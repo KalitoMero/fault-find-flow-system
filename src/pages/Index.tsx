@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut } from 'lucide-react';
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit } from 'lucide-react';
 import ErrorReportForm from '@/components/ErrorReportForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
 import LoginForm from '@/components/LoginForm';
 import ErrorReportDetail from '@/components/ErrorReportDetail';
+import ErrorReportEdit from '@/components/ErrorReportEdit';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics } from '@/lib/storage';
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ const Index = () => {
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [showLogin, setShowLogin] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
+  const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -55,6 +57,7 @@ const Index = () => {
   const handleBackToOverview = () => {
     setShowLogin(false);
     setSelectedReport(null);
+    setEditingReport(null);
   };
 
   const handleLogout = () => {
@@ -65,15 +68,25 @@ const Index = () => {
   const handleReportClick = (report: ErrorReport) => {
     if (isAuthenticated) {
       setSelectedReport(report);
+    } else {
+      // Für Mitarbeiter: nur freigegebene Meldungen anklickbar
+      if (report.approvalStatus === 'approved') {
+        setSelectedReport(report);
+      } else if (report.approvalStatus === 'pending') {
+        toast.info("Diese Meldung ist noch zur Prüfung und kann nicht geöffnet werden");
+      }
     }
   };
 
-  const getStatistics = () => {
-    if (isAuthenticated && user) {
-      return getErrorReportStatistics(user.username);
-    }
-    const stats = getErrorReportStatistics();
-    return stats;
+  const handleEditClick = (report: ErrorReport, e: React.MouseEvent) => {
+    e.stopPropagation(); // Verhindert das Auslösen des Zeilen-Klicks
+    setEditingReport(report);
+  };
+
+  const handleEditSave = () => {
+    loadData();
+    setEditingReport(null);
+    toast.success("Fehlermeldung erfolgreich aktualisiert!");
   };
 
   // Zeige Login-Formular
@@ -81,8 +94,19 @@ const Index = () => {
     return <LoginForm onBack={handleBackToOverview} />;
   }
 
+  // Zeige Bearbeitungs-Formular
+  if (editingReport) {
+    return (
+      <ErrorReportEdit
+        report={editingReport}
+        onBack={handleBackToOverview}
+        onSave={handleEditSave}
+      />
+    );
+  }
+
   // Zeige Detailansicht
-  if (selectedReport && isAuthenticated) {
+  if (selectedReport && (isAuthenticated || selectedReport.approvalStatus === 'approved')) {
     return (
       <ErrorReportDetail
         report={selectedReport}
@@ -92,7 +116,7 @@ const Index = () => {
     );
   }
 
-  const stats = getStatistics();
+  const stats = getErrorReportStatistics();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -276,7 +300,17 @@ const Index = () => {
                   ) : (
                     <div className="space-y-4">
                       {errorReports.slice(0, 10).map((report) => (
-                        <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div 
+                          key={report.id} 
+                          className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                            report.approvalStatus === 'approved' 
+                              ? 'hover:bg-gray-50 cursor-pointer' 
+                              : report.approvalStatus === 'pending'
+                              ? 'opacity-75 cursor-not-allowed'
+                              : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleReportClick(report)}
+                        >
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
                               <Badge variant="outline">#{report.id}</Badge>
@@ -291,6 +325,16 @@ const Index = () => {
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
+                            {report.approvalStatus === 'rejected' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => handleEditClick(report, e)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Bearbeiten
+                              </Button>
+                            )}
                             <Badge 
                               variant={
                                 report.approvalStatus === 'approved' ? 'default' :
