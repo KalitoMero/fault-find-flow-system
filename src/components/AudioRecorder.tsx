@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { pipeline } from '@huggingface/transformers';
 import { Button } from "@/components/ui/button";
@@ -37,13 +38,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     try {
       console.log('Lade Whisper-Modell für deutsche Transkription...');
       
-      // Verwende ein kleineres, aber effizientes Whisper-Modell für bessere Performance
+      // Verwende WASM statt CPU für Browser-Kompatibilität
       transcriptionPipeline = await pipeline(
         'automatic-speech-recognition',
         'Xenova/whisper-small',
         {
-          // Optimiert für bessere Kompatibilität auf Windows-Terminals
-          device: 'cpu'
+          // WASM ist die unterstützte Variante für Browser
+          device: 'wasm'
         }
       );
       
@@ -353,3 +354,4 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
 };
 
 export default AudioRecorder;
+
