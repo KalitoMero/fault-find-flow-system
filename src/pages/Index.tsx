@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,6 @@ import { toast } from "sonner";
 const Index = () => {
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [showLogin, setShowLogin] = useState(false);
-  const [showReportAccess, setShowReportAccess] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
@@ -55,13 +55,8 @@ const Index = () => {
     setShowLogin(true);
   };
 
-  const handleReportAccessClick = () => {
-    setShowReportAccess(true);
-  };
-
   const handleBackToOverview = () => {
     setShowLogin(false);
-    setShowReportAccess(false);
     setSelectedReport(null);
     setEditingReport(null);
   };
@@ -97,17 +92,11 @@ const Index = () => {
 
   const handleReportFound = (report: ErrorReport) => {
     setSelectedReport(report);
-    setShowReportAccess(false);
   };
 
   // Zeige Login-Formular
   if (showLogin && !isAuthenticated) {
     return <LoginForm onBack={handleBackToOverview} />;
-  }
-
-  // Zeige Report Access Form
-  if (showReportAccess) {
-    return <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />;
   }
 
   // Zeige Bearbeitungs-Formular
@@ -148,14 +137,6 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Meldung Einsehen Button für alle Benutzer */}
-              {!isAuthenticated && (
-                <Button variant="outline" onClick={handleReportAccessClick}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Meldung Einsehen
-                </Button>
-              )}
-              
               {isAuthenticated && user ? (
                 <>
                   <Badge variant="default">
@@ -285,12 +266,12 @@ const Index = () => {
             </CardContent>
           </Card>
         ) : (
-          // Mitarbeiter-Dashboard (bestehende Tabs)
-          <Tabs defaultValue="dashboard" className="space-y-6">
+          // Mitarbeiter-Dashboard (Tabs mit Meldung Einsehen statt Dashboard)
+          <Tabs defaultValue="report-access" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="dashboard" className="flex items-center space-x-2">
-                <FileText className="h-4 w-4" />
-                <span>Dashboard</span>
+              <TabsTrigger value="report-access" className="flex items-center space-x-2">
+                <Search className="h-4 w-4" />
+                <span>Meldung Einsehen</span>
               </TabsTrigger>
               <TabsTrigger value="new-report" className="flex items-center space-x-2">
                 <Plus className="h-4 w-4" />
@@ -302,79 +283,8 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Aktuelle Fehlermeldungen</CardTitle>
-                  <CardDescription>
-                    Übersicht der letzten Meldungen aus Ihrer Abteilung
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {errorReports.length === 0 ? (
-                    <div className="text-center py-12">
-                      <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Meldungen vorhanden</h3>
-                      <p className="text-gray-500 mb-4">Erstellen Sie Ihre erste Fehlermeldung</p>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Neue Meldung erstellen
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {errorReports.slice(0, 10).map((report) => (
-                        <div 
-                          key={report.id} 
-                          className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                            report.approvalStatus === 'approved' 
-                              ? 'hover:bg-gray-50 cursor-pointer' 
-                              : report.approvalStatus === 'pending'
-                              ? 'opacity-75 cursor-not-allowed'
-                              : 'hover:bg-gray-50'
-                          }`}
-                          onClick={() => handleReportClick(report)}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-4">
-                              <Badge variant="outline">#{report.id}</Badge>
-                              <span className="font-medium">Auftrag: {report.orderNumber}</span>
-                              <span className="text-gray-500">AFO: {report.afoNumber}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}
-                            </p>
-                            <p className="text-sm text-gray-800 mt-1 truncate max-w-md">
-                              {report.problemDescription.slice(0, 100)}...
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {report.approvalStatus === 'rejected' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => handleEditClick(report, e)}
-                              >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Bearbeiten
-                              </Button>
-                            )}
-                            <Badge 
-                              variant={
-                                report.approvalStatus === 'approved' ? 'default' :
-                                report.approvalStatus === 'rejected' ? 'destructive' : 'secondary'
-                              }
-                            >
-                              {report.approvalStatus === 'approved' ? 'Freigegeben' :
-                               report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            <TabsContent value="report-access" className="space-y-6">
+              <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
             </TabsContent>
 
             <TabsContent value="new-report">
