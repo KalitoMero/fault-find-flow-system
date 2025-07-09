@@ -1,5 +1,5 @@
-
 import React, { useState, useRef } from 'react';
+import { pipeline } from '@huggingface/transformers';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,9 @@ interface AudioRecorderProps {
   label: string;
 }
 
+// Cache für das Whisper-Modell
+let transcriptionPipeline: any = null;
+
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -18,11 +21,43 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isLoadingModel, setIsLoadingModel] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialisiere das Whisper-Modell (einmalig)
+  const initializeTranscriptionModel = async () => {
+    if (transcriptionPipeline) return transcriptionPipeline;
+    
+    setIsLoadingModel(true);
+    try {
+      console.log('Lade Whisper-Modell für deutsche Transkription...');
+      
+      // Verwende ein kleineres, aber effizientes Whisper-Modell für bessere Performance
+      transcriptionPipeline = await pipeline(
+        'automatic-speech-recognition',
+        'Xenova/whisper-small',
+        {
+          // Optimiert für deutsche Sprache und Windows-Performance
+          quantized: true,
+          device: 'cpu' // Für bessere Kompatibilität auf Windows-Terminals
+        }
+      );
+      
+      console.log('Whisper-Modell erfolgreich geladen');
+      toast.success('Transkriptions-Modell geladen');
+      return transcriptionPipeline;
+    } catch (error) {
+      console.error('Fehler beim Laden des Modells:', error);
+      toast.error('Fehler beim Laden des Transkriptions-Modells');
+      throw error;
+    } finally {
+      setIsLoadingModel(false);
+    }
+  };
 
   const startRecording = async () => {
     try {
@@ -30,7 +65,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          // Optimierte Einstellungen für Industrieumgebung
+          sampleRate: 16000, // Whisper bevorzugt 16kHz
+          channelCount: 1 // Mono für bessere Performance
         } 
       });
       
@@ -132,34 +170,46 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     setIsTranscribing(true);
 
     try {
-      // Simuliere Transkription (in echter Anwendung würde hier ein Speech-to-Text Service aufgerufen)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Initialisiere das Modell falls noch nicht geladen
+      const model = await initializeTranscriptionModel();
       
-      // Simuliere deutsche Transkription basierend auf der Aufnahmedauer
-      const mockTranscriptions = [
-        "Das Problem tritt bei der Bearbeitung des Werkstücks auf. Die Maschine macht ungewöhnliche Geräusche und die Oberflächenqualität entspricht nicht den Vorgaben.",
-        "Die Fehlerursache liegt vermutlich an einem verschlissenen Werkzeug. Die Schnittparameter müssen überprüft und angepasst werden.",
-        "Als Korrekturmaßnahme wurde das Werkzeug gewechselt und die Maschinenparameter neu eingestellt. Eine Probefertigung wurde erfolgreich durchgeführt."
-      ];
-      
-      const randomTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
-      
-      // Audio als Base64 String speichern (vereinfacht)
+      // Audio-Blob für Transkription vorbereiten
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const reader = new FileReader();
       
+      console.log('Starte Transkription...');
+      toast.info('Transkribiere Audio...');
+      
+      // Führe die Transkription durch
+      const result = await model(audioBlob, {
+        language: 'german', // Explizit deutsche Sprache
+        task: 'transcribe',
+        // Chunk-basierte Verarbeitung für bessere Performance
+        chunk_length_s: 30,
+        stride_length_s: 5
+      });
+      
+      const transcribedText = result.text || '';
+      console.log('Transkription erfolgreich:', transcribedText);
+      
+      if (!transcribedText.trim()) {
+        toast.warning('Keine Sprache erkannt. Bitte sprechen Sie deutlicher oder näher zum Mikrofon.');
+        return;
+      }
+      
+      // Audio als Base64 String speichern
+      const reader = new FileReader();
       reader.onloadend = () => {
         const base64Audio = reader.result as string;
-        onTranscription(randomTranscription, base64Audio);
+        onTranscription(transcribedText, base64Audio);
         setIsSaved(true);
-        toast.success("Aufnahme gespeichert und transkribiert!");
+        toast.success("Aufnahme erfolgreich transkribiert!");
       };
       
       reader.readAsDataURL(audioBlob);
       
     } catch (error) {
       console.error('Fehler bei der Transkription:', error);
-      toast.error("Fehler bei der Transkription");
+      toast.error("Fehler bei der Transkription. Bitte versuchen Sie es erneut.");
     } finally {
       setIsTranscribing(false);
     }
@@ -176,7 +226,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h4 className="font-medium text-blue-900">{label}</h4>
-          {isSaved && <Badge className="bg-green-100 text-green-800">Gespeichert</Badge>}
+          <div className="flex space-x-2">
+            {isLoadingModel && <Badge variant="secondary">Lädt Modell...</Badge>}
+            {isSaved && <Badge className="bg-green-100 text-green-800">Gespeichert</Badge>}
+          </div>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -186,7 +239,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
               variant="outline"
               size="lg"
               onClick={startRecording}
-              disabled={isSaved}
+              disabled={isSaved || isLoadingModel}
               className="h-12 px-6"
             >
               <Mic className="h-5 w-5 mr-2" />
@@ -234,7 +287,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
             <Button
               size="lg"
               onClick={saveAndTranscribe}
-              disabled={isTranscribing}
+              disabled={isTranscribing || isLoadingModel}
               className="h-12 px-6"
             >
               {isTranscribing ? (
@@ -256,6 +309,15 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         <audio ref={audioElementRef} style={{ display: 'none' }} />
         
         {/* Status-Info */}
+        {isLoadingModel && (
+          <div className="mt-4 text-sm text-blue-700 bg-blue-100 p-2 rounded">
+            <span className="flex items-center">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Lade Transkriptions-Modell... (Nur beim ersten Mal)
+            </span>
+          </div>
+        )}
+        
         {isRecording && (
           <div className="mt-4 text-sm text-blue-700 bg-blue-100 p-2 rounded">
             <span className="flex items-center">
@@ -265,15 +327,24 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
           </div>
         )}
         
-        {hasRecording && !isRecording && !isSaved && (
+        {hasRecording && !isRecording && !isSaved && !isTranscribing && (
           <div className="mt-4 text-sm text-blue-700 bg-blue-100 p-2 rounded">
-            Aufnahme bereit. Klicken Sie auf "Speichern" für automatische Transkription.
+            Aufnahme bereit. Klicken Sie auf "Speichern" für automatische deutsche Transkription.
+          </div>
+        )}
+        
+        {isTranscribing && (
+          <div className="mt-4 text-sm text-orange-700 bg-orange-100 p-2 rounded">
+            <span className="flex items-center">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Transkribiere Audio zu Text... Das kann einen Moment dauern.
+            </span>
           </div>
         )}
         
         {isSaved && (
           <div className="mt-4 text-sm text-green-700 bg-green-100 p-2 rounded">
-            ✓ Aufnahme gespeichert und transkribiert
+            ✓ Aufnahme gespeichert und erfolgreich transkribiert
           </div>
         )}
       </CardContent>
