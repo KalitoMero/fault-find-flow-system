@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Save, AlertTriangle } from 'lucide-react';
+import { Save, AlertTriangle, Copy, Key } from 'lucide-react';
 import AudioRecorder from './AudioRecorder';
-import { ErrorReport, saveErrorReport, generateErrorReportId } from '@/lib/storage';
+import { ErrorReport, saveErrorReport, generateErrorReportId, generateAccessNumber } from '@/lib/storage';
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
@@ -26,6 +25,8 @@ const availableTeamLeaders = [
 const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   onReportCreated
 }) => {
+  const [accessNumber, setAccessNumber] = useState('');
+  
   const [formData, setFormData] = useState({
     orderNumber: '',
     afoNumber: '',
@@ -47,6 +48,20 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Zugriffsnummer beim Laden der Komponente generieren
+  useEffect(() => {
+    setAccessNumber(generateAccessNumber());
+  }, []);
+
+  const copyAccessNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(accessNumber);
+      toast.success('Zugriffsnummer kopiert!');
+    } catch (error) {
+      toast.error('Kopieren fehlgeschlagen');
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -121,6 +136,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
       
       const newReport: ErrorReport = {
         id: reportId,
+        accessNumber: accessNumber,
         orderNumber: formData.orderNumber,
         afoNumber: formData.afoNumber,
         defectiveQuantity: Number(formData.defectiveQuantity),
@@ -143,7 +159,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
 
       saveErrorReport(newReport);
       
-      // Form zurücksetzen
+      // Form zurücksetzen und neue Zugriffsnummer generieren
       setFormData({
         orderNumber: '',
         afoNumber: '',
@@ -164,7 +180,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         correctiveActionAudio: null
       });
 
-      toast.success(`Fehlermeldung #${reportId} erfolgreich erstellt!`);
+      setAccessNumber(generateAccessNumber());
+
+      toast.success(`Fehlermeldung #${reportId} erfolgreich erstellt! Zugriffsnummer: ${accessNumber}`);
       onReportCreated();
       
     } catch (error) {
@@ -185,6 +203,27 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         <CardDescription>
           Bitte füllen Sie alle Pflichtfelder aus, um eine neue Fehlermeldung zu erstellen.
         </CardDescription>
+        
+        {/* Zugriffsnummer Anzeige */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Key className="h-5 w-5 text-blue-600" />
+              <div>
+                <h4 className="font-semibold text-blue-900">Zugriffsnummer für diese Meldung</h4>
+                <p className="text-sm text-blue-700">Diese Nummer wird benötigt, um die Meldung später einzusehen</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl font-mono font-bold text-blue-900 bg-white px-3 py-1 rounded border">
+                {accessNumber}
+              </span>
+              <Button variant="outline" size="sm" onClick={copyAccessNumber}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent className="space-y-6">
@@ -391,6 +430,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
                   Sind Sie sicher, dass Sie die Fehlermeldung abschließen möchten? 
                   Nach dem Speichern können die Daten nicht mehr bearbeitet werden.
                   Die Meldung wird automatisch an Ihren Team-/Schichtleiter zur Freigabe weitergeleitet.
+                  <br/><br/>
+                  <strong>Wichtig:</strong> Notieren Sie sich die Zugriffsnummer <strong>{accessNumber}</strong> - Sie benötigen diese, um die Meldung später einzusehen.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

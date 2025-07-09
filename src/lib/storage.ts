@@ -3,6 +3,7 @@
 
 export interface ErrorReport {
   id: string;
+  accessNumber: string; // Neue 6-stellige Zugriffsnummer
   orderNumber: string;
   afoNumber: string;
   defectiveQuantity: number;
@@ -40,6 +41,11 @@ export const generateErrorReportId = (): string => {
   const nextId = currentCounter + 1;
   localStorage.setItem(COUNTER_KEY, nextId.toString());
   return nextId.toString().padStart(6, '0');
+};
+
+// Neue Funktion: 6-stellige Zugriffsnummer generieren
+export const generateAccessNumber = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 // Alle Fehlermeldungen laden
@@ -121,6 +127,12 @@ export const updateErrorReportStatus = (
 export const getErrorReportById = (id: string): ErrorReport | null => {
   const reports = getErrorReports();
   return reports.find(r => r.id === id) || null;
+};
+
+// Funktion zum Finden einer Meldung über Zugriffsnummer
+export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport | null => {
+  const reports = getErrorReports();
+  return reports.find(r => r.accessNumber === accessNumber) || null;
 };
 
 // Statistiken berechnen
