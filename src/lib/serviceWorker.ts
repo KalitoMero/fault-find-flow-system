@@ -1,9 +1,86 @@
 // Service Worker für Offline-Funktionalität und Hintergrund-Synchronisation
 
-// Type declarations for Service Worker APIs
+// Complete Service Worker API type declarations
+interface WorkerGlobalScope extends EventTarget {
+  readonly location: WorkerLocation;
+  readonly navigator: WorkerNavigator;
+  onerror: ((this: WorkerGlobalScope, ev: ErrorEvent) => any) | null;
+  onlanguagechange: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+  onoffline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+  ononline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+  onrejectionhandled: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+  onunhandledrejection: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+  importScripts(...urls: string[]): void;
+}
+
+interface WorkerLocation {
+  readonly hash: string;
+  readonly host: string;
+  readonly hostname: string;
+  readonly href: string;
+  readonly origin: string;
+  readonly pathname: string;
+  readonly port: string;
+  readonly protocol: string;
+  readonly search: string;
+}
+
+interface WorkerNavigator {
+  readonly appCodeName: string;
+  readonly appName: string;
+  readonly appVersion: string;
+  readonly language: string;
+  readonly onLine: boolean;
+  readonly platform: string;
+  readonly product: string;
+  readonly userAgent: string;
+}
+
+interface Client {
+  readonly frameType: FrameType;
+  readonly id: string;
+  readonly type: ClientType;
+  readonly url: string;
+  postMessage(message: any, transfer?: Transferable[]): void;
+}
+
+interface Clients {
+  claim(): Promise<void>;
+  get(id: string): Promise<Client | undefined>;
+  matchAll(options?: ClientQueryOptions): Promise<readonly Client[]>;
+  openWindow(url: string): Promise<WindowClient | null>;
+}
+
+interface ClientQueryOptions {
+  includeUncontrolled?: boolean;
+  type?: ClientType;
+}
+
+type ClientType = "window" | "worker" | "sharedworker" | "all";
+type FrameType = "auxiliary" | "top-level" | "nested" | "none";
+
+interface WindowClient extends Client {
+  readonly focused: boolean;
+  readonly visibilityState: VisibilityState;
+  focus(): Promise<WindowClient>;
+  navigate(url: string): Promise<WindowClient | null>;
+}
+
+type VisibilityState = "hidden" | "visible";
+
 interface ServiceWorkerGlobalScope extends WorkerGlobalScope {
-  registration: ServiceWorkerRegistration;
-  clients: Clients;
+  readonly clients: Clients;
+  readonly registration: ServiceWorkerRegistration;
+  readonly serviceWorker: ServiceWorker;
+  onactivate: ((this: ServiceWorkerGlobalScope, ev: ExtendableEvent) => any) | null;
+  onfetch: ((this: ServiceWorkerGlobalScope, ev: FetchEvent) => any) | null;
+  oninstall: ((this: ServiceWorkerGlobalScope, ev: ExtendableEvent) => any) | null;
+  onmessage: ((this: ServiceWorkerGlobalScope, ev: ExtendableMessageEvent) => any) | null;
+  onnotificationclick: ((this: ServiceWorkerGlobalScope, ev: NotificationEvent) => any) | null;
+  onnotificationclose: ((this: ServiceWorkerGlobalScope, ev: NotificationEvent) => any) | null;
+  onpush: ((this: ServiceWorkerGlobalScope, ev: PushEvent) => any) | null;
+  onpushsubscriptionchange: ((this: ServiceWorkerGlobalScope, ev: PushSubscriptionChangeEvent) => any) | null;
+  onsync: ((this: ServiceWorkerGlobalScope, ev: SyncEvent) => any) | null;
   skipWaiting(): Promise<void>;
 }
 
@@ -12,23 +89,45 @@ interface ExtendableEvent extends Event {
 }
 
 interface FetchEvent extends ExtendableEvent {
-  request: Request;
-  respondWith(response: Promise<Response> | Response): void;
+  readonly clientId: string;
+  readonly preloadResponse: Promise<Response>;
+  readonly request: Request;
+  readonly resultingClientId: string;
+  respondWith(r: Response | Promise<Response>): void;
 }
 
 interface ExtendableMessageEvent extends ExtendableEvent {
-  data: any;
-  ports: readonly MessagePort[];
-}
-
-interface SyncEventInit extends EventInit {
-  tag: string;
-  lastChance?: boolean;
+  readonly data: any;
+  readonly lastEventId: string;
+  readonly origin: string;
+  readonly ports: readonly MessagePort[];
+  readonly source: Client | ServiceWorker | MessagePort | null;
 }
 
 interface SyncEvent extends ExtendableEvent {
-  tag: string;
-  lastChance: boolean;
+  readonly lastChance: boolean;
+  readonly tag: string;
+}
+
+interface NotificationEvent extends ExtendableEvent {
+  readonly action: string;
+  readonly notification: Notification;
+}
+
+interface PushEvent extends ExtendableEvent {
+  readonly data: PushMessageData | null;
+}
+
+interface PushSubscriptionChangeEvent extends ExtendableEvent {
+  readonly newSubscription: PushSubscription | null;
+  readonly oldSubscription: PushSubscription | null;
+}
+
+interface PushMessageData {
+  arrayBuffer(): ArrayBuffer;
+  blob(): Blob;
+  json(): any;
+  text(): string;
 }
 
 declare const self: ServiceWorkerGlobalScope;
