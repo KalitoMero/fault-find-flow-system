@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef } from 'react';
 import { pipeline } from '@huggingface/transformers';
 import { Button } from "@/components/ui/button";
@@ -29,6 +27,35 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const audioChunksRef = useRef<Blob[]>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Konvertiere Audio-Blob zu Float32Array für Whisper
+  const convertAudioBlobToFloat32Array = async (audioBlob: Blob): Promise<Float32Array> => {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    
+    // Konvertiere zu Mono (Whisper erwartet Mono-Audio)
+    const monoData = audioBuffer.getChannelData(0);
+    
+    // Resample auf 16kHz falls nötig (Whisper optimiert für 16kHz)
+    if (audioBuffer.sampleRate !== 16000) {
+      const resampledLength = Math.round(monoData.length * 16000 / audioBuffer.sampleRate);
+      const resampledData = new Float32Array(resampledLength);
+      
+      for (let i = 0; i < resampledLength; i++) {
+        const index = i * audioBuffer.sampleRate / 16000;
+        const indexFloor = Math.floor(index);
+        const indexCeil = Math.min(indexFloor + 1, monoData.length - 1);
+        const weight = index - indexFloor;
+        
+        resampledData[i] = monoData[indexFloor] * (1 - weight) + monoData[indexCeil] * weight;
+      }
+      
+      return resampledData;
+    }
+    
+    return monoData;
+  };
 
   // Initialisiere das Whisper-Modell (einmalig)
   const initializeTranscriptionModel = async () => {
@@ -177,11 +204,16 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       // Audio-Blob für Transkription vorbereiten
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
+      console.log('Konvertiere Audio für Transkription...');
+      
+      // Konvertiere Audio-Blob zu Float32Array
+      const audioData = await convertAudioBlobToFloat32Array(audioBlob);
+      
       console.log('Starte Transkription...');
       toast.info('Transkribiere Audio...');
       
       // Führe die Transkription durch
-      const result = await model(audioBlob, {
+      const result = await model(audioData, {
         language: 'german', // Explizit deutsche Sprache
         task: 'transcribe',
         // Chunk-basierte Verarbeitung für bessere Performance
@@ -354,4 +386,3 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
 };
 
 export default AudioRecorder;
-
