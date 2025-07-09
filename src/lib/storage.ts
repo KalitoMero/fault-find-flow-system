@@ -181,6 +181,7 @@ export const createDemoData = (): void => {
   const demoReports: ErrorReport[] = [
     {
       id: generateErrorReportId(),
+      accessNumber: generateAccessNumber(),
       orderNumber: 'AUF-2024-001',
       afoNumber: 'AFO-12345',
       defectiveQuantity: 3,
@@ -199,6 +200,7 @@ export const createDemoData = (): void => {
     },
     {
       id: generateErrorReportId(),
+      accessNumber: generateAccessNumber(),
       orderNumber: 'AUF-2024-002',
       afoNumber: 'AFO-12346',
       defectiveQuantity: 5,
@@ -215,6 +217,7 @@ export const createDemoData = (): void => {
     },
     {
       id: generateErrorReportId(),
+      accessNumber: generateAccessNumber(),
       orderNumber: 'AUF-2024-003',
       afoNumber: 'AFO-12347',
       defectiveQuantity: 2,
