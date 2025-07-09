@@ -16,8 +16,6 @@ const Index = () => {
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [pendingReports, setPendingReports] = useState<ErrorReport[]>([]);
   const [userRole, setUserRole] = useState<'employee' | 'supervisor'>('employee');
-  const [currentUser, setCurrentUser] = useState('Max Mustermann');
-  const [currentPersonalNumber, setCurrentPersonalNumber] = useState('12345');
   const location = useLocation();
 
   // Simuliere Benutzerrolle basierend auf URL-Parameter oder localStorage
@@ -86,10 +84,6 @@ const Index = () => {
               <Badge variant={userRole === 'supervisor' ? 'default' : 'secondary'}>
                 {userRole === 'supervisor' ? 'Team-/Schichtleiter' : 'Mitarbeiter'}
               </Badge>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{currentUser}</p>
-                <p className="text-xs text-gray-500">Personal-Nr: {currentPersonalNumber}</p>
-              </div>
             </div>
           </div>
         </div>
@@ -222,11 +216,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="new-report">
-            <ErrorReportForm 
-              currentUser={currentUser}
-              currentPersonalNumber={currentPersonalNumber}
-              onReportCreated={handleNewReport}
-            />
+            <ErrorReportForm onReportCreated={handleNewReport} />
           </TabsContent>
 
           {userRole === 'supervisor' && (

@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Save, AlertTriangle } from 'lucide-react';
@@ -14,14 +13,10 @@ import { ErrorReport, saveErrorReport, generateErrorReportId } from '@/lib/stora
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
-  currentUser: string;
-  currentPersonalNumber: string;
   onReportCreated: () => void;
 }
 
 const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
-  currentUser,
-  currentPersonalNumber,
   onReportCreated
 }) => {
   const [formData, setFormData] = useState({
@@ -29,6 +24,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
     afoNumber: '',
     defectiveQuantity: '',
     totalDefectiveQuantity: '',
+    creatorName: '',
+    personalNumber: '',
     machine: '',
     problemDescription: '',
     errorCause: '',
@@ -42,17 +39,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const machines = [
-    'Maschine 01 - CNC Drehmaschine',
-    'Maschine 02 - Fräsmaschine',
-    'Maschine 03 - Bohrmaschine',
-    'Maschine 04 - Schleifmaschine',
-    'Maschine 05 - Pressmaschine',
-    'Maschine 06 - Schweißanlage',
-    'Maschine 07 - Montagestation',
-    'Maschine 08 - Prüfstand'
-  ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -73,7 +59,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   };
 
   const validateForm = () => {
-    const required = ['orderNumber', 'afoNumber', 'defectiveQuantity', 'totalDefectiveQuantity', 'machine', 'problemDescription', 'errorCause', 'correctiveAction'];
+    const required = ['orderNumber', 'afoNumber', 'defectiveQuantity', 'totalDefectiveQuantity', 'creatorName', 'personalNumber', 'machine', 'problemDescription', 'errorCause', 'correctiveAction'];
     
     for (const field of required) {
       if (!formData[field as keyof typeof formData]) {
@@ -106,6 +92,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
       afoNumber: 'AFO-Nummer',
       defectiveQuantity: 'Beanstandete Menge',
       totalDefectiveQuantity: 'Gesamt beanstandete Menge',
+      creatorName: 'Name',
+      personalNumber: 'Personal-Nummer',
       machine: 'Maschine',
       problemDescription: 'Problembeschreibung',
       errorCause: 'Fehlerursache',
@@ -128,8 +116,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         afoNumber: formData.afoNumber,
         defectiveQuantity: Number(formData.defectiveQuantity),
         totalDefectiveQuantity: Number(formData.totalDefectiveQuantity),
-        creator: currentUser,
-        personalNumber: currentPersonalNumber,
+        creator: formData.creatorName,
+        personalNumber: formData.personalNumber,
         machine: formData.machine,
         problemDescription: formData.problemDescription,
         errorCause: formData.errorCause,
@@ -151,6 +139,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         afoNumber: '',
         defectiveQuantity: '',
         totalDefectiveQuantity: '',
+        creatorName: '',
+        personalNumber: '',
         machine: '',
         problemDescription: '',
         errorCause: '',
@@ -252,28 +242,35 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
           <h3 className="text-lg font-semibold">Ersteller und Maschine</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Ersteller</Label>
+              <Label htmlFor="creatorName">Name *</Label>
               <Input
-                value={`${currentUser} (${currentPersonalNumber})`}
-                disabled
-                className="text-lg h-12 bg-gray-50"
+                id="creatorName"
+                placeholder="Vor- und Nachname"
+                value={formData.creatorName}
+                onChange={(e) => handleInputChange('creatorName', e.target.value)}
+                className="text-lg h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="machine">Maschine *</Label>
-              <Select value={formData.machine} onValueChange={(value) => handleInputChange('machine', value)}>
-                <SelectTrigger className="text-lg h-12">
-                  <SelectValue placeholder="Maschine auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {machines.map((machine) => (
-                    <SelectItem key={machine} value={machine}>
-                      {machine}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="personalNumber">Personal-Nummer *</Label>
+              <Input
+                id="personalNumber"
+                placeholder="z.B. 12345"
+                value={formData.personalNumber}
+                onChange={(e) => handleInputChange('personalNumber', e.target.value)}
+                className="text-lg h-12"
+              />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="machine">Maschine *</Label>
+            <Input
+              id="machine"
+              placeholder="z.B. CNC Drehmaschine 01"
+              value={formData.machine}
+              onChange={(e) => handleInputChange('machine', e.target.value)}
+              className="text-lg h-12"
+            />
           </div>
         </div>
 
