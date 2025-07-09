@@ -1,3 +1,4 @@
+
 // Lokale Datenspeicherung für Offline-Betrieb
 // In Produktionsumgebung würde dies durch eine echte Datenbank ersetzt
 
@@ -18,7 +19,6 @@ export interface ErrorReport {
   approvedBy?: string;
   approvedAt?: string;
   rejectionReason?: string;
-  assignedSupervisor?: string; // Zugewiesener Teamleiter
   audioFiles?: {
     problemDescription?: string | null;
     errorCause?: string | null;
@@ -28,12 +28,6 @@ export interface ErrorReport {
 
 const STORAGE_KEY = 'production_error_reports';
 const COUNTER_KEY = 'error_report_counter';
-
-// Liste der verfügbaren Teamleiter
-export const AVAILABLE_SUPERVISORS = [
-  'Test Teamleiter',
-  'Test2 Teamleiter'
-];
 
 // Initialisiere Zähler wenn nicht vorhanden
 if (!localStorage.getItem(COUNTER_KEY)) {
@@ -59,21 +53,10 @@ export const getErrorReports = (): ErrorReport[] => {
   }
 };
 
-// Fehlermeldungen für einen bestimmten Teamleiter laden
-export const getErrorReportsForSupervisor = (supervisorName: string): ErrorReport[] => {
+// Fehlermeldungen zur Freigabe laden (nur pending)
+export const getErrorReportsForApproval = (): ErrorReport[] => {
   const allReports = getErrorReports();
-  return allReports
-    .filter(report => report.assignedSupervisor === supervisorName)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-};
-
-// Fehlermeldungen zur Freigabe laden (nur pending für aktuellen Teamleiter)
-export const getErrorReportsForApproval = (supervisorName?: string): ErrorReport[] => {
-  const allReports = getErrorReports();
-  return allReports.filter(report => 
-    report.approvalStatus === 'pending' && 
-    (!supervisorName || report.assignedSupervisor === supervisorName)
-  );
+  return allReports.filter(report => report.approvalStatus === 'pending');
 };
 
 // Einzelne Fehlermeldung speichern
@@ -133,11 +116,8 @@ export const getErrorReportById = (id: string): ErrorReport | null => {
 };
 
 // Statistiken berechnen
-export const getErrorReportStatistics = (supervisorName?: string) => {
-  const reports = supervisorName 
-    ? getErrorReportsForSupervisor(supervisorName)
-    : getErrorReports();
-    
+export const getErrorReportStatistics = () => {
+  const reports = getErrorReports();
   const total = reports.length;
   const pending = reports.filter(r => r.approvalStatus === 'pending').length;
   const approved = reports.filter(r => r.approvalStatus === 'approved').length;
@@ -193,9 +173,8 @@ export const createDemoData = (): void => {
       correctiveAction: 'Werkzeug gewechselt, Schnittgeschwindigkeit reduziert, Kühlmittelflow erhöht. Probefertigung erfolgreich.',
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'approved',
-      approvedBy: 'Test Teamleiter',
-      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      assignedSupervisor: 'Test Teamleiter'
+      approvedBy: 'Team-/Schichtleiter',
+      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
       id: generateErrorReportId(),
@@ -210,24 +189,7 @@ export const createDemoData = (): void => {
       errorCause: 'Spannvorrichtung nicht korrekt justiert. Werkstück rutscht während der Bearbeitung.',
       correctiveAction: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
       createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'pending',
-      assignedSupervisor: 'Test Teamleiter'
-    },
-    {
-      id: generateErrorReportId(),
-      orderNumber: 'AUF-2024-003',
-      afoNumber: 'AFO-12347',
-      defectiveQuantity: 2,
-      totalDefectiveQuantity: 25,
-      creator: 'Peter Weber',
-      personalNumber: '54323',
-      machine: 'Maschine 03 - Bohrmaschine',
-      problemDescription: 'Bohrungsqualität unzureichend, Grate an den Bohrungskanten.',
-      errorCause: 'Bohrer stumpf, falsche Vorschubgeschwindigkeit.',
-      correctiveAction: 'Neuen Bohrer eingesetzt, Vorschubgeschwindigkeit angepasst.',
-      createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'pending',
-      assignedSupervisor: 'Test2 Teamleiter'
+      approvalStatus: 'pending'
     }
   ];
 
