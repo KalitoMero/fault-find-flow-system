@@ -1,7 +1,36 @@
-
 // Service Worker für Offline-Funktionalität und Hintergrund-Synchronisation
 
 // Type declarations for Service Worker APIs
+interface ServiceWorkerGlobalScope extends WorkerGlobalScope {
+  registration: ServiceWorkerRegistration;
+  clients: Clients;
+  skipWaiting(): Promise<void>;
+}
+
+interface ExtendableEvent extends Event {
+  waitUntil(f: Promise<any>): void;
+}
+
+interface FetchEvent extends ExtendableEvent {
+  request: Request;
+  respondWith(response: Promise<Response> | Response): void;
+}
+
+interface ExtendableMessageEvent extends ExtendableEvent {
+  data: any;
+  ports: readonly MessagePort[];
+}
+
+interface SyncEventInit extends EventInit {
+  tag: string;
+  lastChance?: boolean;
+}
+
+interface SyncEvent extends ExtendableEvent {
+  tag: string;
+  lastChance: boolean;
+}
+
 declare const self: ServiceWorkerGlobalScope;
 
 const CACHE_NAME = 'production-error-reports-v1';
@@ -172,8 +201,8 @@ const handleOfflineSync = async (request: Request): Promise<Response> => {
     }
     
     // Hintergrund-Sync registrieren wenn verfügbar
-    if ('serviceWorker' in navigator && 'sync' in self.registration) {
-      await self.registration.sync.register('error-report-sync');
+    if ('serviceWorker' in navigator && 'sync' in (self.registration as any)) {
+      await (self.registration as any).sync.register('error-report-sync');
     }
     
     // Erfolgreiche Response zurückgeben (simuliert)
@@ -263,7 +292,7 @@ const processOfflineQueue = async (): Promise<void> => {
 };
 
 // Background-Sync Event
-self.addEventListener('sync', (event: any) => {
+self.addEventListener('sync', (event: SyncEvent) => {
   console.log('Service Worker: Background sync triggered:', event.tag);
   
   if (event.tag === 'error-report-sync') {
