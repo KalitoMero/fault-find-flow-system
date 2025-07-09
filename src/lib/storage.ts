@@ -1,4 +1,3 @@
-
 // Lokale Datenspeicherung für Offline-Betrieb
 // In Produktionsumgebung würde dies durch eine echte Datenbank ersetzt
 
@@ -19,6 +18,7 @@ export interface ErrorReport {
   approvedBy?: string;
   approvedAt?: string;
   rejectionReason?: string;
+  assignedTeamLeader?: string;
   audioFiles?: {
     problemDescription?: string | null;
     errorCause?: string | null;
@@ -57,6 +57,14 @@ export const getErrorReports = (): ErrorReport[] => {
 export const getErrorReportsForApproval = (): ErrorReport[] => {
   const allReports = getErrorReports();
   return allReports.filter(report => report.approvalStatus === 'pending');
+};
+
+// Fehlermeldungen für einen bestimmten Teamleiter laden
+export const getErrorReportsForTeamLeader = (teamLeader: string): ErrorReport[] => {
+  const allReports = getErrorReports();
+  return allReports
+    .filter(report => report.assignedTeamLeader === teamLeader)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 // Einzelne Fehlermeldung speichern
@@ -116,8 +124,8 @@ export const getErrorReportById = (id: string): ErrorReport | null => {
 };
 
 // Statistiken berechnen
-export const getErrorReportStatistics = () => {
-  const reports = getErrorReports();
+export const getErrorReportStatistics = (teamLeader?: string) => {
+  const reports = teamLeader ? getErrorReportsForTeamLeader(teamLeader) : getErrorReports();
   const total = reports.length;
   const pending = reports.filter(r => r.approvalStatus === 'pending').length;
   const approved = reports.filter(r => r.approvalStatus === 'approved').length;
@@ -173,8 +181,9 @@ export const createDemoData = (): void => {
       correctiveAction: 'Werkzeug gewechselt, Schnittgeschwindigkeit reduziert, Kühlmittelflow erhöht. Probefertigung erfolgreich.',
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'approved',
-      approvedBy: 'Team-/Schichtleiter',
-      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+      approvedBy: 'Test',
+      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      assignedTeamLeader: 'Test'
     },
     {
       id: generateErrorReportId(),
@@ -189,7 +198,24 @@ export const createDemoData = (): void => {
       errorCause: 'Spannvorrichtung nicht korrekt justiert. Werkstück rutscht während der Bearbeitung.',
       correctiveAction: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
       createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'pending'
+      approvalStatus: 'pending',
+      assignedTeamLeader: 'Test2'
+    },
+    {
+      id: generateErrorReportId(),
+      orderNumber: 'AUF-2024-003',
+      afoNumber: 'AFO-12347',
+      defectiveQuantity: 2,
+      totalDefectiveQuantity: 25,
+      creator: 'Peter Weber',
+      personalNumber: '54323',
+      machine: 'Maschine 03 - Bohrmaschine',
+      problemDescription: 'Bohrungen nicht mittig. Abweichung von bis zu 1mm festgestellt.',
+      errorCause: 'Spannvorrichtung verschlissen, Werkzeug nicht korrekt zentriert.',
+      correctiveAction: 'Neue Spannvorrichtung installiert, Werkzeug neu ausgerichtet und kalibriert.',
+      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      approvalStatus: 'pending',
+      assignedTeamLeader: 'Test'
     }
   ];
 
