@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogOut, Eye } from 'lucide-react';
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, LogOut, Eye } from 'lucide-react';
 import ErrorReportForm from '@/components/ErrorReportForm';
 import ErrorReportDetail from '@/components/ErrorReportDetail';
 import ExportSection from '@/components/ExportSection';
 import LoginForm from '@/components/LoginForm';
+import EmployeeOverview from '@/pages/EmployeeOverview';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReportsForSupervisor, getErrorReportStatistics } from '@/lib/storage';
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ const Index = () => {
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showLogin, setShowLogin] = useState(false);
 
   const loadData = () => {
     if (user) {
@@ -55,14 +57,27 @@ const Index = () => {
     setSelectedReport(null);
   };
 
+  const handleShowLogin = () => {
+    setShowLogin(true);
+  };
+
+  const handleBackFromLogin = () => {
+    setShowLogin(false);
+  };
+
   const getStatistics = () => {
     if (!user) return { total: 0, pending: 0, approved: 0, rejected: 0 };
     return getErrorReportStatistics(user.name);
   };
 
-  // Zeige Login-Form wenn nicht angemeldet
+  // Zeige Login-Form wenn Login angefordert und nicht angemeldet
+  if (showLogin && !isAuthenticated) {
+    return <LoginForm onBack={handleBackFromLogin} />;
+  }
+
+  // Zeige Mitarbeiter-Übersicht wenn nicht angemeldet
   if (!isAuthenticated) {
-    return <LoginForm />;
+    return <EmployeeOverview onShowLogin={handleShowLogin} />;
   }
 
   // Zeige Detailansicht wenn Meldung ausgewählt

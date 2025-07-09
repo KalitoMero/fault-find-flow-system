@@ -4,11 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, LogIn } from 'lucide-react';
+import { AlertTriangle, LogIn, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
 
-const LoginForm = () => {
+interface LoginFormProps {
+  onBack: () => void;
+}
+
+const LoginForm = ({ onBack }: LoginFormProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,8 +47,17 @@ const LoginForm = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onBack}
+              className="p-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <AlertTriangle className="h-12 w-12 text-red-600" />
+            <div className="w-10" /> {/* Spacer for alignment */}
           </div>
           <CardTitle className="text-2xl">Teamleiter Anmeldung</CardTitle>
           <CardDescription>
