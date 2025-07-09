@@ -159,7 +159,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
           // Hochwertige Aufnahme-Einstellungen
           sampleRate: { ideal: 48000, min: 16000 }, // Höhere Sample-Rate für bessere Qualität
           channelCount: { ideal: 2, min: 1 }, // Stereo falls verfügbar
-          latency: { ideal: 0.01, max: 0.05 }, // Niedrige Latenz
         } 
       });
       
