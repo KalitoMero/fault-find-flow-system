@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Save, AlertTriangle } from 'lucide-react';
@@ -15,6 +16,12 @@ import { toast } from "sonner";
 interface ErrorReportFormProps {
   onReportCreated: () => void;
 }
+
+// Available team leaders
+const availableTeamLeaders = [
+  { value: 'Test', label: 'Test' },
+  { value: 'Test2', label: 'Test2' }
+];
 
 const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   onReportCreated
@@ -29,7 +36,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
     machine: '',
     problemDescription: '',
     errorCause: '',
-    correctiveAction: ''
+    correctiveAction: '',
+    assignedTeamLeader: ''
   });
 
   const [audioData, setAudioData] = useState({
@@ -59,7 +67,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   };
 
   const validateForm = () => {
-    const required = ['orderNumber', 'afoNumber', 'defectiveQuantity', 'totalDefectiveQuantity', 'creatorName', 'personalNumber', 'machine', 'problemDescription', 'errorCause', 'correctiveAction'];
+    const required = ['orderNumber', 'afoNumber', 'defectiveQuantity', 'totalDefectiveQuantity', 'creatorName', 'personalNumber', 'machine', 'problemDescription', 'errorCause', 'correctiveAction', 'assignedTeamLeader'];
     
     for (const field of required) {
       if (!formData[field as keyof typeof formData]) {
@@ -97,7 +105,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
       machine: 'Maschine',
       problemDescription: 'Problembeschreibung',
       errorCause: 'Fehlerursache',
-      correctiveAction: 'Korrekturmaßnahme'
+      correctiveAction: 'Korrekturmaßnahme',
+      assignedTeamLeader: 'Teamleiter'
     };
     return labels[field] || field;
   };
@@ -124,6 +133,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         correctiveAction: formData.correctiveAction,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending',
+        assignedTeamLeader: formData.assignedTeamLeader,
         audioFiles: {
           problemDescription: audioData.problemAudio,
           errorCause: audioData.errorCauseAudio,
@@ -144,7 +154,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         machine: '',
         problemDescription: '',
         errorCause: '',
-        correctiveAction: ''
+        correctiveAction: '',
+        assignedTeamLeader: ''
       });
 
       setAudioData({
@@ -271,6 +282,31 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
               onChange={(e) => handleInputChange('machine', e.target.value)}
               className="text-lg h-12"
             />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Teamleiter Zuweisung */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Zuweisung</h3>
+          <div className="space-y-2">
+            <Label htmlFor="assignedTeamLeader">Teamleiter *</Label>
+            <Select
+              value={formData.assignedTeamLeader}
+              onValueChange={(value) => handleInputChange('assignedTeamLeader', value)}
+            >
+              <SelectTrigger className="text-lg h-12">
+                <SelectValue placeholder="Teamleiter auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTeamLeaders.map((leader) => (
+                  <SelectItem key={leader.value} value={leader.value}>
+                    {leader.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
