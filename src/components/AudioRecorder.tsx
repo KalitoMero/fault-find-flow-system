@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { pipeline } from '@huggingface/transformers';
 import { Button } from "@/components/ui/button";
@@ -41,9 +42,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         'automatic-speech-recognition',
         'Xenova/whisper-small',
         {
-          // Optimiert für deutsche Sprache und Windows-Performance
-          quantized: true,
-          device: 'cpu' // Für bessere Kompatibilität auf Windows-Terminals
+          // Optimiert für bessere Kompatibilität auf Windows-Terminals
+          device: 'cpu'
         }
       );
       
