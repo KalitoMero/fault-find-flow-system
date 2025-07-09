@@ -135,7 +135,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
             {/* Status-Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Status Filter</label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <Select value={filterStatus} onValueChange={(value: string) => setFilterStatus(value as 'all' | 'approved' | 'pending' | 'rejected')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -190,7 +190,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
             {/* Format-Auswahl */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Export-Format</label>
-              <Select value={exportFormat} onValueChange={setExportFormat}>
+              <Select value={exportFormat} onValueChange={(value: string) => setExportFormat(value as 'excel' | 'csv')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -209,7 +209,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                   <Checkbox
                     id="basicInfo"
                     checked={selectedFields.basicInfo}
-                    onCheckedChange={(checked) => handleFieldChange('basicInfo', checked as boolean)}
+                    onCheckedChange={(checked) => handleFieldChange('basicInfo', checked === true)}
                   />
                   <label htmlFor="basicInfo" className="text-sm">
                     Basis-Informationen (ID, Auftrag, AFO, Maschine)
@@ -219,7 +219,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                   <Checkbox
                     id="quantities"
                     checked={selectedFields.quantities}
-                    onCheckedChange={(checked) => handleFieldChange('quantities', checked as boolean)}
+                    onCheckedChange={(checked) => handleFieldChange('quantities', checked === true)}
                   />
                   <label htmlFor="quantities" className="text-sm">
                     Mengenangaben
@@ -229,7 +229,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                   <Checkbox
                     id="descriptions"
                     checked={selectedFields.descriptions}
-                    onCheckedChange={(checked) => handleFieldChange('descriptions', checked as boolean)}
+                    onCheckedChange={(checked) => handleFieldChange('descriptions', checked === true)}
                   />
                   <label htmlFor="descriptions" className="text-sm">
                     Beschreibungen (Problem, Ursache, Maßnahme)
@@ -239,7 +239,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                   <Checkbox
                     id="timestamps"
                     checked={selectedFields.timestamps}
-                    onCheckedChange={(checked) => handleFieldChange('timestamps', checked as boolean)}
+                    onCheckedChange={(checked) => handleFieldChange('timestamps', checked === true)}
                   />
                   <label htmlFor="timestamps" className="text-sm">
                     Zeitstempel und Ersteller
@@ -249,7 +249,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                   <Checkbox
                     id="approval"
                     checked={selectedFields.approval}
-                    onCheckedChange={(checked) => handleFieldChange('approval', checked as boolean)}
+                    onCheckedChange={(checked) => handleFieldChange('approval', checked === true)}
                   />
                   <label htmlFor="approval" className="text-sm">
                     Freigabe-Status
@@ -264,7 +264,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
                 <Checkbox
                   id="includeAudio"
                   checked={includeAudio}
-                  onCheckedChange={setIncludeAudio}
+                  onCheckedChange={(checked) => setIncludeAudio(checked === true)}
                 />
                 <label htmlFor="includeAudio" className="text-sm">
                   Audio-Referenzen einschließen

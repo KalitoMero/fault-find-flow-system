@@ -1,6 +1,9 @@
 
 // Service Worker für Offline-Funktionalität und Hintergrund-Synchronisation
 
+// Type declarations for Service Worker APIs
+declare const self: ServiceWorkerGlobalScope;
+
 const CACHE_NAME = 'production-error-reports-v1';
 const OFFLINE_QUEUE_KEY = 'offline_error_reports';
 
@@ -20,7 +23,7 @@ const PRECACHE_URLS = [
 ];
 
 // Service Worker Installation
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (event: ExtendableEvent) => {
   console.log('Service Worker: Installing...');
   
   event.waitUntil(
@@ -37,7 +40,7 @@ self.addEventListener('install', (event) => {
 });
 
 // Service Worker Aktivierung
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event: ExtendableEvent) => {
   console.log('Service Worker: Activating...');
   
   event.waitUntil(
@@ -60,7 +63,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch-Events abfangen
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', (event: FetchEvent) => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -84,7 +87,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Cache-First Strategie
-const cacheFirstStrategy = async (request) => {
+const cacheFirstStrategy = async (request: Request): Promise<Response> => {
   try {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -105,7 +108,10 @@ const cacheFirstStrategy = async (request) => {
     
     // Fallback für Navigation-Requests
     if (request.mode === 'navigate') {
-      return caches.match('/');
+      const fallbackResponse = await caches.match('/');
+      if (fallbackResponse) {
+        return fallbackResponse;
+      }
     }
     
     throw error;
@@ -113,7 +119,7 @@ const cacheFirstStrategy = async (request) => {
 };
 
 // Network-First Strategie
-const networkFirstStrategy = async (request) => {
+const networkFirstStrategy = async (request: Request): Promise<Response> => {
   try {
     const networkResponse = await fetch(request);
     
@@ -136,7 +142,7 @@ const networkFirstStrategy = async (request) => {
 };
 
 // Offline-Synchronisation für Fehlermeldungen
-const handleOfflineSync = async (request) => {
+const handleOfflineSync = async (request: Request): Promise<Response> => {
   try {
     // Versuche zuerst Netzwerk-Request
     const networkResponse = await fetch(request);
@@ -154,12 +160,20 @@ const handleOfflineSync = async (request) => {
       timestamp: Date.now()
     });
     
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue));
+    // Store in IndexedDB instead of localStorage for larger data
+    try {
+      const db = await openDB();
+      const tx = db.transaction(['offline_queue'], 'readwrite');
+      const store = tx.objectStore('offline_queue');
+      await store.put({ id: 'queue', data: offlineQueue });
+    } catch (dbError) {
+      console.log('Service Worker: Fallback to localStorage');
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue));
+    }
     
     // Hintergrund-Sync registrieren wenn verfügbar
-    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register('error-report-sync');
+    if ('serviceWorker' in navigator && 'sync' in self.registration) {
+      await self.registration.sync.register('error-report-sync');
     }
     
     // Erfolgreiche Response zurückgeben (simuliert)
@@ -174,8 +188,25 @@ const handleOfflineSync = async (request) => {
   }
 };
 
+// IndexedDB für größere Offline-Daten
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ErrorReportsDB', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('offline_queue')) {
+        db.createObjectStore('offline_queue', { keyPath: 'id' });
+      }
+    };
+  });
+};
+
 // Offline-Queue laden
-const getOfflineQueue = () => {
+const getOfflineQueue = (): any[] => {
   try {
     const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -186,14 +217,14 @@ const getOfflineQueue = () => {
 };
 
 // Offline-Queue abarbeiten
-const processOfflineQueue = async () => {
+const processOfflineQueue = async (): Promise<void> => {
   const queue = getOfflineQueue();
   if (queue.length === 0) return;
 
   console.log(`Service Worker: Processing ${queue.length} offline items`);
   
-  const processed = [];
-  const failed = [];
+  const processed: any[] = [];
+  const failed: any[] = [];
 
   for (const item of queue) {
     try {
@@ -232,7 +263,7 @@ const processOfflineQueue = async () => {
 };
 
 // Background-Sync Event
-self.addEventListener('sync', (event) => {
+self.addEventListener('sync', (event: any) => {
   console.log('Service Worker: Background sync triggered:', event.tag);
   
   if (event.tag === 'error-report-sync') {
@@ -241,7 +272,7 @@ self.addEventListener('sync', (event) => {
 });
 
 // Message-Handler für Client-Communication
-self.addEventListener('message', (event) => {
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
   const { type, data } = event.data;
   
   switch (type) {
@@ -252,7 +283,9 @@ self.addEventListener('message', (event) => {
       
     case 'CHECK_OFFLINE_QUEUE':
       const queueLength = getOfflineQueue().length;
-      event.ports[0].postMessage({ queueLength });
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ queueLength });
+      }
       break;
       
     case 'FORCE_SYNC':
@@ -262,7 +295,7 @@ self.addEventListener('message', (event) => {
 });
 
 // Periodische Synchronisation (wenn online)
-const startPeriodicSync = () => {
+const startPeriodicSync = (): void => {
   setInterval(async () => {
     if (navigator.onLine) {
       const queue = getOfflineQueue();
