@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Save, AlertTriangle, Copy, Key } from 'lucide-react';
 import AudioRecorder from './AudioRecorder';
 import { ErrorReport, saveErrorReport, generateErrorReportId, generateAccessNumber } from '@/lib/storage';
+import { getDepartments, getEmployeesByDepartment, Department, Employee } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
@@ -26,33 +28,46 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   onReportCreated
 }) => {
   const [accessNumber, setAccessNumber] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   
   const [formData, setFormData] = useState({
     orderNumber: '',
     afoNumber: '',
     defectiveQuantity: '',
-    totalDefectiveQuantity: '',
-    creatorName: '',
-    personalNumber: '',
+    departmentId: '',
+    creatorId: '',
     machine: '',
     problemDescription: '',
-    errorCause: '',
     correctiveAction: '',
     assignedTeamLeader: ''
   });
 
   const [audioData, setAudioData] = useState({
     problemAudio: null as string | null,
-    errorCauseAudio: null as string | null,
     correctiveActionAudio: null as string | null
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Zugriffsnummer beim Laden der Komponente generieren
   useEffect(() => {
     setAccessNumber(generateAccessNumber());
+    setDepartments(getDepartments());
   }, []);
+
+  useEffect(() => {
+    if (formData.departmentId) {
+      const employees = getEmployeesByDepartment(formData.departmentId);
+      setAvailableEmployees(employees);
+      // Reset creator selection if current selection is not in new department
+      if (formData.creatorId && !employees.find(e => e.id === formData.creatorId)) {
+        setFormData(prev => ({ ...prev, creatorId: '' }));
+      }
+    } else {
+      setAvailableEmployees([]);
+      setFormData(prev => ({ ...prev, creatorId: '' }));
+    }
+  }, [formData.departmentId]);
 
   const copyAccessNumber = async () => {
     try {
@@ -82,7 +97,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
   };
 
   const validateForm = () => {
-    const required = ['orderNumber', 'afoNumber', 'defectiveQuantity', 'totalDefectiveQuantity', 'creatorName', 'personalNumber', 'machine', 'problemDescription', 'errorCause', 'correctiveAction', 'assignedTeamLeader'];
+    const required = ['orderNumber', 'defectiveQuantity', 'departmentId', 'creatorId', 'problemDescription', 'correctiveAction', 'assignedTeamLeader'];
     
     for (const field of required) {
       if (!formData[field as keyof typeof formData]) {
@@ -96,16 +111,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
       return false;
     }
 
-    if (isNaN(Number(formData.totalDefectiveQuantity)) || Number(formData.totalDefectiveQuantity) <= 0) {
-      toast.error('Gesamt beanstandete Menge muss eine positive Zahl sein');
-      return false;
-    }
-
-    if (Number(formData.defectiveQuantity) > Number(formData.totalDefectiveQuantity)) {
-      toast.error('Beanstandete Menge kann nicht größer als die Gesamtmenge sein');
-      return false;
-    }
-
     return true;
   };
 
@@ -114,16 +119,18 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
       orderNumber: 'Auftragsnummer',
       afoNumber: 'AFO-Nummer',
       defectiveQuantity: 'Beanstandete Menge',
-      totalDefectiveQuantity: 'Gesamt beanstandete Menge',
-      creatorName: 'Name',
-      personalNumber: 'Personal-Nummer',
+      departmentId: 'Abteilung',
+      creatorId: 'Ersteller',
       machine: 'Maschine',
       problemDescription: 'Problembeschreibung',
-      errorCause: 'Fehlerursache',
       correctiveAction: 'Korrekturmaßnahme',
       assignedTeamLeader: 'Teamleiter'
     };
     return labels[field] || field;
+  };
+
+  const getSelectedEmployee = () => {
+    return availableEmployees.find(e => e.id === formData.creatorId);
   };
 
   const handleSubmit = async () => {
@@ -133,6 +140,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
 
     try {
       const reportId = generateErrorReportId();
+      const selectedEmployee = getSelectedEmployee();
       
       const newReport: ErrorReport = {
         id: reportId,
@@ -140,19 +148,21 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         orderNumber: formData.orderNumber,
         afoNumber: formData.afoNumber,
         defectiveQuantity: Number(formData.defectiveQuantity),
-        totalDefectiveQuantity: Number(formData.totalDefectiveQuantity),
-        creator: formData.creatorName,
-        personalNumber: formData.personalNumber,
+        totalDefectiveQuantity: Number(formData.defectiveQuantity), // Use same as defective quantity since totalDefectiveQuantity is removed
+        creator: selectedEmployee ? selectedEmployee.name : 'Unbekannt',
+        personalNumber: '', // Removed field, empty string for compatibility
         machine: formData.machine,
         problemDescription: formData.problemDescription,
-        errorCause: formData.errorCause,
+        errorCause: '', // Removed field, empty string for compatibility
         correctiveAction: formData.correctiveAction,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending',
         assignedTeamLeader: formData.assignedTeamLeader,
+        departmentId: formData.departmentId,
+        creatorId: formData.creatorId,
         audioFiles: {
           problemDescription: audioData.problemAudio,
-          errorCause: audioData.errorCauseAudio,
+          errorCause: null, // Removed field
           correctiveAction: audioData.correctiveActionAudio
         }
       };
@@ -164,19 +174,16 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         orderNumber: '',
         afoNumber: '',
         defectiveQuantity: '',
-        totalDefectiveQuantity: '',
-        creatorName: '',
-        personalNumber: '',
+        departmentId: '',
+        creatorId: '',
         machine: '',
         problemDescription: '',
-        errorCause: '',
         correctiveAction: '',
         assignedTeamLeader: ''
       });
 
       setAudioData({
         problemAudio: null,
-        errorCauseAudio: null,
         correctiveActionAudio: null
       });
 
@@ -242,10 +249,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="afoNumber">AFO-Nummer *</Label>
+              <Label htmlFor="afoNumber">AFO-Nummer</Label>
               <Input
                 id="afoNumber"
-                placeholder="z.B. AFO-12345"
+                placeholder="z.B. AFO-12345 (optional)"
                 value={formData.afoNumber}
                 onChange={(e) => handleInputChange('afoNumber', e.target.value)}
                 className="text-lg h-12"
@@ -259,64 +266,68 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
         {/* Mengendaten */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Mengendaten</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="defectiveQuantity">Beanstandete Menge *</Label>
-              <Input
-                id="defectiveQuantity"
-                type="number"
-                placeholder="Anzahl"
-                value={formData.defectiveQuantity}
-                onChange={(e) => handleInputChange('defectiveQuantity', e.target.value)}
-                className="text-lg h-12"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="totalDefectiveQuantity">Gesamt beanstandete Menge (von Auftrag) *</Label>
-              <Input
-                id="totalDefectiveQuantity"
-                type="number"
-                placeholder="Gesamtanzahl"
-                value={formData.totalDefectiveQuantity}
-                onChange={(e) => handleInputChange('totalDefectiveQuantity', e.target.value)}
-                className="text-lg h-12"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="defectiveQuantity">Beanstandete Menge *</Label>
+            <Input
+              id="defectiveQuantity"
+              type="number"
+              placeholder="Anzahl"
+              value={formData.defectiveQuantity}
+              onChange={(e) => handleInputChange('defectiveQuantity', e.target.value)}
+              className="text-lg h-12"
+            />
           </div>
         </div>
 
         <Separator />
 
-        {/* Ersteller und Maschine */}
+        {/* Abteilung und Ersteller */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Ersteller und Maschine</h3>
+          <h3 className="text-lg font-semibold">Abteilung und Ersteller</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="creatorName">Name *</Label>
-              <Input
-                id="creatorName"
-                placeholder="Vor- und Nachname"
-                value={formData.creatorName}
-                onChange={(e) => handleInputChange('creatorName', e.target.value)}
-                className="text-lg h-12"
-              />
+              <Label htmlFor="departmentId">Abteilung *</Label>
+              <Select
+                value={formData.departmentId}
+                onValueChange={(value) => handleInputChange('departmentId', value)}
+              >
+                <SelectTrigger className="text-lg h-12">
+                  <SelectValue placeholder="Abteilung auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((department) => (
+                    <SelectItem key={department.id} value={department.id}>
+                      {department.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="personalNumber">Personal-Nummer *</Label>
-              <Input
-                id="personalNumber"
-                placeholder="z.B. 12345"
-                value={formData.personalNumber}
-                onChange={(e) => handleInputChange('personalNumber', e.target.value)}
-                className="text-lg h-12"
-              />
+              <Label htmlFor="creatorId">Ersteller *</Label>
+              <Select
+                value={formData.creatorId}
+                onValueChange={(value) => handleInputChange('creatorId', value)}
+                disabled={!formData.departmentId}
+              >
+                <SelectTrigger className="text-lg h-12">
+                  <SelectValue placeholder={formData.departmentId ? "Mitarbeiter auswählen" : "Zuerst Abteilung wählen"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="machine">Maschine *</Label>
+            <Label htmlFor="machine">Maschine</Label>
             <Input
               id="machine"
-              placeholder="z.B. CNC Drehmaschine 01"
+              placeholder="z.B. CNC Drehmaschine 01 (optional)"
               value={formData.machine}
               onChange={(e) => handleInputChange('machine', e.target.value)}
               className="text-lg h-12"
@@ -366,27 +377,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
                 handleAudioTranscription('problemDescription', transcription, audioBlob)
               }
               label="Oder Problembeschreibung aufnehmen"
-            />
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Fehlerursache */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Fehlerursache *</h3>
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Was war die Ursache des Problems?"
-              value={formData.errorCause}
-              onChange={(e) => handleInputChange('errorCause', e.target.value)}
-              className="text-lg min-h-[100px]"
-            />
-            <AudioRecorder
-              onTranscription={(transcription, audioBlob) => 
-                handleAudioTranscription('errorCause', transcription, audioBlob)
-              }
-              label="Oder Fehlerursache aufnehmen"
             />
           </div>
         </div>

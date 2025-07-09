@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search } from 'lucide-react';
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings } from 'lucide-react';
 import ErrorReportForm from '@/components/ErrorReportForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
@@ -12,6 +11,8 @@ import LoginForm from '@/components/LoginForm';
 import ErrorReportDetail from '@/components/ErrorReportDetail';
 import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
+import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
+import SettingsModal from '@/components/SettingsModal';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics } from '@/lib/storage';
 import { toast } from "sonner";
@@ -19,6 +20,8 @@ import { toast } from "sonner";
 const Index = () => {
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [showLogin, setShowLogin] = useState(false);
+  const [showSettingsPrompt, setShowSettingsPrompt] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
@@ -64,6 +67,19 @@ const Index = () => {
   const handleLogout = () => {
     logout();
     toast.success("Erfolgreich abgemeldet!");
+  };
+
+  const handleSettingsClick = () => {
+    setShowSettingsPrompt(true);
+  };
+
+  const handleSettingsPasswordSuccess = () => {
+    setShowSettingsPrompt(false);
+    setShowSettings(true);
+  };
+
+  const handleSettingsClose = () => {
+    setShowSettings(false);
   };
 
   const handleReportClick = (report: ErrorReport) => {
@@ -148,10 +164,16 @@ const Index = () => {
                   </Button>
                 </>
               ) : (
-                <Button onClick={handleLoginClick}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Teamleiter Login
-                </Button>
+                <>
+                  <Button variant="outline" onClick={handleSettingsClick}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Einstellungen
+                  </Button>
+                  <Button onClick={handleLoginClick}>
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Teamleiter Login
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -297,6 +319,19 @@ const Index = () => {
           </Tabs>
         )}
       </div>
+
+      {/* Settings Password Prompt */}
+      <SettingsPasswordPrompt
+        isOpen={showSettingsPrompt}
+        onClose={() => setShowSettingsPrompt(false)}
+        onSuccess={handleSettingsPasswordSuccess}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={handleSettingsClose}
+      />
     </div>
   );
 };

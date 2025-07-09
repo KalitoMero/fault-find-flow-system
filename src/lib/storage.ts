@@ -16,15 +16,14 @@ export interface ErrorReport {
   correctiveAction: string;
   createdAt: string;
   approvalStatus: 'pending' | 'approved' | 'rejected';
-  approvedBy?: string;
-  approvedAt?: string;
-  rejectionReason?: string;
-  assignedTeamLeader?: string;
+  assignedTeamLeader: string;
   audioFiles?: {
     problemDescription?: string | null;
     errorCause?: string | null;
     correctiveAction?: string | null;
   };
+  departmentId?: string;
+  creatorId?: string;
 }
 
 const STORAGE_KEY = 'production_error_reports';
