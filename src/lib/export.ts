@@ -1,4 +1,3 @@
-
 // Export-Funktionen für Excel und CSV
 // Vereinfachte Implementierung - in Produktionsumgebung würden echte Libraries verwendet
 
@@ -12,7 +11,7 @@ interface ExportFields {
   approval: boolean;
 }
 
-// Excel Export (als echte XLSX-Datei)
+// Excel Export (als echte CSV-Datei mit Excel-kompatiblen Einstellungen)
 export const exportToExcel = async (
   reports: ErrorReport[],
   fields: ExportFields,
@@ -20,17 +19,18 @@ export const exportToExcel = async (
   filename: string
 ): Promise<void> => {
   const headers = buildHeaders(fields, includeAudio);
-  const data = buildDataRows(reports, fields, includeAudio);
+  const csvContent = buildExcelCompatibleCSV(reports, fields, includeAudio, headers);
   
-  // Erstelle Excel-Arbeitsmappe
-  const workbook = createWorkbook(headers, data);
+  // BOM für UTF-8 Erkennung in Excel hinzufügen
+  const BOM = '\uFEFF';
+  const csvWithBOM = BOM + csvContent;
   
-  // Download als Excel-Datei
-  const blob = new Blob([workbook], { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  const blob = new Blob([csvWithBOM], { 
+    type: 'text/csv;charset=utf-8' 
   });
   
-  downloadFile(blob, `${filename}.xlsx`);
+  // Als .csv Datei speichern, die Excel direkt öffnen kann
+  downloadFile(blob, `${filename}.csv`);
 };
 
 // CSV Export
@@ -100,6 +100,97 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean): string[] => 
   }
 
   return headers;
+};
+
+// Excel-kompatible CSV erstellen
+const buildExcelCompatibleCSV = (
+  reports: ErrorReport[],
+  fields: ExportFields,
+  includeAudio: boolean,
+  headers: string[]
+): string => {
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleString('de-DE');
+  };
+
+  const formatStatus = (status: string): string => {
+    switch (status) {
+      case 'approved': return 'Freigegeben';
+      case 'rejected': return 'Abgelehnt';
+      case 'pending': return 'Zur Prüfung';
+      default: return status;
+    }
+  };
+
+  const escapeCsvValue = (value: any): string => {
+    if (value == null) return '';
+    const str = String(value);
+    // Für Excel: Semikolon als Trennzeichen verwenden
+    if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = [headers.map(h => escapeCsvValue(h)).join(';')];
+
+  reports.forEach(report => {
+    const row: string[] = [];
+
+    if (fields.basicInfo) {
+      row.push(
+        escapeCsvValue(report.id),
+        escapeCsvValue(report.orderNumber),
+        escapeCsvValue(report.afoNumber),
+        escapeCsvValue(report.machine)
+      );
+    }
+
+    if (fields.quantities) {
+      row.push(
+        escapeCsvValue(report.defectiveQuantity),
+        escapeCsvValue(report.totalDefectiveQuantity)
+      );
+    }
+
+    if (fields.descriptions) {
+      row.push(
+        escapeCsvValue(report.problemDescription),
+        escapeCsvValue(report.errorCause),
+        escapeCsvValue(report.correctiveAction)
+      );
+    }
+
+    if (fields.timestamps) {
+      row.push(
+        escapeCsvValue(report.creator),
+        escapeCsvValue(report.personalNumber),
+        escapeCsvValue(formatDate(report.createdAt))
+      );
+    }
+
+    if (fields.approval) {
+      row.push(
+        escapeCsvValue(formatStatus(report.approvalStatus)),
+        escapeCsvValue(report.approvedBy || ''),
+        escapeCsvValue(formatDate(report.approvedAt)),
+        escapeCsvValue(report.rejectionReason || '')
+      );
+    }
+
+    if (includeAudio) {
+      row.push(
+        escapeCsvValue(report.audioFiles?.problemDescription ? 'Ja' : 'Nein'),
+        escapeCsvValue(report.audioFiles?.errorCause ? 'Ja' : 'Nein'),
+        escapeCsvValue(report.audioFiles?.correctiveAction ? 'Ja' : 'Nein')
+      );
+    }
+
+    rows.push(row.join(';'));
+  });
+
+  return rows.join('\r\n');
 };
 
 // Datenzeilen erstellen

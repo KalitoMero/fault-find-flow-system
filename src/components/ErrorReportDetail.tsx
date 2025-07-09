@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,6 +74,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
       localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
       
       toast.success('Fehlermeldung wurde erfolgreich gelöscht!');
+      
+      // Trigger onStatusChange to refresh the list, then navigate back
+      onStatusChange();
       onBack(); // Zurück zur Übersicht
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
