@@ -1,10 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import { ErrorReport, updateErrorReportStatus } from '@/lib/storage';
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
 
 interface ErrorReportDetailProps {
@@ -14,26 +17,85 @@ interface ErrorReportDetailProps {
 }
 
 const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetailProps) => {
-  const handleApprove = () => {
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectionForm, setShowRejectionForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  const handleApprove = async () => {
+    if (!isAuthenticated) return;
+    
+    setIsSubmitting(true);
     try {
       updateErrorReportStatus(report.id, 'approved');
-      toast.success("Fehlermeldung freigegeben!");
+      toast.success('Fehlermeldung wurde freigegeben!');
       onStatusChange();
     } catch (error) {
-      toast.error("Fehler beim Freigeben!");
+      toast.error('Fehler beim Freigeben der Meldung');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleReject = () => {
-    const reason = prompt("Grund für Ablehnung:");
-    if (reason) {
-      try {
-        updateErrorReportStatus(report.id, 'rejected', reason);
-        toast.success("Fehlermeldung abgelehnt!");
-        onStatusChange();
-      } catch (error) {
-        toast.error("Fehler beim Ablehnen!");
-      }
+  const handleReject = async () => {
+    if (!isAuthenticated || !rejectionReason.trim()) {
+      toast.error('Bitte geben Sie einen Ablehnungsgrund ein');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      updateErrorReportStatus(report.id, 'rejected', rejectionReason);
+      toast.success('Fehlermeldung wurde abgelehnt!');
+      onStatusChange();
+      setShowRejectionForm(false);
+      setRejectionReason('');
+    } catch (error) {
+      toast.error('Fehler beim Ablehnen der Meldung');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isAuthenticated) return;
+    
+    if (!confirm('Sind Sie sicher, dass Sie diese Fehlermeldung dauerhaft löschen möchten?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Lade alle Berichte und entferne den entsprechenden
+      const allReports = getErrorReports();
+      const updatedReports = allReports.filter(r => r.id !== report.id);
+      
+      // Speichere die gefilterte Liste zurück
+      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      
+      toast.success('Fehlermeldung wurde erfolgreich gelöscht!');
+      onBack(); // Zurück zur Übersicht
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      toast.error('Fehler beim Löschen der Fehlermeldung');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('de-DE');
+  };
+
+  const getStatusBadge = () => {
+    switch (report.approvalStatus) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Freigegeben</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Abgelehnt</Badge>;
+      default:
+        return <Badge variant="secondary">Zur Prüfung</Badge>;
     }
   };
 
@@ -51,91 +113,175 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
 
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Fehlermeldung #{report.id}</CardTitle>
-                <CardDescription>
-                  Erstellt am {new Date(report.createdAt).toLocaleString('de-DE')}
-                </CardDescription>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <span>Fehlermeldung #{report.id}</span>
               </div>
-              <Badge 
-                variant={
-                  report.approvalStatus === 'approved' ? 'default' :
-                  report.approvalStatus === 'rejected' ? 'destructive' : 'secondary'
-                }
-              >
-                {report.approvalStatus === 'approved' ? 'Freigegeben' :
-                 report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Zur Prüfung'}
-              </Badge>
-            </div>
+              <div className="flex items-center space-x-2">
+                {getStatusBadge()}
+                {isAuthenticated && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {isDeleting ? 'Lösche...' : 'Löschen'}
+                  </Button>
+                )}
+              </div>
+            </CardTitle>
+            <CardDescription>
+              Erstellt am {formatDate(report.createdAt)} von {report.creator}
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-6">
+            {/* Grunddaten */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">Auftragsnummer</h3>
-                <p className="text-sm">{report.orderNumber}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">AFO-Nummer</h3>
-                <p className="text-sm">{report.afoNumber}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">Ersteller</h3>
-                <p className="text-sm">{report.creator}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">Personalnummer</h3>
-                <p className="text-sm">{report.personalNumber}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">Maschine</h3>
-                <p className="text-sm">{report.machine}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-gray-600 mb-1">Fehlermenge</h3>
-                <p className="text-sm">{report.defectiveQuantity} von {report.totalDefectiveQuantity}</p>
-              </div>
-              {report.assignedTeamLeader && (
-                <div>
-                  <h3 className="font-semibold text-sm text-gray-600 mb-1">Zugewiesener Teamleiter</h3>
-                  <p className="text-sm">{report.assignedTeamLeader}</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Auftragsdaten</h3>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-gray-600">Auftragsnummer:</span>
+                    <p className="font-medium">{report.orderNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">AFO-Nummer:</span>
+                    <p className="font-medium">{report.afoNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Maschine:</span>
+                    <p className="font-medium">{report.machine}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-sm text-gray-600 mb-2">Problembeschreibung</h3>
-              <p className="text-sm bg-gray-50 p-3 rounded">{report.problemDescription}</p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-sm text-gray-600 mb-2">Fehlerursache</h3>
-              <p className="text-sm bg-gray-50 p-3 rounded">{report.errorCause}</p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-sm text-gray-600 mb-2">Korrekturmaßnahme</h3>
-              <p className="text-sm bg-gray-50 p-3 rounded">{report.correctiveAction}</p>
-            </div>
-
-            {report.rejectionReason && (
-              <div>
-                <h3 className="font-semibold text-sm text-red-600 mb-2">Ablehnungsgrund</h3>
-                <p className="text-sm bg-red-50 p-3 rounded border border-red-200">{report.rejectionReason}</p>
               </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-gray-600">Beanstandete Menge:</span>
+                    <p className="font-medium">{report.defectiveQuantity}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Gesamt beanstandete Menge:</span>
+                    <p className="font-medium">{report.totalDefectiveQuantity}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Ersteller:</span>
+                    <p className="font-medium">{report.creator} ({report.personalNumber})</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Problembeschreibung */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-800">{report.problemDescription}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Fehlerursache */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Fehlerursache</h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-800">{report.errorCause}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Korrekturmaßnahme */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-800">{report.correctiveAction}</p>
+              </div>
+            </div>
+
+            {/* Ablehnungsgrund anzeigen */}
+            {report.rejectionReason && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold text-red-800 mb-2">Ablehnungsgrund</h3>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700">{report.rejectionReason}</p>
+                  </div>
+                </div>
+              </>
             )}
 
-            {report.approvalStatus === 'pending' && (
-              <div className="flex space-x-4 pt-4 border-t">
-                <Button onClick={handleApprove} className="flex-1">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Freigeben
-                </Button>
-                <Button onClick={handleReject} variant="destructive" className="flex-1">
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Ablehnen
-                </Button>
-              </div>
+            {/* Freigabe-Aktionen für Teamleiter */}
+            {isAuthenticated && report.approvalStatus === 'pending' && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Freigabe-Entscheidung</h3>
+                  
+                  {!showRejectionForm ? (
+                    <div className="flex space-x-4">
+                      <Button 
+                        onClick={handleApprove}
+                        disabled={isSubmitting}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {isSubmitting ? 'Freigebe...' : 'Freigeben'}
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => setShowRejectionForm(true)}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Ablehnen
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ablehnungsgrund (erforderlich)
+                        </label>
+                        <Textarea
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          placeholder="Bitte geben Sie den Grund für die Ablehnung an..."
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <div className="flex space-x-4">
+                        <Button 
+                          variant="destructive"
+                          onClick={handleReject}
+                          disabled={isSubmitting || !rejectionReason.trim()}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          {isSubmitting ? 'Lehne ab...' : 'Ablehnen'}
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            setShowRejectionForm(false);
+                            setRejectionReason('');
+                          }}
+                        >
+                          Abbrechen
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
