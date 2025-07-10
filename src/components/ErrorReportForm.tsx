@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,30 +146,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-green-800">Ihre Zugriffsnummer:</h3>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className="text-2xl font-mono font-bold text-green-700 bg-white px-3 py-1 rounded border">
-                    {accessNumber}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyAccessNumber}
-                    className="text-green-700 border-green-300 hover:bg-green-50"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-green-700 mt-3">
-              <strong>Wichtig:</strong> Notieren Sie sich diese 6-stellige Nummer! Mit ihr können Sie später den Status Ihrer Meldung einsehen.
-            </p>
-          </div>
-          
           <div className="flex space-x-3">
             <Button onClick={handleNewReport} className="flex-1">
               Neue Meldung erstellen

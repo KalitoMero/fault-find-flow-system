@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye, User, Calendar } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
+import { getEmployees } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
 
@@ -21,14 +22,19 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const handleApprove = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
     
     setIsSubmitting(true);
     try {
-      updateErrorReportStatus(report.id, 'approved');
+      // Find the current user's employee record to get their name
+      const employees = getEmployees();
+      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
+      const approverName = currentEmployee?.name || user.username;
+      
+      updateErrorReportStatus(report.id, 'approved', undefined, approverName);
       toast.success('Fehlermeldung wurde freigegeben!');
       onStatusChange();
     } catch (error) {

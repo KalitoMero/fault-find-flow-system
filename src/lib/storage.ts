@@ -1,4 +1,3 @@
-
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -52,8 +51,7 @@ export const updateErrorReportStatus = (
         rejectionReason: rejectionReason 
       };
       if (status === 'approved') {
-        // For now, we'll use the assignedTeamLeader as the approvedBy since we don't have the current user context
-        updatedReport.approvedBy = report.assignedTeamLeader;
+        updatedReport.approvedBy = approvedBy || report.assignedTeamLeader;
         updatedReport.approvedAt = new Date().toISOString();
       }
       return updatedReport;
