@@ -5,12 +5,12 @@ export interface ErrorReport {
   id: string;
   accessNumber: string; // Neue 6-stellige Zugriffsnummer
   orderNumber: string;
-  afoNumber: string;
+  afoNumber?: string; // Optional gemacht
   defectiveQuantity: number;
   totalDefectiveQuantity: number;
   creator: string;
   personalNumber: string;
-  machine: string;
+  machine?: string; // Optional gemacht
   problemDescription: string;
   errorCause: string;
   correctiveAction: string;
@@ -24,6 +24,10 @@ export interface ErrorReport {
   };
   departmentId?: string;
   creatorId?: string;
+  // Neue Properties für Freigabe-Workflow
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
 }
 
 const STORAGE_KEY = 'production_error_reports';
@@ -195,7 +199,9 @@ export const createDemoData = (): void => {
       approvalStatus: 'approved',
       approvedBy: 'Test',
       approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      assignedTeamLeader: 'Test'
+      assignedTeamLeader: 'Test',
+      personalNumber: '54321',
+      totalDefectiveQuantity: 100,
     },
     {
       id: generateErrorReportId(),
@@ -208,11 +214,13 @@ export const createDemoData = (): void => {
       personalNumber: '54322',
       machine: 'Maschine 02 - Fräsmaschine',
       problemDescription: 'Maß-Abweichungen beim Fräsen. Toleranz von ±0.05mm wird überschritten.',
-      errorCause: 'Spannvorrichtung nicht korrekt justiert. Werkstück rutscht während der Bearbeitung.',
+      errorCause: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
       correctiveAction: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
       createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'pending',
-      assignedTeamLeader: 'Test2'
+      assignedTeamLeader: 'Test2',
+      personalNumber: '54322',
+      totalDefectiveQuantity: 50,
     },
     {
       id: generateErrorReportId(),
@@ -229,7 +237,9 @@ export const createDemoData = (): void => {
       correctiveAction: 'Neue Spannvorrichtung installiert, Werkzeug neu ausgerichtet und kalibriert.',
       createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'pending',
-      assignedTeamLeader: 'Test'
+      assignedTeamLeader: 'Test',
+      personalNumber: '54323',
+      totalDefectiveQuantity: 25,
     }
   ];
 
