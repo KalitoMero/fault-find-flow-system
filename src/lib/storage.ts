@@ -1,3 +1,4 @@
+
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -150,7 +151,7 @@ export const getErrorReportsForTeamLeader = (username: string): ErrorReport[] =>
   });
 };
 
-// Erweiterte Funktion für Vertretungs-Zugriff
+// Erweiterte Funktion für Vertretungs-Zugriff mit Zeitfilter
 export const getErrorReportsForDeputy = (deputyUsername: string): ErrorReport[] => {
   const reports = getErrorReports();
   const employees = getEmployees();
@@ -169,7 +170,59 @@ export const getErrorReportsForDeputy = (deputyUsername: string): ErrorReport[] 
   // Sammle alle Meldungen der Teamleiter, für die diese Person Vertretung ist
   const teamLeaderUsernames = teamLeadersWithThisDeputy.map(tl => tl.account!.username);
   
-  return reports.filter(report => 
-    teamLeaderUsernames.includes(report.assignedTeamLeader)
-  );
+  if (teamLeaderUsernames.length === 0) {
+    return [];
+  }
+  
+  // Ermittle den frühesten Zeitpunkt der Vertretungsernennung
+  let earliestAssignmentTime: Date | null = null;
+  
+  teamLeaderUsernames.forEach(teamLeaderUsername => {
+    const assignmentTimeStr = localStorage.getItem(`deputy_assignment_time_${teamLeaderUsername}`);
+    if (assignmentTimeStr) {
+      const assignmentTime = new Date(assignmentTimeStr);
+      if (!earliestAssignmentTime || assignmentTime < earliestAssignmentTime) {
+        earliestAssignmentTime = assignmentTime;
+      }
+    }
+  });
+  
+  return reports.filter(report => {
+    // Muss einem der Teamleiter zugewiesen sein, für die diese Person Vertretung ist
+    if (!teamLeaderUsernames.includes(report.assignedTeamLeader)) {
+      return false;
+    }
+    
+    const reportCreatedAt = new Date(report.createdAt);
+    
+    // Zeige Meldungen die:
+    // 1. Nach der Vertretungsernennung erstellt wurden ODER
+    // 2. Noch zur Prüfung anstehen (pending)
+    if (earliestAssignmentTime) {
+      return reportCreatedAt >= earliestAssignmentTime || report.approvalStatus === 'pending';
+    } else {
+      // Fallback: nur pending-Meldungen wenn kein Ernennungszeitpunkt gefunden
+      return report.approvalStatus === 'pending';
+    }
+  });
+};
+
+// Hilfsfunktion um zu prüfen ob ein Benutzer als Vertretung eingetragen ist
+export const isUserDeputy = (username: string): boolean => {
+  const employees = getEmployees();
+  
+  // Durchsuche alle Teamleiter und prüfe ob dieser Benutzer als Vertretung eingetragen ist
+  const teamLeaders = employees.filter(emp => emp.isTeamLeader && emp.account?.username);
+  
+  for (const teamLeader of teamLeaders) {
+    const deputyId = localStorage.getItem(`deputy_${teamLeader.account!.username}`);
+    if (deputyId) {
+      const deputy = employees.find(emp => emp.id === deputyId);
+      if (deputy?.account?.username === username) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 };

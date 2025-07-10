@@ -8,18 +8,21 @@ import { getEmployees, getTeamLeadersByDepartment, Employee } from '@/lib/settin
 
 interface DeputySelectionProps {
   currentUser: string;
+  shouldShow: boolean;
 }
 
-const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser }) => {
+const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldShow }) => {
   const [availableDeputies, setAvailableDeputies] = useState<Employee[]>([]);
   const [selectedDeputy, setSelectedDeputy] = useState<string>('none');
   const [currentUserDepartment, setCurrentUserDepartment] = useState<string>('');
 
   useEffect(() => {
-    console.log('DeputySelection: Loading deputies for user:', currentUser);
-    loadDeputies();
-    loadSelectedDeputy();
-  }, [currentUser]);
+    if (shouldShow) {
+      console.log('DeputySelection: Loading deputies for user:', currentUser);
+      loadDeputies();
+      loadSelectedDeputy();
+    }
+  }, [currentUser, shouldShow]);
 
   const loadDeputies = () => {
     try {
@@ -67,11 +70,20 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser }) => {
     console.log('DeputySelection: Deputy changed to:', deputyId);
     setSelectedDeputy(deputyId);
     if (deputyId && deputyId !== 'none') {
+      // Speichere den Zeitpunkt der Vertretungsernennung
+      const deputyAssignmentTime = new Date().toISOString();
       localStorage.setItem(`deputy_${currentUser}`, deputyId);
+      localStorage.setItem(`deputy_assignment_time_${currentUser}`, deputyAssignmentTime);
     } else {
       localStorage.removeItem(`deputy_${currentUser}`);
+      localStorage.removeItem(`deputy_assignment_time_${currentUser}`);
     }
   };
+
+  // Nicht anzeigen wenn shouldShow false ist
+  if (!shouldShow) {
+    return null;
+  }
 
   if (availableDeputies.length === 0) {
     return (

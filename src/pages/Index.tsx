@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,8 @@ import SettingsModal from '@/components/SettingsModal';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
-import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy } from '@/lib/storage';
+import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy } from '@/lib/storage';
+import { getEmployees } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
 const Index = () => {
@@ -131,6 +133,17 @@ const Index = () => {
     setSelectedReport(report);
   };
 
+  // Prüfe ob Vertretungsfeld angezeigt werden soll
+  const shouldShowDeputySelection = () => {
+    if (!isAuthenticated || !user) return false;
+    
+    // Zeige für Teamleiter
+    if (user.role === 'teamleader') return true;
+    
+    // Zeige für normale Mitarbeiter nur wenn sie bereits als Vertretung eingetragen sind
+    return isUserDeputy(user.username);
+  };
+
   // Zeige Login-Formular
   if (showLogin && !isAuthenticated) {
     return <LoginForm onBack={handleBackToOverview} />;
@@ -206,9 +219,12 @@ const Index = () => {
         {isAuthenticated && user ? (
           // Dashboard für alle angemeldeten Benutzer (Teamleiter und Mitarbeiter)
           <div className="space-y-6">
-            {/* Deputy Selection with Error Boundary */}
+            {/* Deputy Selection with Error Boundary - nur anzeigen wenn berechtigt */}
             <ErrorBoundary>
-              <DeputySelection currentUser={user?.username || ''} />
+              <DeputySelection 
+                currentUser={user?.username || ''} 
+                shouldShow={shouldShowDeputySelection()}
+              />
             </ErrorBoundary>
             
             <Card>
