@@ -46,9 +46,9 @@ const Index = () => {
         
         setErrorReports(allReports);
       } else {
-        // Normale Mitarbeiter sehen alle Meldungen (wie bisher)
-        const reports = getErrorReports();
-        setErrorReports(reports);
+        // Normale Mitarbeiter sehen nur Meldungen als Vertretung
+        const deputyReports = getErrorReportsForDeputy(user.username);
+        setErrorReports(deputyReports);
       }
     } else {
       // Nicht angemeldete Benutzer sehen alle Meldungen
@@ -203,27 +203,39 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
-        {isAuthenticated && user?.role === 'teamleader' ? (
-          // Teamleiter-Dashboard
+        {isAuthenticated && user ? (
+          // Dashboard für alle angemeldeten Benutzer (Teamleiter und Mitarbeiter)
           <div className="space-y-6">
-            {/* Deputy Selection for Team Leaders with Error Boundary */}
+            {/* Deputy Selection with Error Boundary */}
             <ErrorBoundary>
               <DeputySelection currentUser={user?.username || ''} />
             </ErrorBoundary>
             
             <Card>
               <CardHeader>
-                <CardTitle>Meine Fehlermeldungen</CardTitle>
+                <CardTitle>
+                  {user.role === 'teamleader' ? 'Meine Fehlermeldungen' : 'Vertretungs-Fehlermeldungen'}
+                </CardTitle>
                 <CardDescription>
-                  Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (inkl. Vertretungsmeldungen, sortiert nach Datum)
+                  {user.role === 'teamleader' 
+                    ? 'Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (inkl. Vertretungsmeldungen, sortiert nach Datum)'
+                    : 'Fehlermeldungen, für die Sie als Vertretung eingetragen sind'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {errorReports.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Meldungen zugewiesen</h3>
-                    <p className="text-gray-500">Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {user.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
+                    </h3>
+                    <p className="text-gray-500">
+                      {user.role === 'teamleader' 
+                        ? 'Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.'
+                        : 'Sie sind aktuell für keine Fehlermeldungen als Vertretung eingetragen.'
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
