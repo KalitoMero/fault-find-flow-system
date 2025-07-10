@@ -1,3 +1,4 @@
+
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -22,6 +23,8 @@ export interface ErrorReport {
   assignedTeamLeader: string;
   approvedBy?: string;
   approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
 }
 
 import { getEmployees } from './settingsStorage';
@@ -53,6 +56,9 @@ export const updateErrorReportStatus = (
       if (status === 'approved') {
         updatedReport.approvedBy = approvedBy || report.assignedTeamLeader;
         updatedReport.approvedAt = new Date().toISOString();
+      } else if (status === 'rejected') {
+        updatedReport.rejectedBy = approvedBy || report.assignedTeamLeader;
+        updatedReport.rejectedAt = new Date().toISOString();
       }
       return updatedReport;
     }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye, User, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye, User, Calendar, Edit } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,9 +15,10 @@ interface ErrorReportDetailProps {
   report: ErrorReport;
   onBack: () => void;
   onStatusChange: () => void;
+  onEdit?: (report: ErrorReport) => void;
 }
 
-const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetailProps) => {
+const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorReportDetailProps) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +53,12 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
     
     setIsSubmitting(true);
     try {
-      updateErrorReportStatus(report.id, 'rejected', rejectionReason);
+      // Find the current user's employee record to get their name
+      const employees = getEmployees();
+      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
+      const rejectorName = currentEmployee?.name || user.username;
+      
+      updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
       toast.success('Fehlermeldung wurde abgelehnt!');
       onStatusChange();
       setShowRejectionForm(false);
@@ -93,6 +99,12 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
     }
   };
 
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(report);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('de-DE');
   };
@@ -129,6 +141,17 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge()}
+                {/* Edit Button für abgelehnte Meldungen */}
+                {report.approvalStatus === 'rejected' && onEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEdit}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Bearbeiten
+                  </Button>
+                )}
                 {isAuthenticated && (
                   <Button
                     variant="destructive"
@@ -196,6 +219,41 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
               </>
             )}
 
+            {/* Rejection Information for rejected reports */}
+            {report.approvalStatus === 'rejected' && report.rejectedBy && report.rejectedAt && (
+              <>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <XCircle className="h-5 w-5 text-red-600" />
+                    <h3 className="font-semibold text-red-800">Ablehnungs-Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-red-600" />
+                      <div>
+                        <span className="text-sm text-red-700">Abgelehnt von:</span>
+                        <p className="font-medium text-red-800">{report.rejectedBy}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-red-600" />
+                      <div>
+                        <span className="text-sm text-red-700">Abgelehnt am:</span>
+                        <p className="font-medium text-red-800">{formatDate(report.rejectedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {report.rejectionReason && (
+                    <div>
+                      <span className="text-sm text-red-700 font-medium">Ablehnungsgrund:</span>
+                      <p className="text-red-800 mt-1">{report.rejectionReason}</p>
+                    </div>
+                  )}
+                </div>
+                <Separator />
+              </>
+            )}
+
             {/* Grunddaten */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -250,19 +308,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
                 <p className="text-gray-800">{report.correctiveAction}</p>
               </div>
             </div>
-
-            {/* Ablehnungsgrund anzeigen */}
-            {report.rejectionReason && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold text-red-800 mb-2">Ablehnungsgrund</h3>
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-700">{report.rejectionReason}</p>
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Freigabe-Aktionen für Teamleiter */}
             {isAuthenticated && report.approvalStatus === 'pending' && (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,8 +117,10 @@ const Index = () => {
     }
   };
 
-  const handleEditClick = (report: ErrorReport, e: React.MouseEvent) => {
-    e.stopPropagation(); // Verhindert das Auslösen des Zeilen-Klicks
+  const handleEditClick = (report: ErrorReport, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Verhindert das Auslösen des Zeilen-Klicks
+    }
     setEditingReport(report);
   };
 
@@ -167,6 +168,7 @@ const Index = () => {
         report={selectedReport}
         onBack={handleBackToOverview}
         onStatusChange={handleApprovalChange}
+        onEdit={handleEditClick}
       />
     );
   }
