@@ -20,6 +20,8 @@ export interface ErrorReport {
     correctiveAction?: string;
   };
   assignedTeamLeader: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 import { getEmployees } from './settingsStorage';
@@ -38,11 +40,21 @@ export const saveErrorReport = (report: ErrorReport) => {
 export const updateErrorReportStatus = (
   reportId: string,
   status: 'pending' | 'approved' | 'rejected',
-  rejectionReason?: string
+  rejectionReason?: string,
+  approvedBy?: string
 ) => {
   const reports = getErrorReports().map(report => {
     if (report.id === reportId) {
-      return { ...report, approvalStatus: status, rejectionReason: rejectionReason };
+      const updatedReport = { 
+        ...report, 
+        approvalStatus: status, 
+        rejectionReason: rejectionReason 
+      };
+      if (status === 'approved' && approvedBy) {
+        updatedReport.approvedBy = approvedBy;
+        updatedReport.approvedAt = new Date().toISOString();
+      }
+      return updatedReport;
     }
     return report;
   });
@@ -70,8 +82,19 @@ export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport 
 };
 
 export const generateAccessNumber = (): string => {
-  const randomNumber = Math.floor(100000 + Math.random() * 900000);
-  return randomNumber.toString();
+  const existingReports = getErrorReports();
+  const existingNumbers = existingReports.map(report => report.accessNumber);
+  
+  let newNumber;
+  do {
+    newNumber = Math.floor(100000 + Math.random() * 900000).toString();
+  } while (existingNumbers.includes(newNumber));
+  
+  return newNumber;
+};
+
+export const generateErrorReportId = (): string => {
+  return Math.random().toString(36).substr(2, 9);
 };
 
 export const getErrorReportStatistics = () => {
