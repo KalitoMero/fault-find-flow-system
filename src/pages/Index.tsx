@@ -15,7 +15,7 @@ import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
 import SettingsModal from '@/components/SettingsModal';
 import DeputySelection from '@/components/DeputySelection';
 import { useAuth } from '@/hooks/useAuth';
-import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics } from '@/lib/storage';
+import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy } from '@/lib/storage';
 import { toast } from "sonner";
 
 const Index = () => {
@@ -30,9 +30,19 @@ const Index = () => {
 
   const loadData = () => {
     if (isAuthenticated && user) {
-      // Teamleiter sieht nur seine zugewiesenen Meldungen
-      const reports = getErrorReportsForTeamLeader(user.username);
-      setErrorReports(reports);
+      // Teamleiter sieht seine zugewiesenen Meldungen + Meldungen als Vertretung
+      const directReports = getErrorReportsForTeamLeader(user.username);
+      const deputyReports = getErrorReportsForDeputy(user.username);
+      
+      // Kombiniere beide Listen und entferne Duplikate
+      const allReports = [...directReports];
+      deputyReports.forEach(deputyReport => {
+        if (!allReports.find(report => report.id === deputyReport.id)) {
+          allReports.push(deputyReport);
+        }
+      });
+      
+      setErrorReports(allReports);
     } else {
       // Mitarbeiter sehen alle Meldungen
       const reports = getErrorReports();
@@ -196,7 +206,7 @@ const Index = () => {
               <CardHeader>
                 <CardTitle>Meine Fehlermeldungen</CardTitle>
                 <CardDescription>
-                  Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (sortiert nach Datum)
+                  Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (inkl. Vertretungsmeldungen, sortiert nach Datum)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -219,6 +229,9 @@ const Index = () => {
                             <Badge variant="outline">#{report.id}</Badge>
                             <span className="font-medium">Auftrag: {report.orderNumber}</span>
                             <span className="text-gray-500">AFO: {report.afoNumber}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              Zugang: {report.accessNumber}
+                            </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}

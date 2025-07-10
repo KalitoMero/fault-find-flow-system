@@ -1,247 +1,152 @@
-// Lokale Datenspeicherung für Offline-Betrieb
-// In Produktionsumgebung würde dies durch eine echte Datenbank ersetzt
-
 export interface ErrorReport {
   id: string;
-  accessNumber: string; // Neue 6-stellige Zugriffsnummer
   orderNumber: string;
-  afoNumber?: string; // Optional gemacht
+  afoNumber: string;
+  machine: string;
   defectiveQuantity: number;
   totalDefectiveQuantity: number;
-  creator: string;
-  personalNumber: string;
-  machine?: string; // Optional gemacht
   problemDescription: string;
   errorCause: string;
   correctiveAction: string;
+  creator: string;
+  personalNumber: string;
   createdAt: string;
   approvalStatus: 'pending' | 'approved' | 'rejected';
-  assignedTeamLeader: string;
-  audioFiles?: {
-    problemDescription?: string | null;
-    errorCause?: string | null;
-    correctiveAction?: string | null;
-  };
-  departmentId?: string;
-  creatorId?: string;
-  // Neue Properties für Freigabe-Workflow
-  approvedBy?: string;
-  approvedAt?: string;
   rejectionReason?: string;
+  accessNumber: string;
+  audioFiles?: {
+    problemDescription?: string;
+    errorCause?: string;
+    correctiveAction?: string;
+  };
+  assignedTeamLeader: string;
 }
 
-const STORAGE_KEY = 'production_error_reports';
-const COUNTER_KEY = 'error_report_counter';
+import { getEmployees } from './settingsStorage';
 
-// Initialisiere Zähler wenn nicht vorhanden
-if (!localStorage.getItem(COUNTER_KEY)) {
-  localStorage.setItem(COUNTER_KEY, '1000');
-}
-
-// Fortlaufende ID generieren
-export const generateErrorReportId = (): string => {
-  const currentCounter = parseInt(localStorage.getItem(COUNTER_KEY) || '1000');
-  const nextId = currentCounter + 1;
-  localStorage.setItem(COUNTER_KEY, nextId.toString());
-  return nextId.toString().padStart(6, '0');
-};
-
-// Neue Funktion: 6-stellige Zugriffsnummer generieren
-export const generateAccessNumber = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Alle Fehlermeldungen laden
 export const getErrorReports = (): ErrorReport[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Fehler beim Laden der Fehlermeldungen:', error);
-    return [];
-  }
+  const stored = localStorage.getItem('production_error_reports');
+  return stored ? JSON.parse(stored) : [];
 };
 
-// Fehlermeldungen zur Freigabe laden (nur pending)
-export const getErrorReportsForApproval = (): ErrorReport[] => {
-  const allReports = getErrorReports();
-  return allReports.filter(report => report.approvalStatus === 'pending');
+export const saveErrorReport = (report: ErrorReport) => {
+  const reports = getErrorReports();
+  reports.push(report);
+  localStorage.setItem('production_error_reports', JSON.stringify(reports));
 };
 
-// Fehlermeldungen für einen bestimmten Teamleiter laden
-export const getErrorReportsForTeamLeader = (teamLeader: string): ErrorReport[] => {
-  const allReports = getErrorReports();
-  return allReports
-    .filter(report => report.assignedTeamLeader === teamLeader)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-};
-
-// Einzelne Fehlermeldung speichern
-export const saveErrorReport = (report: ErrorReport): void => {
-  try {
-    const reports = getErrorReports();
-    reports.push(report);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-    
-    // Service Worker für Offline-Sync informieren
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'SYNC_ERROR_REPORT',
-        data: report
-      });
-    }
-  } catch (error) {
-    console.error('Fehler beim Speichern der Fehlermeldung:', error);
-    throw new Error('Speichern fehlgeschlagen');
-  }
-};
-
-// Freigabestatus aktualisieren
 export const updateErrorReportStatus = (
-  id: string, 
-  status: 'approved' | 'rejected', 
+  reportId: string,
+  status: 'pending' | 'approved' | 'rejected',
   rejectionReason?: string
-): void => {
-  try {
-    const reports = getErrorReports();
-    const reportIndex = reports.findIndex(r => r.id === id);
-    
-    if (reportIndex === -1) {
-      throw new Error('Fehlermeldung nicht gefunden');
+) => {
+  const reports = getErrorReports().map(report => {
+    if (report.id === reportId) {
+      return { ...report, approvalStatus: status, rejectionReason: rejectionReason };
     }
+    return report;
+  });
+  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+};
 
-    reports[reportIndex].approvalStatus = status;
-    
-    if (status === 'approved') {
-      reports[reportIndex].approvedAt = new Date().toISOString();
-      reports[reportIndex].approvedBy = 'Team-/Schichtleiter'; // In echter App: aktueller Benutzer
-    } else if (status === 'rejected' && rejectionReason) {
-      reports[reportIndex].rejectionReason = rejectionReason;
+export const updateErrorReport = (reportId: string, updatedReport: ErrorReport) => {
+  const reports = getErrorReports().map(report => {
+    if (report.id === reportId) {
+      return updatedReport;
     }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-  } catch (error) {
-    console.error('Fehler beim Aktualisieren des Status:', error);
-    throw new Error('Status-Update fehlgeschlagen');
-  }
+    return report;
+  });
+  localStorage.setItem('production_error_reports', JSON.stringify(reports));
 };
 
-// Einzelne Fehlermeldung laden
-export const getErrorReportById = (id: string): ErrorReport | null => {
+export const getErrorReportById = (reportId: string): ErrorReport | undefined => {
   const reports = getErrorReports();
-  return reports.find(r => r.id === id) || null;
+  return reports.find(report => report.id === reportId);
 };
 
-// Funktion zum Finden einer Meldung über Zugriffsnummer
-export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport | null => {
+export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport | undefined => {
   const reports = getErrorReports();
-  return reports.find(r => r.accessNumber === accessNumber) || null;
+  return reports.find(report => report.accessNumber === accessNumber);
 };
 
-// Statistiken berechnen
-export const getErrorReportStatistics = (teamLeader?: string) => {
-  const reports = teamLeader ? getErrorReportsForTeamLeader(teamLeader) : getErrorReports();
+export const generateAccessNumber = (): string => {
+  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  return randomNumber.toString();
+};
+
+export const getErrorReportStatistics = () => {
+  const reports = getErrorReports();
   const total = reports.length;
-  const pending = reports.filter(r => r.approvalStatus === 'pending').length;
-  const approved = reports.filter(r => r.approvalStatus === 'approved').length;
-  const rejected = reports.filter(r => r.approvalStatus === 'rejected').length;
-
-  // Auswertungen nach Maschine
-  const byMachine = reports.reduce((acc, report) => {
-    const machine = report.machine;
-    if (!acc[machine]) {
-      acc[machine] = { total: 0, approved: 0, pending: 0, rejected: 0 };
-    }
-    acc[machine].total++;
-    acc[machine][report.approvalStatus]++;
-    return acc;
-  }, {} as Record<string, {total: number; approved: number; pending: number; rejected: number}>);
-
-  // Auswertungen nach Monat
-  const byMonth = reports.reduce((acc, report) => {
-    const month = new Date(report.createdAt).toISOString().slice(0, 7); // YYYY-MM
-    if (!acc[month]) {
-      acc[month] = 0;
-    }
-    acc[month]++;
-    return acc;
-  }, {} as Record<string, number>);
+  const pending = reports.filter(report => report.approvalStatus === 'pending').length;
+  const approved = reports.filter(report => report.approvalStatus === 'approved').length;
+  const rejected = reports.filter(report => report.approvalStatus === 'rejected').length;
 
   return {
     total,
     pending,
     approved,
-    rejected,
-    byMachine,
-    byMonth
+    rejected
   };
 };
 
-// Demo-Daten erstellen (nur für Entwicklung)
-export const createDemoData = (): void => {
-  if (getErrorReports().length > 0) return; // Nur wenn keine Daten vorhanden
-
-  const demoReports: ErrorReport[] = [
-    {
-      id: generateErrorReportId(),
-      accessNumber: generateAccessNumber(),
-      orderNumber: 'AUF-2024-001',
-      afoNumber: 'AFO-12345',
-      defectiveQuantity: 3,
-      totalDefectiveQuantity: 100,
-      creator: 'Hans Mueller',
-      personalNumber: '54321',
-      machine: 'Maschine 01 - CNC Drehmaschine',
-      problemDescription: 'Oberflächenrauheit entspricht nicht den Vorgaben. Messungen zeigen Abweichungen von bis zu 0.2µm.',
-      errorCause: 'Verschlissenes Werkzeug und falsche Schnittparameter. Kühlmittelzufuhr unzureichend.',
-      correctiveAction: 'Werkzeug gewechselt, Schnittgeschwindigkeit reduziert, Kühlmittelflow erhöht. Probefertigung erfolgreich.',
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'approved',
-      approvedBy: 'Test',
-      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      assignedTeamLeader: 'Test',
-    },
-    {
-      id: generateErrorReportId(),
-      accessNumber: generateAccessNumber(),
-      orderNumber: 'AUF-2024-002',
-      afoNumber: 'AFO-12346',
-      defectiveQuantity: 5,
-      totalDefectiveQuantity: 50,
-      creator: 'Anna Schmidt',
-      personalNumber: '54322',
-      machine: 'Maschine 02 - Fräsmaschine',
-      problemDescription: 'Maß-Abweichungen beim Fräsen. Toleranz von ±0.05mm wird überschritten.',
-      errorCause: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
-      correctiveAction: 'Spannvorrichtung neu ausgerichtet und Klemmkraft erhöht. Werkstück-Fixierung überprüft.',
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'pending',
-      assignedTeamLeader: 'Test2',
-    },
-    {
-      id: generateErrorReportId(),
-      accessNumber: generateAccessNumber(),
-      orderNumber: 'AUF-2024-003',
-      afoNumber: 'AFO-12347',
-      defectiveQuantity: 2,
-      totalDefectiveQuantity: 25,
-      creator: 'Peter Weber',
-      personalNumber: '54323',
-      machine: 'Maschine 03 - Bohrmaschine',
-      problemDescription: 'Bohrungen nicht mittig. Abweichung von bis zu 1mm festgestellt.',
-      errorCause: 'Spannvorrichtung verschlissen, Werkzeug nicht korrekt zentriert.',
-      correctiveAction: 'Neue Spannvorrichtung installiert, Werkzeug neu ausgerichtet und kalibriert.',
-      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      approvalStatus: 'pending',
-      assignedTeamLeader: 'Test',
+export const getErrorReportsForTeamLeader = (username: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  const employees = getEmployees();
+  
+  // Finde den aktuellen Teamleiter
+  const currentTeamLeader = employees.find(emp => 
+    emp.isTeamLeader && emp.account?.username === username
+  );
+  
+  if (!currentTeamLeader) {
+    return [];
+  }
+  
+  // Prüfe, ob eine Vertretung aktiv ist
+  const deputyId = localStorage.getItem(`deputy_${username}`);
+  let deputyUsername = null;
+  
+  if (deputyId) {
+    const deputy = employees.find(emp => emp.id === deputyId);
+    deputyUsername = deputy?.account?.username;
+  }
+  
+  // Filtere Meldungen, die diesem Teamleiter oder seiner Vertretung zugewiesen sind
+  return reports.filter(report => {
+    // Meldungen die direkt dem Teamleiter zugewiesen sind
+    if (report.assignedTeamLeader === username) {
+      return true;
     }
-  ];
-
-  demoReports.forEach(report => saveErrorReport(report));
+    
+    // Meldungen die der Vertretung zugewiesen sind (falls Vertretung aktiv)
+    if (deputyUsername && report.assignedTeamLeader === deputyUsername) {
+      return true;
+    }
+    
+    return false;
+  });
 };
 
-// Beim Import Demo-Daten erstellen
-if (typeof window !== 'undefined') {
-  // Nur im Browser, nicht während Server-Side Rendering
-  setTimeout(() => createDemoData(), 100);
-}
+// Erweiterte Funktion für Vertretungs-Zugriff
+export const getErrorReportsForDeputy = (deputyUsername: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  const employees = getEmployees();
+  
+  // Finde alle Teamleiter, die diese Person als Vertretung haben
+  const teamLeadersWithThisDeputy = employees.filter(emp => {
+    if (!emp.isTeamLeader || !emp.account?.username) return false;
+    
+    const deputyId = localStorage.getItem(`deputy_${emp.account.username}`);
+    if (!deputyId) return false;
+    
+    const deputy = employees.find(d => d.id === deputyId);
+    return deputy?.account?.username === deputyUsername;
+  });
+  
+  // Sammle alle Meldungen der Teamleiter, für die diese Person Vertretung ist
+  const teamLeaderUsernames = teamLeadersWithThisDeputy.map(tl => tl.account!.username);
+  
+  return reports.filter(report => 
+    teamLeaderUsernames.includes(report.assignedTeamLeader)
+  );
+};

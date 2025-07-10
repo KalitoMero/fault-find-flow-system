@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
@@ -141,6 +142,25 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Zugriffsnummer für Teamleiter */}
+            {isAuthenticated && (
+              <>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Eye className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-800">Zugriffsnummer für Mitarbeiter</h3>
+                  </div>
+                  <div className="text-2xl font-mono font-bold text-blue-900 tracking-widest">
+                    {report.accessNumber}
+                  </div>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Mitarbeiter können diese Nummer verwenden, um die Meldung nach der Freigabe einzusehen.
+                  </p>
+                </div>
+                <Separator />
+              </>
+            )}
+
             {/* Grunddaten */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -169,12 +189,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
                     <p className="font-medium">{report.defectiveQuantity}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Gesamt beanstandete Menge:</span>
-                    <p className="font-medium">{report.totalDefectiveQuantity}</p>
-                  </div>
-                  <div>
                     <span className="text-sm text-gray-600">Ersteller:</span>
-                    <p className="font-medium">{report.creator} ({report.personalNumber})</p>
+                    <p className="font-medium">{report.creator}</p>
                   </div>
                 </div>
               </div>
@@ -187,16 +203,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-gray-800">{report.problemDescription}</p>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Fehlerursache */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Fehlerursache</h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-800">{report.errorCause}</p>
               </div>
             </div>
 
