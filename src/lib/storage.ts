@@ -197,14 +197,25 @@ export const getErrorReportsForDeputy = (deputyUsername: string): ErrorReport[] 
     
     // Zeige Meldungen die:
     // 1. Nach der Vertretungsernennung erstellt wurden ODER
-    // 2. Noch zur Prüfung anstehen (pending)
+    // 2. Noch zur Prüfung anstehen (pending) ODER
+    // 3. Von dieser Vertretung freigegeben/abgelehnt wurden (auch wenn sie älter sind)
     if (earliestAssignmentTime) {
-      return reportCreatedAt >= earliestAssignmentTime || report.approvalStatus === 'pending';
+      return reportCreatedAt >= earliestAssignmentTime || 
+             report.approvalStatus === 'pending' ||
+             report.approvedBy === getEmployeeNameByUsername(deputyUsername);
     } else {
-      // Fallback: nur pending-Meldungen wenn kein Ernennungszeitpunkt gefunden
-      return report.approvalStatus === 'pending';
+      // Fallback: nur pending-Meldungen und von Vertretung bearbeitete wenn kein Ernennungszeitpunkt gefunden
+      return report.approvalStatus === 'pending' ||
+             report.approvedBy === getEmployeeNameByUsername(deputyUsername);
     }
   });
+};
+
+// Hilfsfunktion um Mitarbeiternamen anhand des Benutzernamens zu finden
+const getEmployeeNameByUsername = (username: string): string | undefined => {
+  const employees = getEmployees();
+  const employee = employees.find(emp => emp.account?.username === username);
+  return employee?.name;
 };
 
 // Hilfsfunktion um zu prüfen ob ein Benutzer als Vertretung eingetragen ist
