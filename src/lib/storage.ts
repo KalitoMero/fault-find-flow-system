@@ -200,8 +200,6 @@ export const createDemoData = (): void => {
       approvedBy: 'Test',
       approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       assignedTeamLeader: 'Test',
-      personalNumber: '54321',
-      totalDefectiveQuantity: 100,
     },
     {
       id: generateErrorReportId(),
@@ -219,8 +217,6 @@ export const createDemoData = (): void => {
       createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'pending',
       assignedTeamLeader: 'Test2',
-      personalNumber: '54322',
-      totalDefectiveQuantity: 50,
     },
     {
       id: generateErrorReportId(),
@@ -238,8 +234,6 @@ export const createDemoData = (): void => {
       createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
       approvalStatus: 'pending',
       assignedTeamLeader: 'Test',
-      personalNumber: '54323',
-      totalDefectiveQuantity: 25,
     }
   ];
 
