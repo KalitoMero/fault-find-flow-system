@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 interface ReportAccessFormProps {
   onReportFound: (report: ErrorReport) => void;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
@@ -64,9 +64,11 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
     <Card className="max-w-md mx-auto mt-8">
       <CardHeader>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          {onBack && (
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
           <div>
             <CardTitle className="flex items-center space-x-2">
               <Search className="h-5 w-5" />

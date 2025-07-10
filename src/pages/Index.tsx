@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,7 +278,7 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="report-access" className="space-y-6">
-              <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
+              <ReportAccessForm onReportFound={handleReportFound} />
             </TabsContent>
 
             <TabsContent value="new-report">
