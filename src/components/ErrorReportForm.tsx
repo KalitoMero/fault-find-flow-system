@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle, Copy } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Copy, Eye } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId, generateAccessNumber } from '@/lib/storage';
 import { getDepartments, getEmployees, Department, Employee } from '@/lib/settingsStorage';
 import AudioRecorder from './AudioRecorder';
@@ -34,10 +34,12 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     correctiveAction?: string | null;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [createdAccessNumber, setCreatedAccessNumber] = useState('');
+  const [accessNumber, setAccessNumber] = useState('');
 
   useEffect(() => {
     loadDepartmentsData();
+    // Generate access number immediately when component mounts
+    setAccessNumber(generateAccessNumber());
   }, [refreshDepartments]);
 
   const loadDepartmentsData = () => {
@@ -73,8 +75,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         return;
       }
 
-      const accessNumber = generateAccessNumber();
-
       const report = {
         id: generateErrorReportId(),
         accessNumber,
@@ -98,8 +98,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
       saveErrorReport(report);
       
-      // Show success state with access number
-      setCreatedAccessNumber(accessNumber);
+      // Show success state
       setShowSuccess(true);
       
       onReportCreated();
@@ -112,7 +111,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   };
 
   const handleNewReport = () => {
-    // Reset form
+    // Reset form and generate new access number
     setOrderNumber('');
     setAfoNumber('');
     setDefectiveQuantity('');
@@ -123,11 +122,11 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setSelectedEmployee('');
     setAudioFiles({});
     setShowSuccess(false);
-    setCreatedAccessNumber('');
+    setAccessNumber(generateAccessNumber()); // Generate new access number
   };
 
   const copyAccessNumber = () => {
-    navigator.clipboard.writeText(createdAccessNumber);
+    navigator.clipboard.writeText(accessNumber);
     toast.success('Zugriffsnummer kopiert!');
   };
 
@@ -154,7 +153,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 <h3 className="font-medium text-green-800">Ihre Zugriffsnummer:</h3>
                 <div className="flex items-center space-x-2 mt-2">
                   <span className="text-2xl font-mono font-bold text-green-700 bg-white px-3 py-1 rounded border">
-                    {createdAccessNumber}
+                    {accessNumber}
                   </span>
                   <Button
                     variant="outline"
@@ -194,6 +193,30 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Access Number Display */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center space-x-2 mb-2">
+            <Eye className="h-5 w-5 text-blue-600" />
+            <h3 className="font-semibold text-blue-800">Ihre Zugriffsnummer für diese Meldung:</h3>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xl font-mono font-bold text-blue-900 bg-white px-3 py-1 rounded border tracking-widest">
+              {accessNumber}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyAccessNumber}
+              className="text-blue-700 border-blue-300 hover:bg-blue-50"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-sm text-blue-700 mt-2">
+            Mit dieser 6-stelligen Nummer können Sie später den Status Ihrer Meldung einsehen.
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

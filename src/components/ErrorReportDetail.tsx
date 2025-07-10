@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye, User, Calendar } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
@@ -156,6 +156,35 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange }: ErrorReportDetail
                   <p className="text-sm text-blue-700 mt-1">
                     Mitarbeiter können diese Nummer verwenden, um die Meldung nach der Freigabe einzusehen.
                   </p>
+                </div>
+                <Separator />
+              </>
+            )}
+
+            {/* Approval Information for approved reports */}
+            {report.approvalStatus === 'approved' && report.approvedBy && report.approvedAt && (
+              <>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <h3 className="font-semibold text-green-800">Freigabe-Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-green-600" />
+                      <div>
+                        <span className="text-sm text-green-700">Freigegeben von:</span>
+                        <p className="font-medium text-green-800">{report.approvedBy}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                      <div>
+                        <span className="text-sm text-green-700">Freigegeben am:</span>
+                        <p className="font-medium text-green-800">{formatDate(report.approvedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <Separator />
               </>
