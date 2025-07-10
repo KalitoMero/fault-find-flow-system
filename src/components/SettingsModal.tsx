@@ -297,7 +297,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                           <div className="flex items-center space-x-3">
                             <span className="font-medium">{employee.name}</span>
                             {employee.isTeamLeader && (
-                              <Shield className="h-4 w-4 text-blue-600" title="Teamleiter" />
+                              <Shield className="h-4 w-4 text-blue-600" />
                             )}
                             {employee.account && (
                               <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">

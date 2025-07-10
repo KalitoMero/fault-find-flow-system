@@ -263,7 +263,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               required
             />
             <AudioRecorder 
-              onAudioSaved={(audioUrl) => setAudioFiles(prev => ({...prev, problemDescription: audioUrl}))}
+              onTranscription={(transcription, audioBlob) => {
+                setProblemDescription(transcription);
+                setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+              }}
               label="Problembeschreibung aufnehmen"
             />
           </div>
@@ -279,7 +282,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               required
             />
             <AudioRecorder 
-              onAudioSaved={(audioUrl) => setAudioFiles(prev => ({...prev, errorCause: audioUrl}))}
+              onTranscription={(transcription, audioBlob) => {
+                setErrorCause(transcription);
+                setAudioFiles(prev => ({...prev, errorCause: audioBlob}));
+              }}
               label="Fehlerursache aufnehmen"
             />
           </div>
@@ -295,7 +301,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               required
             />
             <AudioRecorder 
-              onAudioSaved={(audioUrl) => setAudioFiles(prev => ({...prev, correctiveAction: audioUrl}))}
+              onTranscription={(transcription, audioBlob) => {
+                setCorrectiveAction(transcription);
+                setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+              }}
               label="Korrekturmaßnahme aufnehmen"
             />
           </div>
