@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Edit } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -21,7 +21,6 @@ import {
   generateId 
 } from '@/lib/settingsStorage';
 import AccountCreationDialog from './AccountCreationDialog';
-import AccountEditDialog from './AccountEditDialog';
 import { toast } from "sonner";
 
 interface SettingsModalProps {
@@ -38,7 +37,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [selectedDepartmentForEmployee, setSelectedDepartmentForEmployee] = useState('');
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('all');
   const [accountCreationEmployee, setAccountCreationEmployee] = useState<Employee | null>(null);
-  const [accountEditEmployee, setAccountEditEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -132,15 +130,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setAccountCreationEmployee(employee);
   };
 
-  const handleAccountEdit = (employee: Employee) => {
-    setAccountEditEmployee(employee);
-  };
-
   const handleAccountCreated = () => {
-    loadData();
-  };
-
-  const handleAccountUpdated = () => {
     loadData();
   };
 
@@ -342,17 +332,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                               Account
                             </Button>
                           ) : (
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAccountEdit(employee)}
-                              >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Bearbeiten
-                              </Button>
-                              <span className="text-xs text-green-600">✓ Account</span>
-                            </div>
+                            <span className="text-xs text-green-600">✓ Account</span>
                           )}
                           
                           <Button
@@ -383,15 +363,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           onClose={() => setAccountCreationEmployee(null)}
           employee={accountCreationEmployee}
           onAccountCreated={handleAccountCreated}
-        />
-      )}
-
-      {accountEditEmployee && (
-        <AccountEditDialog
-          isOpen={!!accountEditEmployee}
-          onClose={() => setAccountEditEmployee(null)}
-          employee={accountEditEmployee}
-          onAccountUpdated={handleAccountUpdated}
         />
       )}
     </Dialog>

@@ -174,7 +174,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                   <SelectValue placeholder="Abteilung auswählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.filter(dept => dept.id && dept.id.trim() !== '').map((department) => (
+                  {departments.map((department) => (
                     <SelectItem key={department.id} value={department.id}>
                       {department.name}
                     </SelectItem>
@@ -194,7 +194,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                   <SelectValue placeholder="Mitarbeiter auswählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredEmployees.filter(emp => emp.id && emp.id.trim() !== '').map((employee) => (
+                  {filteredEmployees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.name}
                     </SelectItem>

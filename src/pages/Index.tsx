@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,16 +259,16 @@ const Index = () => {
             </Card>
           </div>
         ) : (
-          // Mitarbeiter-Dashboard mit korrekten Tabs
-          <Tabs defaultValue="new-report" className="space-y-6">
+          // Mitarbeiter-Dashboard (Tabs mit Meldung Einsehen statt Dashboard)
+          <Tabs defaultValue="report-access" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="new-report" className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Neue Meldung</span>
-              </TabsTrigger>
               <TabsTrigger value="report-access" className="flex items-center space-x-2">
                 <Search className="h-4 w-4" />
                 <span>Meldung Einsehen</span>
+              </TabsTrigger>
+              <TabsTrigger value="new-report" className="flex items-center space-x-2">
+                <Plus className="h-4 w-4" />
+                <span>Neue Meldung</span>
               </TabsTrigger>
               <TabsTrigger value="export" className="flex items-center space-x-2">
                 <Download className="h-4 w-4" />
@@ -277,15 +276,15 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="new-report" className="space-y-6">
+            <TabsContent value="report-access" className="space-y-6">
+              <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
+            </TabsContent>
+
+            <TabsContent value="new-report">
               <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
             </TabsContent>
 
-            <TabsContent value="report-access" className="space-y-6">
-              <ReportAccessForm onReportFound={handleReportFound} />
-            </TabsContent>
-
-            <TabsContent value="export" className="space-y-6">
+            <TabsContent value="export">
               <ExportSection reports={errorReports} />
             </TabsContent>
           </Tabs>

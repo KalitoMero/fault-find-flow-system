@@ -88,15 +88,8 @@ export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport 
 };
 
 export const generateAccessNumber = (): string => {
-  const existingReports = getErrorReports();
-  let accessNumber: string;
-  
-  // Generiere so lange neue Nummern bis eine einzigartige gefunden wird
-  do {
-    accessNumber = Math.floor(100000 + Math.random() * 900000).toString();
-  } while (existingReports.some(report => report.accessNumber === accessNumber));
-  
-  return accessNumber;
+  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  return randomNumber.toString();
 };
 
 export const getErrorReportStatistics = () => {
