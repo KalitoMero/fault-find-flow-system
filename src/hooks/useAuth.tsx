@@ -1,5 +1,6 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { getEmployees } from '@/lib/settingsStorage';
 
 interface User {
   username: string;
@@ -15,7 +16,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const testAccounts = [
+// Fallback Test-Accounts falls keine Einstellungen vorhanden sind
+const fallbackTestAccounts = [
   { username: 'Test', password: 'Test1' },
   { username: 'Test2', password: 'Test1' }
 ];
@@ -31,11 +33,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    const account = testAccounts.find(
+    // Erst in den erstellten Mitarbeiter-Accounts suchen
+    const employees = getEmployees();
+    const employeeAccount = employees.find(emp => 
+      emp.isTeamLeader && 
+      emp.account && 
+      emp.account.username === username && 
+      emp.account.password === password
+    );
+
+    if (employeeAccount) {
+      const user = { username, role: 'teamleader' as const };
+      setUser(user);
+      localStorage.setItem('teamleader', JSON.stringify(user));
+      return true;
+    }
+
+    // Fallback zu den ursprünglichen Test-Accounts
+    const fallbackAccount = fallbackTestAccounts.find(
       acc => acc.username === username && acc.password === password
     );
 
-    if (account) {
+    if (fallbackAccount) {
       const user = { username, role: 'teamleader' as const };
       setUser(user);
       localStorage.setItem('teamleader', JSON.stringify(user));
