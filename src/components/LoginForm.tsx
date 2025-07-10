@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,9 +49,9 @@ const LoginForm = ({ onBack }: LoginFormProps) => {
 
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Teamleiter Login</CardTitle>
+            <CardTitle className="text-2xl text-center">Mitarbeiter Login</CardTitle>
             <CardDescription className="text-center">
-              Melden Sie sich mit Ihren Teamleiter-Zugangsdaten an
+              Melden Sie sich mit Ihren Zugangsdaten an
             </CardDescription>
           </CardHeader>
           <CardContent>

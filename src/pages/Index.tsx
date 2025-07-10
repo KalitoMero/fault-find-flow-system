@@ -31,21 +31,27 @@ const Index = () => {
 
   const loadData = () => {
     if (isAuthenticated && user) {
-      // Teamleiter sieht seine zugewiesenen Meldungen + Meldungen als Vertretung
-      const directReports = getErrorReportsForTeamLeader(user.username);
-      const deputyReports = getErrorReportsForDeputy(user.username);
-      
-      // Kombiniere beide Listen und entferne Duplikate
-      const allReports = [...directReports];
-      deputyReports.forEach(deputyReport => {
-        if (!allReports.find(report => report.id === deputyReport.id)) {
-          allReports.push(deputyReport);
-        }
-      });
-      
-      setErrorReports(allReports);
+      if (user.role === 'teamleader') {
+        // Teamleiter sieht seine zugewiesenen Meldungen + Meldungen als Vertretung
+        const directReports = getErrorReportsForTeamLeader(user.username);
+        const deputyReports = getErrorReportsForDeputy(user.username);
+        
+        // Kombiniere beide Listen und entferne Duplikate
+        const allReports = [...directReports];
+        deputyReports.forEach(deputyReport => {
+          if (!allReports.find(report => report.id === deputyReport.id)) {
+            allReports.push(deputyReport);
+          }
+        });
+        
+        setErrorReports(allReports);
+      } else {
+        // Normale Mitarbeiter sehen alle Meldungen (wie bisher)
+        const reports = getErrorReports();
+        setErrorReports(reports);
+      }
     } else {
-      // Mitarbeiter sehen alle Meldungen
+      // Nicht angemeldete Benutzer sehen alle Meldungen
       const reports = getErrorReports();
       setErrorReports(reports);
     }
@@ -171,7 +177,7 @@ const Index = () => {
               {isAuthenticated && user ? (
                 <>
                   <Badge variant="default">
-                    Teamleiter: {user.username}
+                    {user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
                   </Badge>
                   <Button variant="outline" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -186,7 +192,7 @@ const Index = () => {
                   </Button>
                   <Button onClick={handleLoginClick}>
                     <LogIn className="h-4 w-4 mr-2" />
-                    Teamleiter Login
+                    Login
                   </Button>
                 </>
               )}
@@ -197,7 +203,7 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
-        {isAuthenticated ? (
+        {isAuthenticated && user?.role === 'teamleader' ? (
           // Teamleiter-Dashboard
           <div className="space-y-6">
             {/* Deputy Selection for Team Leaders with Error Boundary */}

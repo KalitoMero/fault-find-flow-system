@@ -4,7 +4,8 @@ import { getEmployees } from '@/lib/settingsStorage';
 
 interface User {
   username: string;
-  role: 'teamleader';
+  role: 'teamleader' | 'employee';
+  name: string;
 }
 
 interface AuthContextType {
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('teamleader');
+    const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -36,28 +37,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Erst in den erstellten Mitarbeiter-Accounts suchen
     const employees = getEmployees();
     const employeeAccount = employees.find(emp => 
-      emp.isTeamLeader && 
       emp.account && 
       emp.account.username === username && 
       emp.account.password === password
     );
 
     if (employeeAccount) {
-      const user = { username, role: 'teamleader' as const };
+      const user = { 
+        username, 
+        role: employeeAccount.isTeamLeader ? 'teamleader' as const : 'employee' as const,
+        name: employeeAccount.name
+      };
       setUser(user);
-      localStorage.setItem('teamleader', JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(user));
       return true;
     }
 
-    // Fallback zu den ursprünglichen Test-Accounts
+    // Fallback zu den ursprünglichen Test-Accounts (diese sind immer Teamleiter)
     const fallbackAccount = fallbackTestAccounts.find(
       acc => acc.username === username && acc.password === password
     );
 
     if (fallbackAccount) {
-      const user = { username, role: 'teamleader' as const };
+      const user = { 
+        username, 
+        role: 'teamleader' as const,
+        name: username
+      };
       setUser(user);
-      localStorage.setItem('teamleader', JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(user));
       return true;
     }
 
@@ -66,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('teamleader');
+    localStorage.removeItem('currentUser');
   };
 
   return (
