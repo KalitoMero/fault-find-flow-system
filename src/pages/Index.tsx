@@ -14,6 +14,7 @@ import ReportAccessForm from '@/components/ReportAccessForm';
 import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
 import SettingsModal from '@/components/SettingsModal';
 import DeputySelection from '@/components/DeputySelection';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy } from '@/lib/storage';
 import { toast } from "sonner";
@@ -199,8 +200,10 @@ const Index = () => {
         {isAuthenticated ? (
           // Teamleiter-Dashboard
           <div className="space-y-6">
-            {/* Deputy Selection for Team Leaders */}
-            <DeputySelection currentUser={user?.username || ''} />
+            {/* Deputy Selection for Team Leaders with Error Boundary */}
+            <ErrorBoundary>
+              <DeputySelection currentUser={user?.username || ''} />
+            </ErrorBoundary>
             
             <Card>
               <CardHeader>

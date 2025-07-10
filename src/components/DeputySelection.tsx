@@ -12,44 +12,61 @@ interface DeputySelectionProps {
 
 const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser }) => {
   const [availableDeputies, setAvailableDeputies] = useState<Employee[]>([]);
-  const [selectedDeputy, setSelectedDeputy] = useState<string>('');
+  const [selectedDeputy, setSelectedDeputy] = useState<string>('none');
   const [currentUserDepartment, setCurrentUserDepartment] = useState<string>('');
 
   useEffect(() => {
+    console.log('DeputySelection: Loading deputies for user:', currentUser);
     loadDeputies();
     loadSelectedDeputy();
   }, [currentUser]);
 
   const loadDeputies = () => {
-    const employees = getEmployees();
-    const currentEmployee = employees.find(emp => 
-      emp.account?.username === currentUser || emp.name === currentUser
-    );
-    
-    if (currentEmployee) {
-      setCurrentUserDepartment(currentEmployee.departmentId);
-      // Get employees from the same department who have accounts (excluding current user)
-      const deputies = employees.filter(emp => 
-        emp.departmentId === currentEmployee.departmentId &&
-        emp.id !== currentEmployee.id &&
-        emp.account && // Nur Mitarbeiter mit Account
-        emp.account.username && // Username muss vorhanden sein
-        emp.account.password   // Passwort muss vorhanden sein
+    try {
+      const employees = getEmployees();
+      const currentEmployee = employees.find(emp => 
+        emp.account?.username === currentUser || emp.name === currentUser
       );
-      setAvailableDeputies(deputies);
+      
+      if (currentEmployee) {
+        console.log('DeputySelection: Current employee found:', currentEmployee.name);
+        setCurrentUserDepartment(currentEmployee.departmentId);
+        // Get employees from the same department who have accounts (excluding current user)
+        const deputies = employees.filter(emp => 
+          emp.departmentId === currentEmployee.departmentId &&
+          emp.id !== currentEmployee.id &&
+          emp.account && // Nur Mitarbeiter mit Account
+          emp.account.username && // Username muss vorhanden sein
+          emp.account.password   // Passwort muss vorhanden sein
+        );
+        console.log('DeputySelection: Available deputies:', deputies.length);
+        setAvailableDeputies(deputies);
+      }
+    } catch (error) {
+      console.error('DeputySelection: Error loading deputies:', error);
+      setAvailableDeputies([]);
     }
   };
 
   const loadSelectedDeputy = () => {
-    const savedDeputy = localStorage.getItem(`deputy_${currentUser}`);
-    if (savedDeputy) {
-      setSelectedDeputy(savedDeputy);
+    try {
+      const savedDeputy = localStorage.getItem(`deputy_${currentUser}`);
+      if (savedDeputy && savedDeputy !== '') {
+        console.log('DeputySelection: Loaded saved deputy:', savedDeputy);
+        setSelectedDeputy(savedDeputy);
+      } else {
+        setSelectedDeputy('none');
+      }
+    } catch (error) {
+      console.error('DeputySelection: Error loading saved deputy:', error);
+      setSelectedDeputy('none');
     }
   };
 
   const handleDeputyChange = (deputyId: string) => {
+    console.log('DeputySelection: Deputy changed to:', deputyId);
     setSelectedDeputy(deputyId);
-    if (deputyId) {
+    if (deputyId && deputyId !== 'none') {
       localStorage.setItem(`deputy_${currentUser}`, deputyId);
     } else {
       localStorage.removeItem(`deputy_${currentUser}`);
@@ -93,7 +110,7 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser }) => {
               <SelectValue placeholder="Vertretung auswählen" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Keine Vertretung</SelectItem>
+              <SelectItem value="none">Keine Vertretung</SelectItem>
               {availableDeputies.map((deputy) => (
                 <SelectItem key={deputy.id} value={deputy.id}>
                   {deputy.name} ({deputy.account?.username})
@@ -101,7 +118,7 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser }) => {
               ))}
             </SelectContent>
           </Select>
-          {selectedDeputy && (
+          {selectedDeputy && selectedDeputy !== 'none' && (
             <p className="text-sm text-green-600 mt-2">
               ✓ Vertretung aktiv: {availableDeputies.find(d => d.id === selectedDeputy)?.name}
             </p>
