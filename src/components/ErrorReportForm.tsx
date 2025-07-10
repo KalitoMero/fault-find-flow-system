@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import { toast } from "sonner";
 
 interface ErrorReportFormProps {
   onReportCreated: () => void;
+  refreshDepartments?: boolean;
 }
 
 // Available team leaders
@@ -25,7 +25,8 @@ const availableTeamLeaders = [
 ];
 
 const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
-  onReportCreated
+  onReportCreated,
+  refreshDepartments = false
 }) => {
   const [accessNumber, setAccessNumber] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -50,10 +51,20 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const loadDepartments = () => {
+    setDepartments(getDepartments());
+  };
+
   useEffect(() => {
     setAccessNumber(generateAccessNumber());
-    setDepartments(getDepartments());
+    loadDepartments();
   }, []);
+
+  useEffect(() => {
+    if (refreshDepartments) {
+      loadDepartments();
+    }
+  }, [refreshDepartments]);
 
   useEffect(() => {
     if (formData.departmentId) {

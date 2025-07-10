@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
+  const [refreshDepartments, setRefreshDepartments] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -80,6 +82,8 @@ const Index = () => {
 
   const handleSettingsClose = () => {
     setShowSettings(false);
+    // Trigger department refresh in ErrorReportForm
+    setRefreshDepartments(prev => !prev);
   };
 
   const handleReportClick = (report: ErrorReport) => {
@@ -181,56 +185,54 @@ const Index = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistik Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isAuthenticated ? 'Meine Meldungen' : 'Gesamt Meldungen'}
-              </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {isAuthenticated ? 'Zugewiesene Meldungen' : 'Alle erfassten Meldungen'}
-              </p>
-            </CardContent>
-          </Card>
+        {/* Statistik Cards - nur für Teamleiter */}
+        {isAuthenticated && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meine Meldungen</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Zugewiesene Meldungen</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Zur Prüfung</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-              <p className="text-xs text-muted-foreground">Warten auf Freigabe</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Zur Prüfung</CardTitle>
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+                <p className="text-xs text-muted-foreground">Warten auf Freigabe</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-              <p className="text-xs text-muted-foreground">Genehmigt</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+                <p className="text-xs text-muted-foreground">Genehmigt</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Abgelehnt</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-              <p className="text-xs text-muted-foreground">Zur Überarbeitung</p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Abgelehnt</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+                <p className="text-xs text-muted-foreground">Zur Überarbeitung</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Hauptinhalt */}
         {isAuthenticated ? (
@@ -310,7 +312,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="new-report">
-              <ErrorReportForm onReportCreated={handleNewReport} />
+              <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
             </TabsContent>
 
             <TabsContent value="export">
