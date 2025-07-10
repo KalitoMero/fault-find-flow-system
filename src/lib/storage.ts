@@ -20,15 +20,9 @@ export interface ErrorReport {
     correctiveAction?: string;
   };
   assignedTeamLeader: string;
-  approvedBy?: string;
-  approvedAt?: string;
 }
 
 import { getEmployees } from './settingsStorage';
-
-export const generateErrorReportId = (): string => {
-  return 'ER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-};
 
 export const getErrorReports = (): ErrorReport[] => {
   const stored = localStorage.getItem('production_error_reports');
@@ -44,23 +38,11 @@ export const saveErrorReport = (report: ErrorReport) => {
 export const updateErrorReportStatus = (
   reportId: string,
   status: 'pending' | 'approved' | 'rejected',
-  rejectionReason?: string,
-  approvedBy?: string
+  rejectionReason?: string
 ) => {
   const reports = getErrorReports().map(report => {
     if (report.id === reportId) {
-      const updatedReport = { 
-        ...report, 
-        approvalStatus: status, 
-        rejectionReason: rejectionReason 
-      };
-      
-      if (status === 'approved' && approvedBy) {
-        updatedReport.approvedBy = approvedBy;
-        updatedReport.approvedAt = new Date().toISOString();
-      }
-      
-      return updatedReport;
+      return { ...report, approvalStatus: status, rejectionReason: rejectionReason };
     }
     return report;
   });
