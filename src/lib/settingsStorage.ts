@@ -3,6 +3,12 @@ export interface Employee {
   id: string;
   name: string;
   departmentId: string;
+  isTeamLeader?: boolean;
+  account?: {
+    username: string;
+    email: string;
+    password: string;
+  };
 }
 
 export interface Department {
@@ -64,6 +70,19 @@ export const getEmployeesByDepartment = (departmentId: string): Employee[] => {
   return getEmployees().filter(e => e.departmentId === departmentId);
 };
 
+export const getTeamLeadersByDepartment = (departmentId: string): Employee[] => {
+  return getEmployees().filter(e => e.departmentId === departmentId && e.isTeamLeader);
+};
+
 export const generateId = () => {
   return Math.random().toString(36).substr(2, 9);
+};
+
+export const generatePassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };

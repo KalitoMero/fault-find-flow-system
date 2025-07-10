@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, Building, Users } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, Plus, Building, Users, UserPlus, Shield } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -20,6 +20,7 @@ import {
   getEmployeesByDepartment,
   generateId 
 } from '@/lib/settingsStorage';
+import AccountCreationDialog from './AccountCreationDialog';
 import { toast } from "sonner";
 
 interface SettingsModalProps {
@@ -30,15 +31,26 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [selectedDepartmentForEmployee, setSelectedDepartmentForEmployee] = useState('');
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('all');
+  const [accountCreationEmployee, setAccountCreationEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (selectedDepartmentFilter === 'all') {
+      setFilteredEmployees(employees);
+    } else {
+      setFilteredEmployees(employees.filter(emp => emp.departmentId === selectedDepartmentFilter));
+    }
+  }, [employees, selectedDepartmentFilter]);
 
   const loadData = () => {
     setDepartments(getDepartments());
@@ -82,7 +94,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const newEmployee: Employee = {
       id: generateId(),
       name: newEmployeeName.trim(),
-      departmentId: selectedDepartmentForEmployee
+      departmentId: selectedDepartmentForEmployee,
+      isTeamLeader: false
     };
 
     saveEmployee(newEmployee);
@@ -98,9 +111,27 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     toast.success('Mitarbeiter gelöscht');
   };
 
+  const handleTeamLeaderChange = (employeeId: string, isTeamLeader: boolean) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (employee) {
+      const updatedEmployee = { ...employee, isTeamLeader };
+      saveEmployee(updatedEmployee);
+      loadData();
+      toast.success(`Teamleiter-Status für ${employee.name} ${isTeamLeader ? 'aktiviert' : 'deaktiviert'}`);
+    }
+  };
+
   const getDepartmentName = (departmentId: string) => {
     const department = departments.find(d => d.id === departmentId);
     return department ? department.name : 'Unbekannte Abteilung';
+  };
+
+  const handleAccountCreation = (employee: Employee) => {
+    setAccountCreationEmployee(employee);
+  };
+
+  const handleAccountCreated = () => {
+    loadData();
   };
 
   return (
@@ -234,25 +265,84 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <Card>
               <CardHeader>
                 <CardTitle>Vorhandene Mitarbeiter</CardTitle>
+                <CardDescription>
+                  Verwalten Sie Mitarbeiter, Teamleiter-Rollen und Accounts
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                {employees.length === 0 ? (
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="departmentFilter">Nach Abteilung filtern</Label>
+                  <Select value={selectedDepartmentFilter} onValueChange={setSelectedDepartmentFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Abteilung auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Abteilungen</SelectItem>
+                      {departments.map((department) => (
+                        <SelectItem key={department.id} value={department.id}>
+                          {department.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {filteredEmployees.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">Keine Mitarbeiter vorhanden</p>
                 ) : (
                   <div className="space-y-2">
-                    {employees.map((employee) => (
+                    {filteredEmployees.map((employee) => (
                       <div key={employee.id} className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <span className="font-medium">{employee.name}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-medium">{employee.name}</span>
+                            {employee.isTeamLeader && (
+                              <Shield className="h-4 w-4 text-blue-600" title="Teamleiter" />
+                            )}
+                            {employee.account && (
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Account vorhanden
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">{getDepartmentName(employee.departmentId)}</p>
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteEmployee(employee.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`teamleader-${employee.id}`}
+                              checked={employee.isTeamLeader || false}
+                              onCheckedChange={(checked) => 
+                                handleTeamLeaderChange(employee.id, checked as boolean)
+                              }
+                            />
+                            <Label htmlFor={`teamleader-${employee.id}`} className="text-sm">
+                              Teamleiter
+                            </Label>
+                          </div>
+                          
+                          {!employee.account ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAccountCreation(employee)}
+                            >
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Account
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-green-600">✓ Account</span>
+                          )}
+                          
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteEmployee(employee.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -266,6 +356,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <Button onClick={onClose}>Schließen</Button>
         </div>
       </DialogContent>
+
+      {accountCreationEmployee && (
+        <AccountCreationDialog
+          isOpen={!!accountCreationEmployee}
+          onClose={() => setAccountCreationEmployee(null)}
+          employee={accountCreationEmployee}
+          onAccountCreated={handleAccountCreated}
+        />
+      )}
     </Dialog>
   );
 };

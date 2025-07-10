@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
 import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
 import SettingsModal from '@/components/SettingsModal';
+import DeputySelection from '@/components/DeputySelection';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics } from '@/lib/storage';
 import { toast } from "sonner";
@@ -185,110 +185,66 @@ const Index = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistik Cards - nur für Teamleiter */}
-        {isAuthenticated && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Meine Meldungen</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">Zugewiesene Meldungen</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Zur Prüfung</CardTitle>
-                <Clock className="h-4 w-4 text-yellow-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-                <p className="text-xs text-muted-foreground">Warten auf Freigabe</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-                <p className="text-xs text-muted-foreground">Genehmigt</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Abgelehnt</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-                <p className="text-xs text-muted-foreground">Zur Überarbeitung</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Hauptinhalt */}
         {isAuthenticated ? (
           // Teamleiter-Dashboard
-          <Card>
-            <CardHeader>
-              <CardTitle>Meine Fehlermeldungen</CardTitle>
-              <CardDescription>
-                Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (sortiert nach Datum)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {errorReports.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Meldungen zugewiesen</h3>
-                  <p className="text-gray-500">Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {errorReports.map((report) => (
-                    <div 
-                      key={report.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => handleReportClick(report)}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4">
-                          <Badge variant="outline">#{report.id}</Badge>
-                          <span className="font-medium">Auftrag: {report.orderNumber}</span>
-                          <span className="text-gray-500">AFO: {report.afoNumber}</span>
+          <div className="space-y-6">
+            {/* Deputy Selection for Team Leaders */}
+            <DeputySelection currentUser={user?.username || ''} />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Meine Fehlermeldungen</CardTitle>
+                <CardDescription>
+                  Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (sortiert nach Datum)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {errorReports.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Meldungen zugewiesen</h3>
+                    <p className="text-gray-500">Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {errorReports.map((report) => (
+                      <div 
+                        key={report.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => handleReportClick(report)}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <Badge variant="outline">#{report.id}</Badge>
+                            <span className="font-medium">Auftrag: {report.orderNumber}</span>
+                            <span className="text-gray-500">AFO: {report.afoNumber}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}
+                          </p>
+                          <p className="text-sm text-gray-800 mt-1 truncate max-w-md">
+                            {report.problemDescription.slice(0, 100)}...
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}
-                        </p>
-                        <p className="text-sm text-gray-800 mt-1 truncate max-w-md">
-                          {report.problemDescription.slice(0, 100)}...
-                        </p>
+                        <div className="flex items-center space-x-2">
+                          <Badge 
+                            variant={
+                              report.approvalStatus === 'approved' ? 'default' :
+                              report.approvalStatus === 'rejected' ? 'destructive' : 'secondary'
+                            }
+                          >
+                            {report.approvalStatus === 'approved' ? 'Freigegeben' :
+                             report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge 
-                          variant={
-                            report.approvalStatus === 'approved' ? 'default' :
-                            report.approvalStatus === 'rejected' ? 'destructive' : 'secondary'
-                          }
-                        >
-                          {report.approvalStatus === 'approved' ? 'Freigegeben' :
-                           report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           // Mitarbeiter-Dashboard (Tabs mit Meldung Einsehen statt Dashboard)
           <Tabs defaultValue="report-access" className="space-y-6">
