@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +21,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [orderNumber, setOrderNumber] = useState('');
   const [afoNumber, setAfoNumber] = useState('');
   const [defectiveQuantity, setDefectiveQuantity] = useState('');
-  const [totalDefectiveQuantity, setTotalDefectiveQuantity] = useState('');
-  const [creator, setCreator] = useState('');
-  const [personalNumber, setPersonalNumber] = useState('');
   const [machine, setMachine] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
-  const [errorCause, setErrorCause] = useState('');
   const [correctiveAction, setCorrectiveAction] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -34,7 +31,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [audioFiles, setAudioFiles] = useState<{
     problemDescription?: string | null;
-    errorCause?: string | null;
     correctiveAction?: string | null;
   }>({});
 
@@ -52,9 +48,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setIsSubmitting(true);
 
     try {
-      if (!orderNumber || !defectiveQuantity || !totalDefectiveQuantity || 
-          !creator || !personalNumber || !problemDescription || 
-          !errorCause || !correctiveAction || !selectedDepartment || !selectedEmployee) {
+      if (!orderNumber || !defectiveQuantity || 
+          !problemDescription || !correctiveAction || 
+          !selectedDepartment || !selectedEmployee) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
@@ -68,18 +64,25 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         return;
       }
 
+      // Get selected employee for creator name and personal number
+      const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
+      if (!selectedEmp) {
+        toast.error('Ausgewählter Mitarbeiter nicht gefunden');
+        return;
+      }
+
       const report = {
         id: generateErrorReportId(),
         accessNumber: generateAccessNumber(),
         orderNumber,
         afoNumber: afoNumber || undefined,
         defectiveQuantity: parseInt(defectiveQuantity),
-        totalDefectiveQuantity: parseInt(totalDefectiveQuantity),
-        creator,
-        personalNumber,
+        totalDefectiveQuantity: parseInt(defectiveQuantity), // Use same as defective quantity
+        creator: selectedEmp.name,
+        personalNumber: selectedEmp.id, // Use employee ID as personal number
         machine: machine || undefined,
         problemDescription,
-        errorCause,
+        errorCause: problemDescription, // Use problem description as error cause
         correctiveAction,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
@@ -95,12 +98,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
       setOrderNumber('');
       setAfoNumber('');
       setDefectiveQuantity('');
-      setTotalDefectiveQuantity('');
-      setCreator('');
-      setPersonalNumber('');
       setMachine('');
       setProblemDescription('');
-      setErrorCause('');
       setCorrectiveAction('');
       setSelectedDepartment('');
       setSelectedEmployee('');
@@ -154,31 +153,17 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="defectiveQuantity">Fehlerhafte Menge *</Label>
-              <Input
-                id="defectiveQuantity"
-                type="number"
-                value={defectiveQuantity}
-                onChange={(e) => setDefectiveQuantity(e.target.value)}
-                placeholder="Anzahl fehlerhafter Teile"
-                min="1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="totalDefectiveQuantity">Gesamtmenge *</Label>
-              <Input
-                id="totalDefectiveQuantity"
-                type="number"
-                value={totalDefectiveQuantity}
-                onChange={(e) => setTotalDefectiveQuantity(e.target.value)}
-                placeholder="Gesamtanzahl Teile"
-                min="1"
-                required
-              />
-            </div>
+          <div>
+            <Label htmlFor="defectiveQuantity">Fehlerhafte Menge *</Label>
+            <Input
+              id="defectiveQuantity"
+              type="number"
+              value={defectiveQuantity}
+              onChange={(e) => setDefectiveQuantity(e.target.value)}
+              placeholder="Anzahl fehlerhafter Teile"
+              min="1"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,29 +204,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="creator">Name des Erstellers *</Label>
-              <Input
-                id="creator"
-                value={creator}
-                onChange={(e) => setCreator(e.target.value)}
-                placeholder="Vor- und Nachname"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="personalNumber">Personalnummer *</Label>
-              <Input
-                id="personalNumber"
-                value={personalNumber}
-                onChange={(e) => setPersonalNumber(e.target.value)}
-                placeholder="z.B. 12345"
-                required
-              />
-            </div>
-          </div>
-
           <div>
             <Label htmlFor="machine">Maschine/Arbeitsplatz</Label>
             <Input
@@ -268,25 +230,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
               }}
               label="Problembeschreibung aufnehmen"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="errorCause">Fehlerursache *</Label>
-            <Textarea
-              id="errorCause"
-              value={errorCause}
-              onChange={(e) => setErrorCause(e.target.value)}
-              placeholder="Beschreiben Sie die identifizierte Ursache des Fehlers..."
-              rows={3}
-              required
-            />
-            <AudioRecorder 
-              onTranscription={(transcription, audioBlob) => {
-                setErrorCause(transcription);
-                setAudioFiles(prev => ({...prev, errorCause: audioBlob}));
-              }}
-              label="Fehlerursache aufnehmen"
             />
           </div>
 

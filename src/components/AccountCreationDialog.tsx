@@ -23,7 +23,7 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
 }) => {
   const [username, setUsername] = useState(employee.name.toLowerCase().replace(/\s+/g, '.'));
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(generatePassword());
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -59,6 +59,11 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} in Zwischenablage kopiert`);
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generatePassword();
+    setPassword(newPassword);
   };
 
   return (
@@ -135,6 +140,7 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => copyToClipboard(password, 'Passwort')}
+                disabled={!password}
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -143,7 +149,7 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
 
           <Button
             variant="outline"
-            onClick={() => setPassword(generatePassword())}
+            onClick={handleGeneratePassword}
             className="w-full"
           >
             Neues Passwort generieren
