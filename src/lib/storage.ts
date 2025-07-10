@@ -1,4 +1,3 @@
-
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -95,7 +94,21 @@ export const generateAccessNumber = (): string => {
 };
 
 export const generateErrorReportId = (): string => {
-  return Math.random().toString(36).substr(2, 9);
+  const existingReports = getErrorReports();
+  
+  if (existingReports.length === 0) {
+    return "1";
+  }
+  
+  // Find the highest existing ID number
+  const existingIds = existingReports
+    .map(report => parseInt(report.id))
+    .filter(id => !isNaN(id))
+    .sort((a, b) => b - a);
+  
+  const highestId = existingIds.length > 0 ? existingIds[0] : 0;
+  
+  return (highestId + 1).toString();
 };
 
 export const getErrorReportStatistics = () => {
