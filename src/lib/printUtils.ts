@@ -46,8 +46,9 @@ export const printErrorReport = (report: ErrorReport) => {
           max-width: 800px;
           margin: 0 auto;
           padding: 20px;
-          line-height: 1.6;
+          line-height: 1.4;
           color: #333;
+          font-size: 13px;
         }
         .header {
           border-bottom: 2px solid #e5e7eb;
@@ -55,20 +56,20 @@ export const printErrorReport = (report: ErrorReport) => {
           margin-bottom: 30px;
         }
         .title {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: bold;
           color: #dc2626;
           margin-bottom: 10px;
         }
         .subtitle {
           color: #6b7280;
-          font-size: 14px;
+          font-size: 13px;
         }
         .status {
           display: inline-block;
           padding: 4px 12px;
           border-radius: 6px;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 500;
           margin-top: 10px;
         }
@@ -85,12 +86,13 @@ export const printErrorReport = (report: ErrorReport) => {
           color: #374151;
         }
         .section {
-          margin-bottom: 30px;
+          margin-bottom: 25px;
+          page-break-inside: avoid;
         }
         .section-title {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 600;
-          margin-bottom: 15px;
+          margin-bottom: 12px;
           color: #111827;
         }
         .grid {
@@ -99,28 +101,38 @@ export const printErrorReport = (report: ErrorReport) => {
           gap: 20px;
           margin-bottom: 20px;
         }
+        .order-data-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
         .field {
-          margin-bottom: 15px;
+          margin-bottom: 12px;
         }
         .field-label {
-          font-size: 12px;
+          font-size: 11px;
           color: #6b7280;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
         .field-value {
           font-weight: 500;
           color: #111827;
+          font-size: 13px;
         }
         .description-box {
           background-color: #f9fafb;
-          padding: 15px;
-          border-radius: 8px;
+          padding: 12px;
+          border-radius: 6px;
           border: 1px solid #e5e7eb;
+          page-break-inside: avoid;
+          min-height: 60px;
         }
         .approval-info {
-          padding: 15px;
-          border-radius: 8px;
+          padding: 12px;
+          border-radius: 6px;
           margin-bottom: 20px;
+          page-break-inside: avoid;
         }
         .approval-info.approved {
           background-color: #f0fdf4;
@@ -132,7 +144,8 @@ export const printErrorReport = (report: ErrorReport) => {
         }
         .approval-title {
           font-weight: 600;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
+          font-size: 14px;
         }
         .approval-title.approved {
           color: #166534;
@@ -140,10 +153,38 @@ export const printErrorReport = (report: ErrorReport) => {
         .approval-title.rejected {
           color: #dc2626;
         }
+        .problem-section {
+          page-break-inside: avoid;
+        }
+        .corrective-section {
+          page-break-inside: avoid;
+        }
         @media print {
           body {
             margin: 0;
             padding: 15px;
+            font-size: 12px;
+          }
+          .title {
+            font-size: 20px;
+          }
+          .section-title {
+            font-size: 15px;
+          }
+          .field-value {
+            font-size: 12px;
+          }
+          .subtitle {
+            font-size: 12px;
+          }
+          .status {
+            font-size: 10px;
+          }
+          .field-label {
+            font-size: 10px;
+          }
+          .approval-title {
+            font-size: 13px;
           }
         }
       </style>
@@ -195,7 +236,7 @@ export const printErrorReport = (report: ErrorReport) => {
 
       <div class="section">
         <div class="section-title">Auftragsdaten</div>
-        <div class="grid">
+        <div class="order-data-grid">
           <div class="field">
             <div class="field-label">Auftragsnummer:</div>
             <div class="field-value">${report.orderNumber}</div>
@@ -215,14 +256,14 @@ export const printErrorReport = (report: ErrorReport) => {
         </div>
       </div>
 
-      <div class="section">
+      <div class="section problem-section">
         <div class="section-title">Problembeschreibung</div>
         <div class="description-box">
           ${report.problemDescription}
         </div>
       </div>
 
-      <div class="section">
+      <div class="section corrective-section">
         <div class="section-title">Korrekturmaßnahme</div>
         <div class="description-box">
           ${report.correctiveAction}
