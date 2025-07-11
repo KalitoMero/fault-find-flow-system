@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, Eye, User, Calendar, Edit } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
@@ -171,25 +171,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Zugriffsnummer für Teamleiter */}
-            {isAuthenticated && (
-              <>
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Eye className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-800">Zugriffsnummer für Mitarbeiter</h3>
-                  </div>
-                  <div className="text-2xl font-mono font-bold text-blue-900 tracking-widest">
-                    {report.accessNumber}
-                  </div>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Mitarbeiter können diese Nummer verwenden, um die Meldung nach der Freigabe einzusehen.
-                  </p>
-                </div>
-                <Separator />
-              </>
-            )}
-
             {/* Approval Information for approved reports */}
             {report.approvalStatus === 'approved' && report.approvedBy && report.approvedAt && (
               <>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle, Copy, Eye } from 'lucide-react';
-import { saveErrorReport, generateErrorReportId, generateAccessNumber } from '@/lib/storage';
-import { getDepartments, getEmployees, Department, Employee } from '@/lib/settingsStorage';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
+import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
 import AudioRecorder from './AudioRecorder';
+import SearchableCombobox from './SearchableCombobox';
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
@@ -26,6 +28,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [audioFiles, setAudioFiles] = useState<{
@@ -33,17 +36,15 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     correctiveAction?: string | null;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [accessNumber, setAccessNumber] = useState('');
 
   useEffect(() => {
     loadDepartmentsData();
-    // Generate access number immediately when component mounts
-    setAccessNumber(generateAccessNumber());
   }, [refreshDepartments]);
 
   const loadDepartmentsData = () => {
     setDepartments(getDepartments());
     setEmployees(getEmployees());
+    setMachines(getMachines());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +77,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
       const report = {
         id: generateErrorReportId(),
-        accessNumber,
         orderNumber,
         afoNumber: afoNumber || undefined,
         defectiveQuantity: parseInt(defectiveQuantity),
@@ -90,9 +90,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: teamLeader.account?.username || teamLeader.name,
-        audioFiles,
-        departmentId: selectedDepartment,
-        creatorId: selectedEmployee
+        audioFiles
       };
 
       saveErrorReport(report);
@@ -110,7 +108,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   };
 
   const handleNewReport = () => {
-    // Reset form and generate new access number
+    // Reset form
     setOrderNumber('');
     setAfoNumber('');
     setDefectiveQuantity('');
@@ -121,12 +119,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setSelectedEmployee('');
     setAudioFiles({});
     setShowSuccess(false);
-    setAccessNumber(generateAccessNumber()); // Generate new access number
-  };
-
-  const copyAccessNumber = () => {
-    navigator.clipboard.writeText(accessNumber);
-    toast.success('Zugriffsnummer kopiert!');
   };
 
   const filteredEmployees = selectedDepartment 
@@ -168,30 +160,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Access Number Display */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center space-x-2 mb-2">
-            <Eye className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-800">Ihre Zugriffsnummer für diese Meldung:</h3>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xl font-mono font-bold text-blue-900 bg-white px-3 py-1 rounded border tracking-widest">
-              {accessNumber}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyAccessNumber}
-              className="text-blue-700 border-blue-300 hover:bg-blue-50"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-sm text-blue-700 mt-2">
-            Mit dieser 6-stelligen Nummer können Sie später den Status Ihrer Meldung einsehen.
-          </p>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -246,33 +214,25 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             </div>
             <div>
               <Label htmlFor="selectedEmployee">Ersteller *</Label>
-              <Select 
-                value={selectedEmployee} 
-                onValueChange={setSelectedEmployee} 
+              <SearchableCombobox
+                items={filteredEmployees.map(emp => ({ id: emp.id, name: emp.name }))}
+                value={selectedEmployee}
+                onValueChange={setSelectedEmployee}
+                placeholder="Mitarbeiter auswählen"
+                searchPlaceholder="Mitarbeiter suchen..."
                 disabled={!selectedDepartment}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Mitarbeiter auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredEmployees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </div>
 
           <div>
             <Label htmlFor="machine">Maschine/Arbeitsplatz</Label>
-            <Input
-              id="machine"
+            <SearchableCombobox
+              items={machines.map(machine => ({ id: machine.id, name: machine.name }))}
               value={machine}
-              onChange={(e) => setMachine(e.target.value)}
-              placeholder="z.B. Maschine 01 - CNC Drehmaschine"
+              onValueChange={setMachine}
+              placeholder="Maschine auswählen"
+              searchPlaceholder="Maschine suchen..."
             />
           </div>
 
