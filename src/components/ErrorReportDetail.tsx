@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
+import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
 
 interface ErrorReportDetailProps {
@@ -105,6 +106,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
     }
   };
 
+  const handlePrint = () => {
+    printErrorReport(report);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('de-DE');
   };
@@ -141,6 +146,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge()}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  Drucken
+                </Button>
                 {/* Edit Button für abgelehnte Meldungen */}
                 {report.approvalStatus === 'rejected' && onEdit && (
                   <Button
@@ -200,7 +213,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
               </>
             )}
 
-            {/* Rejection Information for rejected reports */}
             {report.approvalStatus === 'rejected' && report.rejectedBy && report.rejectedAt && (
               <>
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -272,7 +284,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
 
             <Separator />
 
-            {/* Problembeschreibung */}
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
               <div className="p-4 bg-gray-50 rounded-lg">
@@ -282,7 +293,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
 
             <Separator />
 
-            {/* Korrekturmaßnahme */}
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
               <div className="p-4 bg-gray-50 rounded-lg">

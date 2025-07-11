@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Printer } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
 import AudioRecorder from './AudioRecorder';
 import SearchableCombobox from './SearchableCombobox';
+import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
@@ -36,10 +36,23 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     correctiveAction?: string | null;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
 
   useEffect(() => {
     loadDepartmentsData();
   }, [refreshDepartments]);
+
+  // Auto-hide success message after 2 minutes
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => {
+        setShowSuccess(false);
+        setLastCreatedReport(null);
+      }, 120000); // 2 minutes
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
 
   const loadDepartmentsData = () => {
     setDepartments(getDepartments());
@@ -95,8 +108,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
       saveErrorReport(report);
       
-      // Show success state
+      // Show success state and store created report
       setShowSuccess(true);
+      setLastCreatedReport(report);
       
       onReportCreated();
     } catch (error) {
@@ -119,6 +133,13 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setSelectedEmployee('');
     setAudioFiles({});
     setShowSuccess(false);
+    setLastCreatedReport(null);
+  };
+
+  const handlePrintReport = () => {
+    if (lastCreatedReport) {
+      printErrorReport(lastCreatedReport);
+    }
   };
 
   const filteredEmployees = selectedDepartment 
@@ -135,12 +156,17 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           </CardTitle>
           <CardDescription>
             Ihre Fehlermeldung wurde erfolgreich gespeichert und einem Teamleiter zur Prüfung zugewiesen.
+            Dieses Fenster schließt sich automatisch in 2 Minuten.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex space-x-3">
             <Button onClick={handleNewReport} className="flex-1">
               Neue Meldung erstellen
+            </Button>
+            <Button onClick={handlePrintReport} variant="outline">
+              <Printer className="h-4 w-4 mr-2" />
+              Drucken
             </Button>
           </div>
         </CardContent>
@@ -221,6 +247,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 placeholder="Mitarbeiter auswählen"
                 searchPlaceholder="Mitarbeiter suchen..."
                 className="w-full"
+                disabled={!selectedDepartment}
               />
             </div>
           </div>
