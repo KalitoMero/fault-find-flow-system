@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,6 +173,9 @@ const Index = () => {
     return isUserDeputy(user.username);
   };
 
+  // Calculate pending reports count for team leaders
+  const pendingReportsCount = errorReports.filter(report => report.approvalStatus === 'pending').length;
+
   // Zeige Login-Formular
   if (showLogin && !isAuthenticated) {
     return <LoginForm onBack={handleBackToOverview} />;
@@ -250,6 +252,30 @@ const Index = () => {
         {isAuthenticated && user ? (
           // Dashboard für alle angemeldeten Benutzer (Teamleiter und Mitarbeiter)
           <div className="space-y-6">
+            {/* Status-Anzeige für Teamleiter */}
+            {user.role === 'teamleader' && pendingReportsCount > 0 && (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <Clock className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-orange-900">
+                        {pendingReportsCount} Fehlermeldung{pendingReportsCount !== 1 ? 'en' : ''} zur Prüfung
+                      </h3>
+                      <p className="text-sm text-orange-700">
+                        {pendingReportsCount === 1 
+                          ? 'Eine Fehlermeldung wartet auf Ihre Prüfung.'
+                          : `${pendingReportsCount} Fehlermeldungen warten auf Ihre Prüfung.`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Deputy Selection with Error Boundary - nur anzeigen wenn berechtigt */}
             <ErrorBoundary>
               <DeputySelection 
