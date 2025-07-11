@@ -1,10 +1,9 @@
 
 import { ErrorReport } from './storage';
+import { getEmployees } from './settingsStorage';
+import { getMachines } from './settingsStorage';
 
 export const printErrorReport = (report: ErrorReport) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('de-DE');
   };
@@ -19,6 +18,21 @@ export const printErrorReport = (report: ErrorReport) => {
         return 'Zur Prüfung';
     }
   };
+
+  // Hole den richtigen Maschinennamen
+  const machines = getMachines();
+  const machine = machines.find(m => m.id === report.machine);
+  const machineName = machine ? machine.name : report.machine;
+
+  // Hole den Namen des Freigabenden/Ablehnenden
+  const employees = getEmployees();
+  const getEmployeeName = (username: string) => {
+    const employee = employees.find(emp => emp.account?.username === username);
+    return employee ? employee.name : username;
+  };
+
+  const approvedByName = report.approvedBy ? getEmployeeName(report.approvedBy) : report.approvedBy;
+  const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
 
   const html = `
     <!DOCTYPE html>
@@ -141,13 +155,13 @@ export const printErrorReport = (report: ErrorReport) => {
         <div class="status ${report.approvalStatus}">Status: ${getStatusText(report.approvalStatus)}</div>
       </div>
 
-      ${report.approvalStatus === 'approved' && report.approvedBy && report.approvedAt ? `
+      ${report.approvalStatus === 'approved' && approvedByName && report.approvedAt ? `
         <div class="approval-info approved">
           <div class="approval-title approved">Freigabe-Information</div>
           <div class="grid">
             <div class="field">
               <div class="field-label">Freigegeben von:</div>
-              <div class="field-value">${report.approvedBy}</div>
+              <div class="field-value">${approvedByName}</div>
             </div>
             <div class="field">
               <div class="field-label">Freigegeben am:</div>
@@ -157,13 +171,13 @@ export const printErrorReport = (report: ErrorReport) => {
         </div>
       ` : ''}
 
-      ${report.approvalStatus === 'rejected' && report.rejectedBy && report.rejectedAt ? `
+      ${report.approvalStatus === 'rejected' && rejectedByName && report.rejectedAt ? `
         <div class="approval-info rejected">
           <div class="approval-title rejected">Ablehnungs-Information</div>
           <div class="grid">
             <div class="field">
               <div class="field-label">Abgelehnt von:</div>
-              <div class="field-value">${report.rejectedBy}</div>
+              <div class="field-value">${rejectedByName}</div>
             </div>
             <div class="field">
               <div class="field-label">Abgelehnt am:</div>
@@ -192,7 +206,7 @@ export const printErrorReport = (report: ErrorReport) => {
           </div>
           <div class="field">
             <div class="field-label">Maschine:</div>
-            <div class="field-value">${report.machine || '-'}</div>
+            <div class="field-value">${machineName || '-'}</div>
           </div>
           <div class="field">
             <div class="field-label">Beanstandete Menge:</div>
@@ -218,8 +232,32 @@ export const printErrorReport = (report: ErrorReport) => {
     </html>
   `;
 
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  // Erstelle ein verstecktes iframe Element für das Drucken
+  const printFrame = document.createElement('iframe');
+  printFrame.style.position = 'absolute';
+  printFrame.style.top = '-10000px';
+  printFrame.style.left = '-10000px';
+  printFrame.style.width = '0px';
+  printFrame.style.height = '0px';
+  printFrame.style.border = 'none';
+  
+  document.body.appendChild(printFrame);
+  
+  const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+  if (printDocument) {
+    printDocument.open();
+    printDocument.write(html);
+    printDocument.close();
+    
+    // Warte bis der Inhalt geladen ist und drucke dann
+    printFrame.onload = () => {
+      printFrame.contentWindow?.focus();
+      printFrame.contentWindow?.print();
+      
+      // Entferne das iframe nach dem Drucken
+      setTimeout(() => {
+        document.body.removeChild(printFrame);
+      }, 1000);
+    };
+  }
 };
