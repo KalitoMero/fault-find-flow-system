@@ -38,6 +38,11 @@ export const saveErrorReport = (report: ErrorReport) => {
   localStorage.setItem('production_error_reports', JSON.stringify(reports));
 };
 
+export const deleteErrorReport = (reportId: string) => {
+  const reports = getErrorReports().filter(report => report.id !== reportId);
+  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+};
+
 export const updateErrorReportStatus = (
   reportId: string,
   status: 'pending' | 'approved' | 'rejected',

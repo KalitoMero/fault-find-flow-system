@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2 } from 'lucide-react';
 import ErrorReportForm from '@/components/ErrorReportForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
@@ -17,7 +19,7 @@ import SettingsModal from '@/components/SettingsModal';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
-import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber } from '@/lib/storage';
+import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber, deleteErrorReport } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
@@ -30,6 +32,7 @@ const Index = () => {
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -66,12 +69,15 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, user]);
 
-  // Filter reports based on search term
-  const filteredReports = searchTerm 
-    ? errorReports.filter(report => 
-        report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : errorReports;
+  // Filter reports based on search term and status
+  const filteredReports = errorReports.filter(report => {
+    const matchesSearch = searchTerm === '' || 
+      report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const handleNewReport = () => {
     loadData();
@@ -131,6 +137,20 @@ const Index = () => {
       e.stopPropagation(); // Verhindert das Auslösen des Zeilen-Klicks
     }
     setEditingReport(report);
+  };
+
+  const handleDeleteClick = (report: ErrorReport, e: React.MouseEvent) => {
+    e.stopPropagation(); // Verhindert das Auslösen des Zeilen-Klicks
+    
+    if (window.confirm(`Möchten Sie die Fehlermeldung #${report.id} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+      try {
+        deleteErrorReport(report.id);
+        loadData();
+        toast.success("Fehlermeldung erfolgreich gelöscht!");
+      } catch (error) {
+        toast.error("Fehler beim Löschen der Fehlermeldung");
+      }
+    }
   };
 
   const handleEditSave = () => {
@@ -250,14 +270,27 @@ const Index = () => {
                   }
                 </CardDescription>
                 {user.role === 'teamleader' && (
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Search className="h-4 w-4 text-gray-500" />
-                    <Input
-                      placeholder="Nach Auftragsnummer suchen..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="max-w-sm"
-                    />
+                  <div className="flex items-center space-x-4 mt-4">
+                    <div className="flex items-center space-x-2">
+                      <Search className="h-4 w-4 text-gray-500" />
+                      <Input
+                        placeholder="Nach Auftragsnummer suchen..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="max-w-sm"
+                      />
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Status filtern" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alle Status</SelectItem>
+                        <SelectItem value="pending">Zur Prüfung</SelectItem>
+                        <SelectItem value="approved">Freigegeben</SelectItem>
+                        <SelectItem value="rejected">Abgelehnt</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </CardHeader>
@@ -266,11 +299,11 @@ const Index = () => {
                   <div className="text-center py-12">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {searchTerm ? 'Keine Meldungen gefunden' : 
+                      {searchTerm || statusFilter !== 'all' ? 'Keine Meldungen gefunden' : 
                        user.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
                     </h3>
                     <p className="text-gray-500">
-                      {searchTerm ? `Keine Meldungen mit der Auftragsnummer "${searchTerm}" gefunden.` :
+                      {searchTerm || statusFilter !== 'all' ? 'Keine Meldungen entsprechen den aktuellen Filterkriterien.' :
                        user.role === 'teamleader' 
                         ? 'Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.'
                         : 'Sie sind aktuell für keine Fehlermeldungen als Vertretung eingetragen.'
@@ -308,6 +341,16 @@ const Index = () => {
                             {report.approvalStatus === 'approved' ? 'Freigegeben' :
                              report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
                           </Badge>
+                          {user.role === 'teamleader' && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => handleDeleteClick(report, e)}
+                              className="ml-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
