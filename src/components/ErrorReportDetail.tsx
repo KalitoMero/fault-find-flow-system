@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
-import { getEmployees } from '@/lib/settingsStorage';
+import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
