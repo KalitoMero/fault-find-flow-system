@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, Wrench } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -122,7 +122,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
   const handleAddMachine = () => {
     if (!newMachineName.trim()) {
-      toast.error('Bitte geben Sie einen Maschinennamen ein');
+      toast.error('Bitte geben Sie einen Feststellort ein');
       return;
     }
 
@@ -134,13 +134,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     saveMachine(newMachine);
     setNewMachineName('');
     loadData();
-    toast.success('Maschine erfolgreich erstellt');
+    toast.success('Feststellort erfolgreich erstellt');
   };
 
   const handleDeleteMachine = (machineId: string) => {
     deleteMachine(machineId);
     loadData();
-    toast.success('Maschine gelöscht');
+    toast.success('Feststellort gelöscht');
   };
 
   const handleTeamLeaderChange = (employeeId: string, isTeamLeader: boolean) => {
@@ -180,7 +180,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         <DialogHeader>
           <DialogTitle>Einstellungen</DialogTitle>
           <DialogDescription>
-            Verwalten Sie Abteilungen, Mitarbeiter und Maschinen
+            Verwalten Sie Abteilungen, Mitarbeiter und Feststellorte
           </DialogDescription>
         </DialogHeader>
 
@@ -195,8 +195,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               <span>Mitarbeiter</span>
             </TabsTrigger>
             <TabsTrigger value="machines" className="flex items-center space-x-2">
-              <Wrench className="h-4 w-4" />
-              <span>Maschinen</span>
+              <MapPin className="h-4 w-4" />
+              <span>Feststellorte</span>
             </TabsTrigger>
           </TabsList>
 
@@ -405,20 +405,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <TabsContent value="machines" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Neue Maschine erstellen</CardTitle>
+                <CardTitle>Neuen Feststellort erstellen</CardTitle>
                 <CardDescription>
-                  Fügen Sie eine neue Maschine hinzu
+                  Fügen Sie einen neuen Feststellort hinzu
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex space-x-2">
                   <div className="flex-1">
-                    <Label htmlFor="machineName">Maschinenname</Label>
+                    <Label htmlFor="machineName">Feststellort</Label>
                     <Input
                       id="machineName"
                       value={newMachineName}
                       onChange={(e) => setNewMachineName(e.target.value)}
-                      placeholder="z.B. Spritzgießmaschine 1"
+                      placeholder="z.B. Halle 1 - Arbeitsplatz 3"
                       onKeyDown={(e) => e.key === 'Enter' && handleAddMachine()}
                     />
                   </div>
@@ -434,11 +434,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Vorhandene Maschinen</CardTitle>
+                <CardTitle>Vorhandene Feststellorte</CardTitle>
               </CardHeader>
               <CardContent>
                 {machines.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">Keine Maschinen vorhanden</p>
+                  <p className="text-gray-500 text-center py-4">Keine Feststellorte vorhanden</p>
                 ) : (
                   <div className="space-y-2">
                     {machines.map((machine) => (

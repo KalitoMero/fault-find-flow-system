@@ -1,4 +1,3 @@
-
 import { ErrorReport } from './storage';
 import { getEmployees } from './settingsStorage';
 import { getMachines } from './settingsStorage';
@@ -19,7 +18,7 @@ export const printErrorReport = (report: ErrorReport) => {
     }
   };
 
-  // Hole den richtigen Maschinennamen
+  // Hole den richtigen Feststellort-Namen
   const machines = getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
@@ -246,7 +245,7 @@ export const printErrorReport = (report: ErrorReport) => {
             <div class="field-value">${report.afoNumber || '-'}</div>
           </div>
           <div class="field">
-            <div class="field-label">Maschine:</div>
+            <div class="field-label">Feststellort:</div>
             <div class="field-value">${machineName || '-'}</div>
           </div>
           <div class="field">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -253,13 +254,13 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           </div>
 
           <div>
-            <Label htmlFor="machine">Maschine/Arbeitsplatz</Label>
+            <Label htmlFor="machine">Feststellort</Label>
             <SearchableCombobox
               options={machines.map(machine => ({ value: machine.id, label: machine.name }))}
               value={machine}
               onValueChange={setMachine}
-              placeholder="Maschine auswählen"
-              searchPlaceholder="Maschine suchen..."
+              placeholder="Feststellort auswählen"
+              searchPlaceholder="Feststellort suchen..."
               className="w-full"
             />
           </div>

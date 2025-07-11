@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -135,7 +134,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
   const approvedByName = report.approvedBy ? getEmployeeName(report.approvedBy) : report.approvedBy;
   const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
 
-  // Hole den richtigen Maschinennamen
+  // Hole den richtigen Feststellort-Namen
   const machines = getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
@@ -276,7 +275,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                     <p className="font-medium">{report.afoNumber}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Maschine:</span>
+                    <span className="text-sm text-gray-600">Feststellort:</span>
                     <p className="font-medium">{machineName}</p>
                   </div>
                 </div>
