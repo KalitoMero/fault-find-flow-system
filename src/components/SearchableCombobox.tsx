@@ -25,6 +25,7 @@ interface SearchableComboboxProps {
   searchPlaceholder?: string;
   emptyText?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
@@ -34,7 +35,8 @@ const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   placeholder = "Auswählen...",
   searchPlaceholder = "Suchen...",
   emptyText = "Keine Ergebnisse gefunden.",
-  className
+  className,
+  disabled = false
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -47,13 +49,14 @@ const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn("w-full justify-between", className)}
         >
           {selectedOption ? selectedOption.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent className="w-[400px] p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
