@@ -47,13 +47,13 @@ const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("justify-between", className)}
+          className={cn("w-full justify-between", className)}
         >
           {selectedOption ? selectedOption.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -62,9 +62,9 @@ const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue);
+                  value={option.label}
+                  onSelect={() => {
+                    onValueChange(value === option.value ? "" : option.value);
                     setOpen(false);
                   }}
                 >
