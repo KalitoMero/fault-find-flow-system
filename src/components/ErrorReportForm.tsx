@@ -215,12 +215,12 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             <div>
               <Label htmlFor="selectedEmployee">Ersteller *</Label>
               <SearchableCombobox
-                items={filteredEmployees.map(emp => ({ id: emp.id, name: emp.name }))}
+                options={filteredEmployees.map(emp => ({ value: emp.id, label: emp.name }))}
                 value={selectedEmployee}
                 onValueChange={setSelectedEmployee}
                 placeholder="Mitarbeiter auswählen"
                 searchPlaceholder="Mitarbeiter suchen..."
-                disabled={!selectedDepartment}
+                className="w-full"
               />
             </div>
           </div>
@@ -228,11 +228,12 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           <div>
             <Label htmlFor="machine">Maschine/Arbeitsplatz</Label>
             <SearchableCombobox
-              items={machines.map(machine => ({ id: machine.id, name: machine.name }))}
+              options={machines.map(machine => ({ value: machine.id, label: machine.name }))}
               value={machine}
               onValueChange={setMachine}
               placeholder="Maschine auswählen"
               searchPlaceholder="Maschine suchen..."
+              className="w-full"
             />
           </div>
 
