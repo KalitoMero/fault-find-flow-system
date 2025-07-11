@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, ArrowLeft } from 'lucide-react';
-import { getErrorReportByAccessNumber, ErrorReport } from '@/lib/storage';
+import { getErrorReportByOrderNumber, ErrorReport } from '@/lib/storage';
 import { toast } from "sonner";
 
 interface ReportAccessFormProps {
@@ -17,24 +17,19 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   onReportFound,
   onBack
 }) => {
-  const [accessNumber, setAccessNumber] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = () => {
-    if (!accessNumber.trim()) {
-      toast.error('Bitte geben Sie eine Zugriffsnummer ein');
-      return;
-    }
-
-    if (accessNumber.length !== 6) {
-      toast.error('Die Zugriffsnummer muss 6-stellig sein');
+    if (!orderNumber.trim()) {
+      toast.error('Bitte geben Sie eine Auftragsnummer ein');
       return;
     }
 
     setIsSearching(true);
 
     try {
-      const report = getErrorReportByAccessNumber(accessNumber);
+      const report = getErrorReportByOrderNumber(orderNumber.trim());
       
       if (report) {
         if (report.approvalStatus === 'approved') {
@@ -44,7 +39,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
           toast.error('Diese Meldung ist noch nicht freigegeben und kann nicht eingesehen werden');
         }
       } else {
-        toast.error('Keine Meldung mit dieser Zugriffsnummer gefunden');
+        toast.error('Keine Meldung mit dieser Auftragsnummer gefunden');
       }
     } catch (error) {
       console.error('Fehler beim Suchen der Meldung:', error);
@@ -73,7 +68,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
               <span>Meldung Einsehen</span>
             </CardTitle>
             <CardDescription>
-              Geben Sie die 6-stellige Zugriffsnummer ein
+              Geben Sie die Auftragsnummer ein
             </CardDescription>
           </div>
         </div>
@@ -81,22 +76,21 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="accessNumber">Zugriffsnummer</Label>
+          <Label htmlFor="orderNumber">Auftragsnummer</Label>
           <Input
-            id="accessNumber"
+            id="orderNumber"
             type="text"
-            placeholder="123456"
-            value={accessNumber}
-            onChange={(e) => setAccessNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="z.B. A123456"
+            value={orderNumber}
+            onChange={(e) => setOrderNumber(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="text-center text-2xl font-mono tracking-widest"
-            maxLength={6}
+            className="text-center text-lg font-mono"
           />
         </div>
         
         <Button 
           onClick={handleSearch} 
-          disabled={isSearching || accessNumber.length !== 6}
+          disabled={isSearching || !orderNumber.trim()}
           className="w-full"
         >
           <Search className="h-4 w-4 mr-2" />

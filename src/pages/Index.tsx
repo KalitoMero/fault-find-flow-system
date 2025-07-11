@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import SettingsModal from '@/components/SettingsModal';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
-import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy } from '@/lib/storage';
+import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const Index = () => {
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -63,6 +65,13 @@ const Index = () => {
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, user]);
+
+  // Filter reports based on search term
+  const filteredReports = searchTerm 
+    ? errorReports.filter(report => 
+        report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : errorReports;
 
   const handleNewReport = () => {
     loadData();
@@ -240,16 +249,29 @@ const Index = () => {
                     : 'Fehlermeldungen, für die Sie als Vertretung eingetragen sind'
                   }
                 </CardDescription>
+                {user.role === 'teamleader' && (
+                  <div className="flex items-center space-x-2 mt-4">
+                    <Search className="h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Nach Auftragsnummer suchen..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                {errorReports.length === 0 ? (
+                {filteredReports.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {user.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
+                      {searchTerm ? 'Keine Meldungen gefunden' : 
+                       user.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
                     </h3>
                     <p className="text-gray-500">
-                      {user.role === 'teamleader' 
+                      {searchTerm ? `Keine Meldungen mit der Auftragsnummer "${searchTerm}" gefunden.` :
+                       user.role === 'teamleader' 
                         ? 'Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.'
                         : 'Sie sind aktuell für keine Fehlermeldungen als Vertretung eingetragen.'
                       }
@@ -257,7 +279,7 @@ const Index = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {errorReports.map((report) => (
+                    {filteredReports.map((report) => (
                       <div 
                         key={report.id} 
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
@@ -268,9 +290,6 @@ const Index = () => {
                             <Badge variant="outline">#{report.id}</Badge>
                             <span className="font-medium">Auftrag: {report.orderNumber}</span>
                             <span className="text-gray-500">AFO: {report.afoNumber}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              Zugang: {report.accessNumber}
-                            </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}

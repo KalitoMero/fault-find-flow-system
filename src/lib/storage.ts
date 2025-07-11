@@ -1,4 +1,3 @@
-
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -14,7 +13,6 @@ export interface ErrorReport {
   createdAt: string;
   approvalStatus: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
-  accessNumber: string;
   audioFiles?: {
     problemDescription?: string;
     errorCause?: string;
@@ -82,22 +80,13 @@ export const getErrorReportById = (reportId: string): ErrorReport | undefined =>
   return reports.find(report => report.id === reportId);
 };
 
-export const getErrorReportByAccessNumber = (accessNumber: string): ErrorReport | undefined => {
+export const getErrorReportByOrderNumber = (orderNumber: string): ErrorReport | undefined => {
   const reports = getErrorReports();
-  return reports.find(report => report.accessNumber === accessNumber);
+  return reports.find(report => report.orderNumber === orderNumber);
 };
 
-export const generateAccessNumber = (): string => {
-  const existingReports = getErrorReports();
-  const existingNumbers = existingReports.map(report => report.accessNumber);
-  
-  let newNumber;
-  do {
-    newNumber = Math.floor(100000 + Math.random() * 900000).toString();
-  } while (existingNumbers.includes(newNumber));
-  
-  return newNumber;
-};
+// Remove the old generateAccessNumber function and replace with this comment
+// Access numbers are no longer used - order numbers are used instead
 
 export const generateErrorReportId = (): string => {
   const existingReports = getErrorReports();
@@ -255,4 +244,11 @@ export const isUserDeputy = (username: string): boolean => {
   }
   
   return false;
+};
+
+export const searchErrorReportsByOrderNumber = (searchTerm: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  return reports.filter(report => 
+    report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 };

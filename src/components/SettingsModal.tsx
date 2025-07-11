@@ -7,16 +7,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, Wrench } from 'lucide-react';
 import { 
   Department, 
   Employee, 
+  Machine,
   getDepartments, 
   getEmployees, 
+  getMachines,
   saveDepartment, 
   saveEmployee, 
+  saveMachine,
   deleteDepartment, 
   deleteEmployee, 
+  deleteMachine,
   getEmployeesByDepartment,
   generateId 
 } from '@/lib/settingsStorage';
@@ -32,9 +36,11 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newMachineName, setNewMachineName] = useState('');
   const [selectedDepartmentForEmployee, setSelectedDepartmentForEmployee] = useState('');
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('all');
   const [accountCreationEmployee, setAccountCreationEmployee] = useState<Employee | null>(null);
@@ -57,6 +63,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const loadData = () => {
     setDepartments(getDepartments());
     setEmployees(getEmployees());
+    setMachines(getMachines());
   };
 
   const handleAddDepartment = () => {
@@ -113,6 +120,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     toast.success('Mitarbeiter gelöscht');
   };
 
+  const handleAddMachine = () => {
+    if (!newMachineName.trim()) {
+      toast.error('Bitte geben Sie einen Maschinennamen ein');
+      return;
+    }
+
+    const newMachine: Machine = {
+      id: generateId(),
+      name: newMachineName.trim()
+    };
+
+    saveMachine(newMachine);
+    setNewMachineName('');
+    loadData();
+    toast.success('Maschine erfolgreich erstellt');
+  };
+
+  const handleDeleteMachine = (machineId: string) => {
+    deleteMachine(machineId);
+    loadData();
+    toast.success('Maschine gelöscht');
+  };
+
   const handleTeamLeaderChange = (employeeId: string, isTeamLeader: boolean) => {
     const employee = employees.find(e => e.id === employeeId);
     if (employee) {
@@ -150,12 +180,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         <DialogHeader>
           <DialogTitle>Einstellungen</DialogTitle>
           <DialogDescription>
-            Verwalten Sie Abteilungen und Mitarbeiter
+            Verwalten Sie Abteilungen, Mitarbeiter und Maschinen
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -163,6 +193,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="employees" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Mitarbeiter</span>
+            </TabsTrigger>
+            <TabsTrigger value="machines" className="flex items-center space-x-2">
+              <Wrench className="h-4 w-4" />
+              <span>Maschinen</span>
             </TabsTrigger>
           </TabsList>
 
@@ -360,6 +394,63 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="machines" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Neue Maschine erstellen</CardTitle>
+                <CardDescription>
+                  Fügen Sie eine neue Maschine hinzu
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <Label htmlFor="machineName">Maschinenname</Label>
+                    <Input
+                      id="machineName"
+                      value={newMachineName}
+                      onChange={(e) => setNewMachineName(e.target.value)}
+                      placeholder="z.B. Spritzgießmaschine 1"
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddMachine()}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={handleAddMachine}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Hinzufügen
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Vorhandene Maschinen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {machines.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Keine Maschinen vorhanden</p>
+                ) : (
+                  <div className="space-y-2">
+                    {machines.map((machine) => (
+                      <div key={machine.id} className="flex items-center justify-between p-3 border rounded">
+                        <span className="font-medium">{machine.name}</span>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteMachine(machine.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                   </div>

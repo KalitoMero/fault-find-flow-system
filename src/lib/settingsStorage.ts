@@ -1,4 +1,3 @@
-
 export interface Employee {
   id: string;
   name: string;
@@ -12,6 +11,11 @@ export interface Employee {
 }
 
 export interface Department {
+  id: string;
+  name: string;
+}
+
+export interface Machine {
   id: string;
   name: string;
 }
@@ -85,4 +89,27 @@ export const generatePassword = () => {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+};
+
+export const getMachines = (): Machine[] => {
+  const stored = localStorage.getItem('production_machines');
+  return stored ? JSON.parse(stored) : [];
+};
+
+export const saveMachine = (machine: Machine) => {
+  const machines = getMachines();
+  const existingIndex = machines.findIndex(m => m.id === machine.id);
+  
+  if (existingIndex >= 0) {
+    machines[existingIndex] = machine;
+  } else {
+    machines.push(machine);
+  }
+  
+  localStorage.setItem('production_machines', JSON.stringify(machines));
+};
+
+export const deleteMachine = (machineId: string) => {
+  const machines = getMachines().filter(m => m.id !== machineId);
+  localStorage.setItem('production_machines', JSON.stringify(machines));
 };
