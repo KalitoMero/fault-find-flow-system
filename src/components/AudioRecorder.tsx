@@ -286,44 +286,42 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     }
 
     setIsTranscribing(true);
+    let workerRef: Worker | null = null;
 
     try {
-      const model = await initializeTranscriptionModel();
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
       console.log('Konvertiere Audio mit verbesserter Qualität...');
       const audioData = await convertAudioBlobToFloat32Array(audioBlob);
       
-      console.log('Starte präzise Transkription...');
-      toast.info('Führe hochwertige Transkription durch...');
+      // Web Worker für nicht-blockierende Transkription
+      workerRef = new Worker(new URL('../workers/transcriptionWorker.ts', import.meta.url), {
+        type: 'module'
+      });
       
-      // Optimierte Transkriptions-Parameter für bessere Genauigkeit
+      // Optimierte Transkriptions-Parameter
       const selectedLang = SUPPORTED_LANGUAGES.find(lang => lang.code === selectedLanguage);
       const transcriptionOptions: any = {
-        // Chunk-basierte Verarbeitung für bessere Genauigkeit
         chunk_length_s: 30,
         stride_length_s: 5,
         return_timestamps: true,
-        // Verbesserte Dekodierungs-Parameter
-        temperature: 0.0, // Deterministische Ausgabe für Konsistenz
+        temperature: 0.0,
         compression_ratio_threshold: 2.4,
         logprob_threshold: -1.0,
         no_speech_threshold: 0.6,
         condition_on_previous_text: true
       };
       
-      // Explizite deutsche Sprachkonfiguration für bessere Genauigkeit
+      // Deutsche Sprachkonfiguration
       if (selectedLang && selectedLang.whisperCode) {
         transcriptionOptions.language = selectedLang.whisperCode;
         transcriptionOptions.task = 'transcribe';
-        // Zusätzliche Parameter für deutsche Sprache
         if (selectedLang.whisperCode === 'de') {
-          transcriptionOptions.forced_decoder_ids = null; // Bessere deutsche Erkennung
-          transcriptionOptions.suppress_tokens = [-1]; // Weniger Unterdrückung für deutsche Umlaute
+          transcriptionOptions.forced_decoder_ids = null;
+          transcriptionOptions.suppress_tokens = [-1];
         }
-        console.log(`Transkribiere explizit in: ${selectedLang.name} (${selectedLang.whisperCode})`);
+        console.log(`Transkribiere in: ${selectedLang.name} (${selectedLang.whisperCode})`);
       } else {
-        // Standard auf Deutsch setzen für bessere Ergebnisse
         transcriptionOptions.language = 'de';
         transcriptionOptions.task = 'transcribe';
         transcriptionOptions.forced_decoder_ids = null;
@@ -331,23 +329,38 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         console.log('Standard-Sprache: Deutsch');
       }
       
-      const result = await model(audioData, transcriptionOptions);
+      // Promise für Worker-Kommunikation
+      const transcriptionPromise = new Promise<{text: string, language: string}>((resolve, reject) => {
+        workerRef!.onmessage = (event) => {
+          const { type, text, language, progress, message, error } = event.data;
+          
+          switch (type) {
+            case 'progress':
+              toast.info(message || `Fortschritt: ${Math.round(progress)}%`);
+              break;
+            case 'complete':
+              resolve({ text, language });
+              break;
+            case 'error':
+              reject(new Error(error));
+              break;
+          }
+        };
+        
+        workerRef!.onerror = (error) => {
+          reject(new Error('Worker-Fehler: ' + error.message));
+        };
+      });
       
-      let transcribedText = '';
-      let detectedLang = '';
+      // Starte Transkription im Worker
+      toast.info('Starte Transkription (nicht-blockierend)...');
+      workerRef.postMessage({
+        type: 'transcribe',
+        audioData: audioData,
+        options: transcriptionOptions
+      });
       
-      if (result.chunks && result.chunks.length > 0) {
-        // Verwende Chunk-basierte Transkription für bessere Qualität
-        transcribedText = result.chunks.map((chunk: any) => chunk.text).join(' ').trim();
-      } else {
-        transcribedText = result.text || '';
-      }
-      
-      // Spracherkennung aus dem Modell-Output
-      if (result.language) {
-        detectedLang = result.language;
-        setDetectedLanguage(detectedLang);
-      }
+      const { text: transcribedText, language: detectedLang } = await transcriptionPromise;
       
       console.log('Rohtranskription erfolgreich:', transcribedText);
       console.log('Erkannte Sprache:', detectedLang);
