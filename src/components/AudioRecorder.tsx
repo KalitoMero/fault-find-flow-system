@@ -18,12 +18,8 @@ let transcriptionPipeline: any = null;
 // Verfügbare Sprachen für bessere Transkription
 const SUPPORTED_LANGUAGES = [
   { code: 'german', name: 'Deutsch', whisperCode: 'de' },
-  { code: 'english', name: 'English', whisperCode: 'en' },
-  { code: 'french', name: 'Français', whisperCode: 'fr' },
-  { code: 'spanish', name: 'Español', whisperCode: 'es' },
-  { code: 'italian', name: 'Italiano', whisperCode: 'it' },
-  { code: 'portuguese', name: 'Português', whisperCode: 'pt' },
-  { code: 'dutch', name: 'Nederlands', whisperCode: 'nl' },
+  { code: 'polish', name: 'Polnisch', whisperCode: 'pl' },
+  { code: 'romanian', name: 'Rumänisch', whisperCode: 'ro' },
   { code: 'auto', name: 'Automatisch erkennen', whisperCode: null }
 ];
 
