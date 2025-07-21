@@ -120,13 +120,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     try {
       console.log('Lade verbessertes Whisper-Modell für präzise Transkription...');
       
-      // Verwende das bessere Whisper-Base-Modell für höhere Genauigkeit
+      // Verwende speziell für Deutsch optimiertes Whisper-Modell
       transcriptionPipeline = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-base', // Größeres Modell für bessere Genauigkeit
+        'Xenova/whisper-small', // Besseres Modell für deutsche Sprache
         {
           device: 'wasm',
-          // Optimierte Konfiguration für bessere Leistung
+          // Spezifische Konfiguration für deutsche Umlaute
           dtype: 'fp32',
           revision: 'main'
         }
