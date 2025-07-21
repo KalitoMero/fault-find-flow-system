@@ -3,9 +3,14 @@ import { pipeline } from '@huggingface/transformers';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Play, Pause, RotateCcw, Save, Loader2, Languages } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, RotateCcw, Save, Loader2, Languages, Settings, Eye, Edit3 } from 'lucide-react';
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { cleanTranscriptionText, previewTextImprovements } from "@/lib/transcriptionCleaner";
 
 interface AudioRecorderProps {
   onTranscription: (transcription: string, audioBlob: string) => void;
@@ -33,13 +38,21 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('german');
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+  
+  // Neue States für Textverbesserung
+  const [enableTextImprovement, setEnableTextImprovement] = useState(true);
+  const [enableAICorrection, setEnableAICorrection] = useState(false);
+  const [rawTranscription, setRawTranscription] = useState('');
+  const [improvedTranscription, setImprovedTranscription] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [showManualEdit, setShowManualEdit] = useState(false);
+  const [manualText, setManualText] = useState('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Verbesserte Audio-Konvertierung mit besserer Qualität
   const convertAudioBlobToFloat32Array = async (audioBlob: Blob): Promise<Float32Array> => {
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
@@ -100,7 +113,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     }
   };
 
-  // Verbesserte Modell-Initialisierung
   const initializeTranscriptionModel = async () => {
     if (transcriptionPipeline) return transcriptionPipeline;
     
@@ -255,6 +267,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     setIsPlaying(false);
     setIsSaved(false);
     setRecordingTime(0);
+    setRawTranscription('');
+    setImprovedTranscription('');
+    setManualText('');
     audioChunksRef.current = [];
     
     if (audioElementRef.current) {
@@ -326,7 +341,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         setDetectedLanguage(detectedLang);
       }
       
-      console.log('Transkription erfolgreich:', transcribedText);
+      console.log('Rohtranskription erfolgreich:', transcribedText);
       console.log('Erkannte Sprache:', detectedLang);
       
       if (!transcribedText.trim()) {
@@ -334,18 +349,28 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         return;
       }
       
-      // Nachbearbeitung für bessere Textqualität
-      const cleanedText = cleanTranscriptionText(transcribedText);
+      // Speichere Rohtranskription
+      setRawTranscription(transcribedText);
+      
+      // Anwenden der erweiterten Textbereinigung
+      let finalText = transcribedText;
+      if (enableTextImprovement) {
+        toast.info('Verbessere Text mit erweiterten Algorithmen...');
+        finalText = await cleanTranscriptionText(transcribedText, enableAICorrection);
+        setImprovedTranscription(finalText);
+        console.log('Verbesserte Transkription:', finalText);
+      }
       
       // Audio als Base64 String speichern
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Audio = reader.result as string;
-        onTranscription(cleanedText, base64Audio);
+        onTranscription(finalText, base64Audio);
         setIsSaved(true);
         
         const langInfo = detectedLang ? ` (${detectedLang.toUpperCase()})` : '';
-        toast.success(`Aufnahme erfolgreich transkribiert!${langInfo}`);
+        const improvementInfo = enableTextImprovement ? ' mit intelligenter Textverbesserung' : '';
+        toast.success(`Aufnahme erfolgreich transkribiert${improvementInfo}!${langInfo}`);
       };
       
       reader.readAsDataURL(audioBlob);
@@ -358,20 +383,25 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     }
   };
 
-  // Textbereinigung für bessere Qualität
-  const cleanTranscriptionText = (text: string): string => {
-    return text
-      .trim()
-      // Entferne mehrfache Leerzeichen
-      .replace(/\s+/g, ' ')
-      // Korrigiere häufige Transkriptionsfehler
-      .replace(/\b(ähm|äh|mhm|hmm)\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      // Erstes Wort großschreiben
-      .replace(/^./, match => match.toUpperCase())
-      // Satzzeichen normalisieren
-      .replace(/([.!?])\s*$/, '$1');
+  const saveManualEdit = () => {
+    if (manualText.trim()) {
+      const reader = new FileReader();
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      reader.onloadend = () => {
+        const base64Audio = reader.result as string;
+        onTranscription(manualText.trim(), base64Audio);
+        setIsSaved(true);
+        setShowManualEdit(false);
+        toast.success('Manuell bearbeitete Transkription gespeichert!');
+      };
+      reader.readAsDataURL(audioBlob);
+    }
+  };
+
+  const showTextPreview = () => {
+    if (rawTranscription) {
+      setShowPreview(true);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -391,28 +421,57 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
               <Languages className="w-3 h-3 mr-1" />
               {detectedLanguage.toUpperCase()}
             </Badge>}
+            {enableTextImprovement && <Badge variant="outline" className="bg-green-50">
+              Textverbesserung AN
+            </Badge>}
             {isSaved && <Badge className="bg-green-100 text-green-800">Gespeichert</Badge>}
           </div>
         </div>
 
-        {/* Sprachauswahl */}
+        {/* Sprachauswahl und Einstellungen */}
         {!hasRecording && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-blue-900 mb-2">
-              Sprache für Transkription:
-            </label>
-            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-blue-900 mb-2">
+                Sprache für Transkription:
+              </label>
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Erweiterte Einstellungen */}
+            <div className="bg-white rounded-lg p-3 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-sm font-medium">Erweiterte Textverbesserung</Label>
+                <Switch 
+                  checked={enableTextImprovement} 
+                  onCheckedChange={setEnableTextImprovement}
+                />
+              </div>
+              <p className="text-xs text-gray-600 mb-3">
+                Entfernt Füllwörter (äh, ehm), korrigiert häufige Fehler und verbessert die Satzstruktur
+              </p>
+              
+              {enableTextImprovement && (
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">KI-basierte Grammatikkorrektur (experimentell)</Label>
+                  <Switch 
+                    checked={enableAICorrection} 
+                    onCheckedChange={setEnableAICorrection}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
         
@@ -489,6 +548,92 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
           )}
         </div>
 
+        {/* Zusätzliche Aktionen nach Transkription */}
+        {rawTranscription && !isSaved && (
+          <div className="flex space-x-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={showTextPreview}
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Vorschau
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setManualText(improvedTranscription || rawTranscription);
+                setShowManualEdit(true);
+              }}
+              className="flex-1"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Bearbeiten
+            </Button>
+          </div>
+        )}
+
+        {/* Vorschau Dialog */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Textverbesserungs-Vorschau</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {rawTranscription && (() => {
+                const preview = previewTextImprovements(rawTranscription);
+                return (
+                  <>
+                    <div>
+                      <Label className="text-sm font-medium text-red-600">Original:</Label>
+                      <p className="text-sm bg-red-50 p-2 rounded">{preview.original}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-yellow-600">Ohne Füllwörter:</Label>
+                      <p className="text-sm bg-yellow-50 p-2 rounded">{preview.withoutFillers}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-blue-600">Fehlerkorrektur:</Label>
+                      <p className="text-sm bg-blue-50 p-2 rounded">{preview.withErrorCorrection}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-green-600">Finale Version:</Label>
+                      <p className="text-sm bg-green-50 p-2 rounded font-medium">{preview.final}</p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Manuelle Bearbeitung Dialog */}
+        <Dialog open={showManualEdit} onOpenChange={setShowManualEdit}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Text manuell bearbeiten</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Textarea
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                placeholder="Bearbeiten Sie hier den transkribierten Text..."
+                className="min-h-32"
+              />
+              <div className="flex space-x-2">
+                <Button onClick={saveManualEdit} className="flex-1">
+                  Speichern
+                </Button>
+                <Button variant="outline" onClick={() => setShowManualEdit(false)}>
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Hidden Audio Element für Wiedergabe */}
         <audio ref={audioElementRef} style={{ display: 'none' }} />
         
@@ -513,7 +658,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         
         {hasRecording && !isRecording && !isSaved && !isTranscribing && (
           <div className="mt-4 text-sm text-blue-700 bg-blue-100 p-2 rounded">
-            Aufnahme bereit. Klicken Sie auf "Speichern" für automatische deutsche Transkription.
+            Aufnahme bereit. Klicken Sie auf "Speichern" für automatische Transkription{enableTextImprovement ? ' mit intelligenter Textverbesserung' : ''}.
           </div>
         )}
         
@@ -521,14 +666,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
           <div className="mt-4 text-sm text-orange-700 bg-orange-100 p-2 rounded">
             <span className="flex items-center">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Transkribiere Audio zu Text... Das kann einen Moment dauern.
+              {enableTextImprovement ? 'Transkribiere und verbessere Text automatisch...' : 'Transkribiere Audio zu Text...'} Das kann einen Moment dauern.
             </span>
           </div>
         )}
         
         {isSaved && (
           <div className="mt-4 text-sm text-green-700 bg-green-100 p-2 rounded">
-            ✓ Aufnahme gespeichert und erfolgreich transkribiert
+            ✓ Aufnahme gespeichert und erfolgreich transkribiert{enableTextImprovement ? ' mit erweiterten Textverbesserungen' : ''}
           </div>
         )}
       </CardContent>
