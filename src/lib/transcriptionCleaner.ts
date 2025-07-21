@@ -124,8 +124,14 @@ const correctCommonErrors = (text: string): string => {
 const improveSentenceStructure = (text: string): string => {
   let improvedText = text;
   
-  // Entferne unvollständige Wörter (einzelne Buchstaben oder sehr kurze Fragmente)
-  improvedText = improvedText.replace(/\b[a-zA-ZäöüÄÖÜß]{1,2}\b(?!\s*[.!?])/g, '');
+  // Entferne nur isolierte einzelne Buchstaben (aber nicht wichtige deutsche Wörter wie "zu", "im", "am")
+  const importantShortWords = ['zu', 'im', 'am', 'an', 'in', 'um', 'ab', 'ex', 'ob', 'so', 'da', 'ja', 'er', 'es', 'wo', 'du', 'wir', 'ihr', 'ich', 'die', 'der', 'das', 'den', 'dem', 'des'];
+  const shortWordPattern = importantShortWords.join('|');
+  improvedText = improvedText.replace(new RegExp(`\\b(?!${shortWordPattern}\\b)[a-zA-ZäöüÄÖÜß]\\b`, 'gi'), '');
+  
+  // Entferne leere Anführungszeichen und unnötige Satzzeichen
+  improvedText = improvedText.replace(/[""]/g, '');
+  improvedText = improvedText.replace(/\s*-\s*(?=[A-ZÄÖÜ])/g, '. ');
   
   // Füge Leerzeichen nach Satzzeichen hinzu, falls fehlend
   improvedText = improvedText.replace(/([.!?])([A-ZÄÖÜ])/g, '$1 $2');
@@ -137,6 +143,9 @@ const improveSentenceStructure = (text: string): string => {
   
   // Entferne überflüssige Leerzeichen
   improvedText = improvedText.replace(/\s{2,}/g, ' ');
+  
+  // Entferne führende Kommas oder Punkte
+  improvedText = improvedText.replace(/^[,.\s]+/, '');
   
   // Trimme und stelle sicher, dass der Text mit einem Punkt endet
   improvedText = improvedText.trim();
