@@ -33,8 +33,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [audioFiles, setAudioFiles] = useState<{
-    problemDescription?: string | null;
-    correctiveAction?: string | null;
+    problemDescription?: string;
+    correctiveAction?: string;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
@@ -104,7 +104,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: teamLeader.account?.username || teamLeader.name,
-        audioFiles
+        audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
       saveErrorReport(report);
