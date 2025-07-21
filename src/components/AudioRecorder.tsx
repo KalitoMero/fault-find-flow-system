@@ -312,15 +312,23 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         condition_on_previous_text: true
       };
       
-      // Sprachspezifische Konfiguration
+      // Explizite deutsche Sprachkonfiguration für bessere Genauigkeit
       if (selectedLang && selectedLang.whisperCode) {
         transcriptionOptions.language = selectedLang.whisperCode;
-        transcriptionOptions.task = 'transcribe'; // Transkription in der Originalsprache
-        console.log(`Transkribiere in: ${selectedLang.name}`);
-      } else {
-        // Automatische Spracherkennung
         transcriptionOptions.task = 'transcribe';
-        console.log('Automatische Spracherkennung aktiviert');
+        // Zusätzliche Parameter für deutsche Sprache
+        if (selectedLang.whisperCode === 'de') {
+          transcriptionOptions.forced_decoder_ids = null; // Bessere deutsche Erkennung
+          transcriptionOptions.suppress_tokens = [-1]; // Weniger Unterdrückung für deutsche Umlaute
+        }
+        console.log(`Transkribiere explizit in: ${selectedLang.name} (${selectedLang.whisperCode})`);
+      } else {
+        // Standard auf Deutsch setzen für bessere Ergebnisse
+        transcriptionOptions.language = 'de';
+        transcriptionOptions.task = 'transcribe';
+        transcriptionOptions.forced_decoder_ids = null;
+        transcriptionOptions.suppress_tokens = [-1];
+        console.log('Standard-Sprache: Deutsch');
       }
       
       const result = await model(audioData, transcriptionOptions);
