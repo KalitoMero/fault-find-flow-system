@@ -489,69 +489,194 @@ const applyAdvancedAICorrection = async (text: string, context: {
   }
 };
 
-// Hauptfunktion für erweiterte KI-basierte Textbereinigung
+// Multi-Step Text Processing Pipeline
 export const cleanTranscriptionText = async (
   text: string, 
   useAICorrection: boolean = false
 ): Promise<string> => {
   if (!text || typeof text !== 'string') return '';
   
-  console.log('🚀 Starte erweiterte KI-basierte Textbereinigung:', text);
+  console.log('🚀 Starte Multi-Step Text Processing Pipeline:', text);
   
+  let processedText = text;
+  
+  // SCHRITT 1: Grundlegende Bereinigung
+  console.log('📋 SCHRITT 1: Grundlegende Bereinigung');
+  processedText = await performBasicCleaning(processedText);
+  console.log('✅ Schritt 1 abgeschlossen:', processedText);
+  
+  // SCHRITT 2: Kontextuelle Analyse
+  console.log('🔍 SCHRITT 2: Kontextuelle Analyse');
+  const contextData = await performContextualAnalysis(processedText);
+  console.log('✅ Schritt 2 abgeschlossen - Erkannte Domänen:', contextData.domains);
+  
+  // SCHRITT 3: Semantische Verbesserung
+  console.log('🧠 SCHRITT 3: Semantische Verbesserung');
+  processedText = await performSemanticImprovement(processedText, contextData, useAICorrection);
+  console.log('✅ Schritt 3 abgeschlossen:', processedText);
+  
+  // SCHRITT 4: Finale Optimierung
+  console.log('✨ SCHRITT 4: Finale Optimierung');
+  processedText = await performFinalOptimization(processedText, contextData);
+  console.log('✅ Schritt 4 abgeschlossen:', processedText);
+  
+  console.log('🎯 Multi-Step Processing abgeschlossen:', processedText);
+  return processedText.trim();
+};
+
+// SCHRITT 1: Grundlegende Bereinigung
+const performBasicCleaning = async (text: string): Promise<string> => {
   let cleanedText = text;
   
-  // 1. Entferne Füllwörter und Geräusche
+  // 1.1 Entferne Füllwörter und Geräusche
   cleanedText = removeFillersAndNoises(cleanedText);
-  console.log('✂️ Nach Füllwort-Entfernung:', cleanedText);
+  console.log('  ✂️ Füllwort-Entfernung:', cleanedText);
   
-  // 2. Korrigiere häufige Fehler
+  // 1.2 Korrigiere häufige Fehler
   cleanedText = correctCommonErrors(cleanedText);
-  console.log('🔧 Nach Fehlerkorrektur:', cleanedText);
+  console.log('  🔧 Fehlerkorrektur:', cleanedText);
   
-  // 3. Verbessere Satzstruktur
+  // 1.3 Verbessere grundlegende Satzstruktur
   cleanedText = improveSentenceStructure(cleanedText);
-  console.log('📝 Nach Strukturverbesserung:', cleanedText);
+  console.log('  📝 Strukturverbesserung:', cleanedText);
   
-  // 4. Kontextuelle Verbesserungen
-  cleanedText = applyContextualImprovements(cleanedText);
-  console.log('🎯 Nach kontextuellen Verbesserungen:', cleanedText);
+  return cleanedText;
+};
+
+// SCHRITT 2: Kontextuelle Analyse
+const performContextualAnalysis = async (text: string): Promise<{
+  domains: string[];
+  entities: any[];
+  sentences: string[];
+  semantics: number[][];
+}> => {
+  // 2.1 Domänen-Erkennung
+  const detectedDomains = detectDomain(text);
+  console.log('  🏷️ Domänen-Erkennung:', detectedDomains);
   
-  // 5. Erweiterte KI-Analyse (wenn aktiviert)
-  if (useAICorrection && cleanedText.length > 10) {
-    console.log('🧠 Starte erweiterte KI-Analyse...');
-    
-    // Erkenne Domänen
-    const detectedDomains = detectDomain(cleanedText);
-    console.log('🏷️ Erkannte Domänen:', detectedDomains);
-    
-    // Extrahiere Named Entities
-    const entities = await extractNamedEntities(cleanedText);
-    console.log('🎭 Erkannte Entitäten:', entities);
-    
-    // Analysiere Satzebene für semantische Zusammenhänge
-    const sentences = cleanedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const semantics = await analyzeSentenceSemantics(sentences);
-    console.log('🧮 Semantische Analyse abgeschlossen:', semantics.length, 'Sätze');
-    
-    // Wende domänen-spezifische Korrekturen an
-    if (detectedDomains.length > 0) {
-      cleanedText = applyDomainSpecificCorrections(cleanedText, detectedDomains);
-      console.log('🎓 Nach domänen-spezifischen Korrekturen:', cleanedText);
-    }
-    
-    // Erweiterte AI-Korrektur mit Kontext
-    const context = {
-      domains: detectedDomains,
-      entities,
-      semantics
-    };
-    
-    cleanedText = await applyAdvancedAICorrection(cleanedText, context);
-    console.log('🤖 Nach erweiterter AI-Korrektur:', cleanedText);
+  // 2.2 Named Entity Recognition
+  const entities = await extractNamedEntities(text);
+  console.log('  🎭 Entity-Extraktion:', entities.length, 'Entitäten');
+  
+  // 2.3 Satz-Segmentierung
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  console.log('  📊 Satz-Segmentierung:', sentences.length, 'Sätze');
+  
+  // 2.4 Semantische Analyse
+  const semantics = await analyzeSentenceSemantics(sentences);
+  console.log('  🧮 Semantische Analyse:', semantics.length, 'Embeddings');
+  
+  return {
+    domains: detectedDomains,
+    entities,
+    sentences,
+    semantics
+  };
+};
+
+// SCHRITT 3: Semantische Verbesserung
+const performSemanticImprovement = async (
+  text: string, 
+  contextData: any, 
+  useAICorrection: boolean
+): Promise<string> => {
+  let improvedText = text;
+  
+  // 3.1 Kontextuelle Basis-Verbesserungen
+  improvedText = applyContextualImprovements(improvedText);
+  console.log('  🎯 Kontextuelle Verbesserungen:', improvedText);
+  
+  // 3.2 Domänen-spezifische Korrekturen
+  if (contextData.domains.length > 0) {
+    improvedText = applyDomainSpecificCorrections(improvedText, contextData.domains);
+    console.log('  🎓 Domänen-spezifische Korrekturen:', improvedText);
   }
   
-  console.log('✅ Finale bereinigte Transkription:', cleanedText);
-  return cleanedText.trim();
+  // 3.3 Erweiterte AI-basierte Korrekturen (optional)
+  if (useAICorrection && improvedText.length > 10) {
+    const aiContext = {
+      domains: contextData.domains,
+      entities: contextData.entities,
+      semantics: contextData.semantics
+    };
+    
+    improvedText = await applyAdvancedAICorrection(improvedText, aiContext);
+    console.log('  🤖 AI-basierte Korrekturen:', improvedText);
+  }
+  
+  return improvedText;
+};
+
+// SCHRITT 4: Finale Optimierung
+const performFinalOptimization = async (text: string, contextData: any): Promise<string> => {
+  let optimizedText = text;
+  
+  // 4.1 Finale Strukturoptimierung
+  optimizedText = applyFinalStructureOptimization(optimizedText);
+  console.log('  🔧 Struktur-Optimierung:', optimizedText);
+  
+  // 4.2 Konsistenz-Prüfung basierend auf Kontext
+  optimizedText = applyConsistencyCheck(optimizedText, contextData);
+  console.log('  ✅ Konsistenz-Prüfung:', optimizedText);
+  
+  // 4.3 Finale Politur
+  optimizedText = applyFinalPolish(optimizedText);
+  console.log('  ✨ Finale Politur:', optimizedText);
+  
+  return optimizedText;
+};
+
+// Hilfsfunktionen für Schritt 4
+const applyFinalStructureOptimization = (text: string): string => {
+  let optimized = text;
+  
+  // Optimiere Absatzstrukturen für längere Texte
+  if (text.length > 200) {
+    // Füge Absätze bei semantischen Brüchen hinzu
+    optimized = optimized.replace(/(\. )([A-ZÄÖÜ][^.]{50,})/g, '$1\n\n$2');
+  }
+  
+  // Optimiere Listen-Erkennungen
+  optimized = optimized.replace(/(\d+\.) /g, '\n$1 ');
+  optimized = optimized.replace(/^(\n)+/, ''); // Entferne führende Zeilenumbrüche
+  
+  return optimized;
+};
+
+const applyConsistencyCheck = (text: string, contextData: any): string => {
+  let consistent = text;
+  
+  // Konsistente Terminologie basierend auf erkannten Domänen
+  if (contextData.domains.includes('technical')) {
+    consistent = consistent.replace(/maschiene/gi, 'Maschine');
+    consistent = consistent.replace(/messure/gi, 'Messung');
+  }
+  
+  if (contextData.domains.includes('medical')) {
+    consistent = consistent.replace(/patiente?/gi, 'Patient');
+    consistent = consistent.replace(/diagnos/gi, 'Diagnose');
+  }
+  
+  return consistent;
+};
+
+const applyFinalPolish = (text: string): string => {
+  let polished = text;
+  
+  // Finale Leerraum-Optimierung
+  polished = polished.replace(/\s{3,}/g, ' ');
+  polished = polished.replace(/\n{3,}/g, '\n\n');
+  
+  // Entferne ungewöhnliche Zeichen-Kombinationen
+  polished = polished.replace(/[^\w\säöüÄÖÜß.!?,;:()\-"\n]/g, '');
+  
+  // Stelle sicher, dass der Text angemessen endet
+  polished = polished.trim();
+  if (polished && !polished.match(/[.!?]$/)) {
+    polished += '.';
+  }
+  
+  return polished;
 };
 
 // Erweiterte Vorschau-Funktion für KI-basierte Textverbesserungen
