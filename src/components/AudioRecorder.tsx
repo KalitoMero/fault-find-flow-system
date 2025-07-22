@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cleanTranscriptionText, previewTextImprovements } from "@/lib/transcriptionCleaner";
+import { useMemoryMonitor } from "@/hooks/useMemoryMonitor";
 
 interface AudioRecorderProps {
   onTranscription: (transcription: string, audioBlob: string) => void;
@@ -50,6 +51,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const [previewData, setPreviewData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
+  
+  // Memory monitoring
+  const { memoryStats, isSupported: memorySupported, triggerGarbageCollection } = useMemoryMonitor(3000);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -59,18 +63,18 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const convertAudioBlobToFloat32Array = async (audioBlob: Blob): Promise<Float32Array> => {
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 16000 // Whisper-optimierte Sample-Rate
+      sampleRate: 16000
     });
     
     try {
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
-      // Konvertiere zu Mono mit besserer Qualität
+      // Simplified mono conversion
       let monoData: Float32Array;
       if (audioBuffer.numberOfChannels === 1) {
         monoData = audioBuffer.getChannelData(0);
       } else {
-        // Mische Stereo-Kanäle intelligent
+        // Simple stereo to mono mixing
         const leftChannel = audioBuffer.getChannelData(0);
         const rightChannel = audioBuffer.getChannelData(1);
         monoData = new Float32Array(leftChannel.length);
@@ -80,32 +84,24 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         }
       }
       
-      // Verbesserte Resampling-Algorithmus
+      // Linear resampling for better memory usage
       if (audioBuffer.sampleRate !== 16000) {
         const ratio = 16000 / audioBuffer.sampleRate;
         const resampledLength = Math.round(monoData.length * ratio);
         const resampledData = new Float32Array(resampledLength);
         
-        // Lanczos-ähnliche Interpolation für bessere Qualität
+        // Simple linear interpolation
         for (let i = 0; i < resampledLength; i++) {
           const sourceIndex = i / ratio;
           const sourceIndexFloor = Math.floor(sourceIndex);
           const sourceIndexCeil = Math.min(sourceIndexFloor + 1, monoData.length - 1);
           const fraction = sourceIndex - sourceIndexFloor;
           
-          // Kubische Interpolation für bessere Audioqualität
-          if (sourceIndexFloor > 0 && sourceIndexCeil < monoData.length - 1) {
-            const p0 = monoData[sourceIndexFloor - 1];
-            const p1 = monoData[sourceIndexFloor];
-            const p2 = monoData[sourceIndexCeil];
-            const p3 = monoData[sourceIndexCeil + 1];
-            
-            resampledData[i] = p1 + 0.5 * fraction * (p2 - p0 + fraction * (2 * p0 - 5 * p1 + 4 * p2 - p3 + fraction * (3 * (p1 - p2) + p3 - p0)));
-          } else {
-            // Fallback auf lineare Interpolation
-            resampledData[i] = monoData[sourceIndexFloor] * (1 - fraction) + monoData[sourceIndexCeil] * fraction;
-          }
+          resampledData[i] = monoData[sourceIndexFloor] * (1 - fraction) + monoData[sourceIndexCeil] * fraction;
         }
+        
+        // Clean up original data
+        monoData = new Float32Array(0);
         
         return resampledData;
       }
@@ -295,8 +291,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       console.log('Konvertiere Audio mit verbesserter Qualität...');
       const audioData = await convertAudioBlobToFloat32Array(audioBlob);
       
-      // Web Worker für nicht-blockierende Transkription
-      workerRef = new Worker(new URL('../workers/transcriptionWorker.ts', import.meta.url), {
+      // Optimized Web Worker for memory-efficient transcription
+      workerRef = new Worker(new URL('../workers/optimizedTranscriptionWorker.ts', import.meta.url), {
         type: 'module'
       });
       
@@ -374,13 +370,19 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       // Speichere Rohtranskription
       setRawTranscription(transcribedText);
       
-      // Anwenden der erweiterten Textbereinigung
+      // Apply basic or advanced text improvement
       let finalText = transcribedText;
       if (enableTextImprovement) {
-        toast.info('Verbessere Text mit erweiterten Algorithmen...');
-        finalText = await cleanTranscriptionText(transcribedText, enableAICorrection);
-        setImprovedTranscription(finalText);
-        console.log('Verbesserte Transkription:', finalText);
+        toast.info('Improving text with smart algorithms...');
+        try {
+          finalText = await cleanTranscriptionText(transcribedText, enableAICorrection);
+          setImprovedTranscription(finalText);
+          console.log('Improved transcription:', finalText);
+        } catch (error) {
+          console.warn('Text improvement failed, using basic transcription:', error);
+          finalText = transcribedText; // Fallback to basic
+          toast.warning('Advanced text improvement unavailable, using basic transcription');
+        }
       }
       
       // Audio als Base64 String speichern
@@ -402,6 +404,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       toast.error("Fehler bei der Transkription. Bitte versuchen Sie es erneut.");
     } finally {
       setIsTranscribing(false);
+      
+      // Cleanup worker
+      if (workerRef) {
+        workerRef.postMessage({ type: 'cleanup' });
+        workerRef.terminate();
+        workerRef = null;
+      }
     }
   };
 
@@ -457,8 +466,17 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
               {detectedLanguage.toUpperCase()}
             </Badge>}
             {enableTextImprovement && <Badge variant="outline" className="bg-green-50">
-              Textverbesserung AN
+              Smart Text ON
             </Badge>}
+            {memorySupported && memoryStats && (
+              <Badge 
+                variant="outline" 
+                className={`${memoryStats.isCritical ? 'bg-red-50 text-red-700' : 
+                  memoryStats.isHigh ? 'bg-yellow-50 text-yellow-700' : 'bg-gray-50'}`}
+              >
+                Memory: {memoryStats.usagePercentage.toFixed(0)}%
+              </Badge>
+            )}
             {isSaved && <Badge className="bg-green-100 text-green-800">Gespeichert</Badge>}
           </div>
         </div>

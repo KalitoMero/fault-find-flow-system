@@ -1,10 +1,92 @@
 
 import { pipeline } from '@huggingface/transformers';
 
-// Cache für KI-Modelle
-let textCorrectionPipeline: any = null;
-let sentenceEmbeddingPipeline: any = null;
-let nerPipeline: any = null;
+// Memory-optimized model cache with automatic cleanup
+interface ModelCache {
+  textCorrection: any | null;
+  sentenceEmbedding: any | null;
+  ner: any | null;
+  lastUsed: { [key: string]: number };
+  memoryUsage: { [key: string]: number };
+}
+
+const modelCache: ModelCache = {
+  textCorrection: null,
+  sentenceEmbedding: null,
+  ner: null,
+  lastUsed: {},
+  memoryUsage: {}
+};
+
+// Memory management constants
+const MAX_MEMORY_MB = 300;
+const MODEL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const CLEANUP_INTERVAL_MS = 30 * 1000; // 30 seconds
+
+// Memory monitoring
+function getMemoryUsage(): number {
+  if ('memory' in performance) {
+    return (performance as any).memory.usedJSHeapSize / (1024 * 1024);
+  }
+  return 0;
+}
+
+function cleanupUnusedModels(): void {
+  const now = Date.now();
+  const currentMemory = getMemoryUsage();
+  
+  console.log(`Memory usage: ${currentMemory.toFixed(2)}MB`);
+  
+  if (currentMemory > MAX_MEMORY_MB) {
+    console.log('Memory limit exceeded, cleaning up models...');
+    
+    // Sort models by last used time (oldest first)
+    const modelEntries = Object.entries(modelCache.lastUsed)
+      .sort(([,a], [,b]) => a - b);
+    
+    for (const [modelName] of modelEntries) {
+      if (modelName === 'textCorrection') {
+        modelCache.textCorrection = null;
+      } else if (modelName === 'sentenceEmbedding') {
+        modelCache.sentenceEmbedding = null;
+      } else if (modelName === 'ner') {
+        modelCache.ner = null;
+      }
+      
+      delete modelCache.lastUsed[modelName];
+      delete modelCache.memoryUsage[modelName];
+      
+      console.log(`Cleaned up ${modelName} model`);
+      
+      // Force garbage collection if available
+      if ('gc' in window) {
+        (window as any).gc();
+      }
+      
+      break; // Clean one at a time
+    }
+  }
+  
+  // Auto cleanup old models
+  for (const [modelName, lastUsed] of Object.entries(modelCache.lastUsed)) {
+    if (now - lastUsed > MODEL_TIMEOUT_MS) {
+      if (modelName === 'textCorrection') {
+        modelCache.textCorrection = null;
+      } else if (modelName === 'sentenceEmbedding') {
+        modelCache.sentenceEmbedding = null;
+      } else if (modelName === 'ner') {
+        modelCache.ner = null;
+      }
+      
+      delete modelCache.lastUsed[modelName];
+      delete modelCache.memoryUsage[modelName];
+      console.log(`Auto-cleaned ${modelName} model after timeout`);
+    }
+  }
+}
+
+// Start periodic cleanup
+setInterval(cleanupUnusedModels, CLEANUP_INTERVAL_MS);
 
 // Domänen-spezifische Erkennungsmuster
 const DOMAIN_PATTERNS = {
@@ -166,87 +248,95 @@ const COMMON_ERRORS = {
   'schwacher': 'schwächer'
 };
 
-// Initialisierung des erweiterten Text-Korrektur-Modells
+// Lazy loading with memory management for text correction
 const initTextCorrectionModel = async () => {
-  if (textCorrectionPipeline) return textCorrectionPipeline;
+  if (modelCache.textCorrection) {
+    modelCache.lastUsed.textCorrection = Date.now();
+    return modelCache.textCorrection;
+  }
+  
+  cleanupUnusedModels();
   
   try {
-    console.log('Lade erweitertes deutsches Text-Korrektur-Modell...');
+    console.log('Loading lightweight text correction model...');
+    const { pipeline } = await import('@huggingface/transformers');
     
-    // Versuche zunächst ein speziell für deutsche Grammatik trainiertes Modell
-    try {
-      textCorrectionPipeline = await pipeline(
-        'text2text-generation',
-        'Xenova/mt5-small',
-        { 
-          device: 'wasm',
-          dtype: 'fp16'
-        }
-      );
-      console.log('Deutsches MT5-Modell erfolgreich geladen');
-      return textCorrectionPipeline;
-    } catch (error) {
-      console.log('MT5-Modell nicht verfügbar, verwende Fallback...');
-    }
-    
-    // Fallback zu FLAN-T5
-    textCorrectionPipeline = await pipeline(
+    // Use smaller model for better memory usage
+    modelCache.textCorrection = await pipeline(
       'text2text-generation',
       'Xenova/flan-t5-small',
-      { 
+      {
         device: 'wasm',
         dtype: 'fp16'
       }
     );
-    console.log('FLAN-T5 Fallback-Modell geladen');
-    return textCorrectionPipeline;
     
+    console.log('Text correction model loaded successfully');
+    modelCache.lastUsed.textCorrection = Date.now();
+    modelCache.memoryUsage.textCorrection = getMemoryUsage();
+    return modelCache.textCorrection;
   } catch (error) {
-    console.warn('Text-Korrektur-Modell konnte nicht geladen werden:', error);
+    console.warn('Failed to load text correction model:', error);
     return null;
   }
 };
 
-// Initialisierung des Sentence Embedding Modells
+// Lazy loading with memory management for sentence embedding
 const initSentenceEmbeddingModel = async () => {
-  if (sentenceEmbeddingPipeline) return sentenceEmbeddingPipeline;
+  if (modelCache.sentenceEmbedding) {
+    modelCache.lastUsed.sentenceEmbedding = Date.now();
+    return modelCache.sentenceEmbedding;
+  }
+  
+  cleanupUnusedModels();
   
   try {
-    console.log('Lade Sentence Embedding Modell...');
-    sentenceEmbeddingPipeline = await pipeline(
+    console.log('Loading sentence embedding model...');
+    const { pipeline } = await import('@huggingface/transformers');
+    modelCache.sentenceEmbedding = await pipeline(
       'feature-extraction',
       'Xenova/all-MiniLM-L6-v2',
-      { 
+      {
         device: 'wasm',
         dtype: 'fp16'
       }
     );
-    console.log('Sentence Embedding Modell geladen');
-    return sentenceEmbeddingPipeline;
+    console.log('Sentence embedding model loaded successfully');
+    modelCache.lastUsed.sentenceEmbedding = Date.now();
+    modelCache.memoryUsage.sentenceEmbedding = getMemoryUsage();
+    return modelCache.sentenceEmbedding;
   } catch (error) {
-    console.warn('Sentence Embedding Modell konnte nicht geladen werden:', error);
+    console.warn('Failed to load sentence embedding model:', error);
     return null;
   }
 };
 
-// Initialisierung des Named Entity Recognition Modells
+// Lazy loading with memory management for NER
 const initNERModel = async () => {
-  if (nerPipeline) return nerPipeline;
+  if (modelCache.ner) {
+    modelCache.lastUsed.ner = Date.now();
+    return modelCache.ner;
+  }
+  
+  cleanupUnusedModels();
   
   try {
-    console.log('Lade Named Entity Recognition Modell...');
-    nerPipeline = await pipeline(
+    console.log('Loading NER model...');
+    const { pipeline } = await import('@huggingface/transformers');
+    modelCache.ner = await pipeline(
       'token-classification',
       'Xenova/bert-base-multilingual-cased-ner-hrl',
-      { 
+      {
         device: 'wasm',
         dtype: 'fp16'
       }
     );
-    console.log('NER Modell geladen');
-    return nerPipeline;
+    console.log('NER model loaded successfully');
+    modelCache.lastUsed.ner = Date.now();
+    modelCache.memoryUsage.ner = getMemoryUsage();
+    return modelCache.ner;
   } catch (error) {
-    console.warn('NER Modell konnte nicht geladen werden:', error);
+    console.warn('Failed to load NER model:', error);
     return null;
   }
 };
