@@ -10,11 +10,10 @@ const initializeModel = async () => {
     console.log('Worker: Lade Whisper-Modell...');
     transcriptionPipeline = await pipeline(
       'automatic-speech-recognition',
-      'Xenova/whisper-small',
+      'Xenova/whisper-tiny',
       {
         device: 'wasm',
-        dtype: 'fp32',
-        revision: 'main'
+        dtype: 'fp16'
       }
     );
     console.log('Worker: Whisper-Modell geladen');
@@ -24,8 +23,8 @@ const initializeModel = async () => {
     // Fallback
     transcriptionPipeline = await pipeline(
       'automatic-speech-recognition',
-      'Xenova/whisper-small',
-      { device: 'wasm' }
+      'Xenova/whisper-tiny',
+      { device: 'wasm', dtype: 'fp16' }
     );
     return transcriptionPipeline;
   }
@@ -34,8 +33,8 @@ const initializeModel = async () => {
 const transcribeAudio = async (audioData: Float32Array, options: any) => {
   const model = await initializeModel();
   
-  // Aufteilen in kleinere Chunks für bessere Performance
-  const chunkSize = 16000 * 30; // 30 Sekunden bei 16kHz
+  // Optimierte Chunk-Größe für Geschwindigkeit
+  const chunkSize = 16000 * 20; // 20 Sekunden für schnellere Verarbeitung
   const chunks = [];
   
   for (let i = 0; i < audioData.length; i += chunkSize) {
@@ -45,19 +44,23 @@ const transcribeAudio = async (audioData: Float32Array, options: any) => {
   
   const results = [];
   
-  for (let i = 0; i < chunks.length; i++) {
-    // Sende Progress-Update
-    self.postMessage({
-      type: 'progress',
-      progress: (i / chunks.length) * 100,
-      message: `Verarbeite Chunk ${i + 1} von ${chunks.length}...`
-    });
-    
-    const result = await model(chunks[i], options);
+  // Parallele Verarbeitung bei mehreren Chunks
+  if (chunks.length === 1) {
+    // Einzelner Chunk - direkter Aufruf
+    const result = await model(chunks[0], options);
     results.push(result);
-    
-    // Kleine Pause um UI responsive zu halten
-    await new Promise(resolve => setTimeout(resolve, 10));
+  } else {
+    // Mehrere Chunks - sequenziell aber mit Fortschrittsanzeige
+    for (let i = 0; i < chunks.length; i++) {
+      self.postMessage({
+        type: 'progress',
+        progress: (i / chunks.length) * 100,
+        message: `Verarbeite Segment ${i + 1} von ${chunks.length}...`
+      });
+      
+      const result = await model(chunks[i], options);
+      results.push(result);
+    }
   }
   
   return results;

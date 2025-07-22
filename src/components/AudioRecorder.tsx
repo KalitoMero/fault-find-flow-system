@@ -120,15 +120,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     try {
       console.log('Lade verbessertes Whisper-Modell für präzise Transkription...');
       
-      // Verwende speziell für Deutsch optimiertes Whisper-Modell
+      // Schnelles Whisper-Tiny für bessere Performance
       transcriptionPipeline = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-small', // Besseres Modell für deutsche Sprache
+        'Xenova/whisper-tiny', // Kleineres, schnelleres Modell
         {
           device: 'wasm',
-          // Spezifische Konfiguration für deutsche Umlaute
-          dtype: 'fp32',
-          revision: 'main'
+          dtype: 'fp16'
         }
       );
       
@@ -142,8 +140,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
         console.log('Lade Fallback-Modell...');
         transcriptionPipeline = await pipeline(
           'automatic-speech-recognition',
-          'Xenova/whisper-small',
-          { device: 'wasm' }
+          'Xenova/whisper-tiny',
+          { device: 'wasm', dtype: 'fp16' }
         );
         toast.warning('Fallback-Modell geladen - Qualität möglicherweise eingeschränkt');
         return transcriptionPipeline;
@@ -302,14 +300,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
       // Optimierte Transkriptions-Parameter
       const selectedLang = SUPPORTED_LANGUAGES.find(lang => lang.code === selectedLanguage);
       const transcriptionOptions: any = {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: true,
+        chunk_length_s: 20,
+        stride_length_s: 3,
+        return_timestamps: false,
         temperature: 0.0,
         compression_ratio_threshold: 2.4,
         logprob_threshold: -1.0,
         no_speech_threshold: 0.6,
-        condition_on_previous_text: true
+        condition_on_previous_text: false
       };
       
       // Deutsche Sprachkonfiguration
