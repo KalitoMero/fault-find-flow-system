@@ -1,8 +1,64 @@
 
 import { pipeline } from '@huggingface/transformers';
 
-// Cache für das Text-Korrektur-Modell
+// Cache für KI-Modelle
 let textCorrectionPipeline: any = null;
+let sentenceEmbeddingPipeline: any = null;
+let nerPipeline: any = null;
+
+// Domänen-spezifische Erkennungsmuster
+const DOMAIN_PATTERNS = {
+  medical: [
+    'patient', 'diagnose', 'therapie', 'medikament', 'symptom', 'behandlung',
+    'krankheit', 'arzt', 'krankenhaus', 'operation', 'blutdruck', 'herzschlag',
+    'röntgen', 'ultraschall', 'mrt', 'ct', 'labor', 'befund'
+  ],
+  technical: [
+    'maschine', 'motor', 'getriebe', 'hydraulik', 'pneumatik', 'sensor',
+    'steuerung', 'regelung', 'antrieb', 'lager', 'dichtung', 'wartung',
+    'reparatur', 'instandhaltung', 'verschleiß', 'toleranz', 'material'
+  ],
+  business: [
+    'umsatz', 'gewinn', 'verlust', 'budget', 'kosten', 'preis', 'markt',
+    'kunde', 'vertrag', 'projekt', 'termin', 'meeting', 'präsentation',
+    'strategie', 'analyse', 'bericht', 'verkauf', 'marketing'
+  ],
+  legal: [
+    'gesetz', 'recht', 'paragraph', 'artikel', 'vertrag', 'klausel',
+    'gericht', 'urteil', 'anwalt', 'richter', 'klage', 'berufung',
+    'revision', 'rechtsmittel', 'frist', 'vollmacht', 'zeuge'
+  ]
+};
+
+// Domänen-spezifische Korrekturen
+const DOMAIN_CORRECTIONS = {
+  medical: {
+    'puls': 'Puls',
+    'ekg': 'EKG',
+    'ecg': 'EKG',
+    'blutdruck': 'Blutdruck',
+    'herzfrequenz': 'Herzfrequenz',
+    'sauerstoffsättigung': 'Sauerstoffsättigung'
+  },
+  technical: {
+    'cnc': 'CNC',
+    'plc': 'PLC',
+    'cad': 'CAD',
+    'cam': 'CAM',
+    'fräse': 'Fräse',
+    'fräsen': 'Fräsen',
+    'drehbank': 'Drehbank',
+    'schleifmaschine': 'Schleifmaschine'
+  },
+  business: {
+    'kpi': 'KPI',
+    'roi': 'ROI',
+    'crm': 'CRM',
+    'erp': 'ERP',
+    'b2b': 'B2B',
+    'b2c': 'B2C'
+  }
+};
 
 // Erweiterte Füllwörter und unerwünschte Ausdrücke
 const FILLER_WORDS = [
@@ -110,22 +166,87 @@ const COMMON_ERRORS = {
   'schwacher': 'schwächer'
 };
 
-// Initialisierung des Text-Korrektur-Modells (falls verfügbar)
+// Initialisierung des erweiterten Text-Korrektur-Modells
 const initTextCorrectionModel = async () => {
   if (textCorrectionPipeline) return textCorrectionPipeline;
   
   try {
-    console.log('Lade Text-Korrektur-Modell...');
-    // Verwende ein deutsches Sprachmodell für Grammatikkorrektur
+    console.log('Lade erweitertes deutsches Text-Korrektur-Modell...');
+    
+    // Versuche zunächst ein speziell für deutsche Grammatik trainiertes Modell
+    try {
+      textCorrectionPipeline = await pipeline(
+        'text2text-generation',
+        'Xenova/mt5-small',
+        { 
+          device: 'wasm',
+          dtype: 'fp16'
+        }
+      );
+      console.log('Deutsches MT5-Modell erfolgreich geladen');
+      return textCorrectionPipeline;
+    } catch (error) {
+      console.log('MT5-Modell nicht verfügbar, verwende Fallback...');
+    }
+    
+    // Fallback zu FLAN-T5
     textCorrectionPipeline = await pipeline(
       'text2text-generation',
       'Xenova/flan-t5-small',
-      { device: 'wasm' }
+      { 
+        device: 'wasm',
+        dtype: 'fp16'
+      }
     );
-    console.log('Text-Korrektur-Modell geladen');
+    console.log('FLAN-T5 Fallback-Modell geladen');
     return textCorrectionPipeline;
+    
   } catch (error) {
     console.warn('Text-Korrektur-Modell konnte nicht geladen werden:', error);
+    return null;
+  }
+};
+
+// Initialisierung des Sentence Embedding Modells
+const initSentenceEmbeddingModel = async () => {
+  if (sentenceEmbeddingPipeline) return sentenceEmbeddingPipeline;
+  
+  try {
+    console.log('Lade Sentence Embedding Modell...');
+    sentenceEmbeddingPipeline = await pipeline(
+      'feature-extraction',
+      'Xenova/all-MiniLM-L6-v2',
+      { 
+        device: 'wasm',
+        dtype: 'fp16'
+      }
+    );
+    console.log('Sentence Embedding Modell geladen');
+    return sentenceEmbeddingPipeline;
+  } catch (error) {
+    console.warn('Sentence Embedding Modell konnte nicht geladen werden:', error);
+    return null;
+  }
+};
+
+// Initialisierung des Named Entity Recognition Modells
+const initNERModel = async () => {
+  if (nerPipeline) return nerPipeline;
+  
+  try {
+    console.log('Lade Named Entity Recognition Modell...');
+    nerPipeline = await pipeline(
+      'token-classification',
+      'Xenova/bert-base-multilingual-cased-ner-hrl',
+      { 
+        device: 'wasm',
+        dtype: 'fp16'
+      }
+    );
+    console.log('NER Modell geladen');
+    return nerPipeline;
+  } catch (error) {
+    console.warn('NER Modell konnte nicht geladen werden:', error);
     return null;
   }
 };
@@ -246,87 +367,269 @@ const applyContextualImprovements = (text: string): string => {
   return contextText;
 };
 
-// AI-basierte Textverbesserung (experimentell)
-const applyAICorrection = async (text: string): Promise<string> => {
+// Domänen-Erkennung basierend auf Schlüsselwörtern
+const detectDomain = (text: string): string[] => {
+  const detectedDomains: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  Object.entries(DOMAIN_PATTERNS).forEach(([domain, patterns]) => {
+    const matchCount = patterns.filter(pattern => 
+      lowerText.includes(pattern.toLowerCase())
+    ).length;
+    
+    // Wenn mindestens 2 Begriffe aus einer Domäne gefunden werden
+    if (matchCount >= 2) {
+      detectedDomains.push(domain);
+    }
+  });
+  
+  return detectedDomains;
+};
+
+// Named Entity Recognition
+const extractNamedEntities = async (text: string): Promise<any[]> => {
+  try {
+    const nerModel = await initNERModel();
+    if (!nerModel) return [];
+    
+    const entities = await nerModel(text);
+    return entities.filter((entity: any) => entity.score > 0.8);
+  } catch (error) {
+    console.warn('NER-Extraktion fehlgeschlagen:', error);
+    return [];
+  }
+};
+
+// Sentence Embedding für semantische Analyse
+const analyzeSentenceSemantics = async (sentences: string[]): Promise<number[][]> => {
+  try {
+    const embeddingModel = await initSentenceEmbeddingModel();
+    if (!embeddingModel || sentences.length === 0) return [];
+    
+    const embeddings = await embeddingModel(sentences, { pooling: 'mean', normalize: true });
+    return embeddings.tolist();
+  } catch (error) {
+    console.warn('Sentence Embedding fehlgeschlagen:', error);
+    return [];
+  }
+};
+
+// Kontextuelle Verbesserungen basierend auf Domäne
+const applyDomainSpecificCorrections = (text: string, domains: string[]): string => {
+  let correctedText = text;
+  
+  domains.forEach(domain => {
+    const corrections = DOMAIN_CORRECTIONS[domain as keyof typeof DOMAIN_CORRECTIONS];
+    if (corrections) {
+      Object.entries(corrections).forEach(([error, correction]) => {
+        const regex = new RegExp(`\\b${error}\\b`, 'gi');
+        correctedText = correctedText.replace(regex, correction);
+      });
+    }
+  });
+  
+  return correctedText;
+};
+
+// Erweiterte AI-basierte Textverbesserung
+const applyAdvancedAICorrection = async (text: string, context: {
+  domains: string[];
+  entities: any[];
+  semantics: number[][];
+}): Promise<string> => {
   try {
     const model = await initTextCorrectionModel();
     if (!model || text.length < 10) return text;
     
-    // Einfache Grammatikkorrektur mit dem Modell
-    const prompt = `Korrigiere die Grammatik und verbessere den folgenden deutschen Text: "${text}"`;
+    // Erstelle kontextuellen Prompt basierend auf erkannten Domänen
+    let contextPrompt = 'Korrigiere die Grammatik und verbessere den folgenden deutschen Text';
+    
+    if (context.domains.length > 0) {
+      const domainNames = {
+        medical: 'medizinischen',
+        technical: 'technischen', 
+        business: 'geschäftlichen',
+        legal: 'rechtlichen'
+      };
+      
+      const domainDescriptions = context.domains.map(d => 
+        domainNames[d as keyof typeof domainNames] || d
+      ).join(' und ');
+      
+      contextPrompt += ` aus dem ${domainDescriptions} Bereich`;
+    }
+    
+    const prompt = `${contextPrompt}: "${text}"`;
+    
     const result = await model(prompt, {
       max_length: Math.min(text.length * 2, 512),
       temperature: 0.1,
-      do_sample: false
+      do_sample: false,
+      num_beams: 3
     });
     
     if (result && result[0] && result[0].generated_text) {
-      const correctedText = result[0].generated_text.replace(prompt, '').trim();
-      return correctedText || text;
+      let correctedText = result[0].generated_text;
+      
+      // Entferne den Prompt aus der Antwort
+      if (correctedText.includes('"')) {
+        const matches = correctedText.match(/"([^"]*)"/);
+        if (matches && matches[1]) {
+          correctedText = matches[1];
+        }
+      }
+      
+      return correctedText.trim() || text;
     }
     
     return text;
   } catch (error) {
-    console.warn('AI-Korrektur fehlgeschlagen:', error);
+    console.warn('Erweiterte AI-Korrektur fehlgeschlagen:', error);
     return text;
   }
 };
 
-// Hauptfunktion für erweiterte Textbereinigung
+// Hauptfunktion für erweiterte KI-basierte Textbereinigung
 export const cleanTranscriptionText = async (
   text: string, 
   useAICorrection: boolean = false
 ): Promise<string> => {
   if (!text || typeof text !== 'string') return '';
   
-  console.log('Starte erweiterte Textbereinigung:', text);
+  console.log('🚀 Starte erweiterte KI-basierte Textbereinigung:', text);
   
   let cleanedText = text;
   
   // 1. Entferne Füllwörter und Geräusche
   cleanedText = removeFillersAndNoises(cleanedText);
-  console.log('Nach Füllwort-Entfernung:', cleanedText);
+  console.log('✂️ Nach Füllwort-Entfernung:', cleanedText);
   
   // 2. Korrigiere häufige Fehler
   cleanedText = correctCommonErrors(cleanedText);
-  console.log('Nach Fehlerkorrektur:', cleanedText);
+  console.log('🔧 Nach Fehlerkorrektur:', cleanedText);
   
   // 3. Verbessere Satzstruktur
   cleanedText = improveSentenceStructure(cleanedText);
-  console.log('Nach Strukturverbesserung:', cleanedText);
+  console.log('📝 Nach Strukturverbesserung:', cleanedText);
   
   // 4. Kontextuelle Verbesserungen
   cleanedText = applyContextualImprovements(cleanedText);
-  console.log('Nach kontextuellen Verbesserungen:', cleanedText);
+  console.log('🎯 Nach kontextuellen Verbesserungen:', cleanedText);
   
-  // 5. Optional: AI-basierte Korrektur
+  // 5. Erweiterte KI-Analyse (wenn aktiviert)
   if (useAICorrection && cleanedText.length > 10) {
-    cleanedText = await applyAICorrection(cleanedText);
-    console.log('Nach AI-Korrektur:', cleanedText);
+    console.log('🧠 Starte erweiterte KI-Analyse...');
+    
+    // Erkenne Domänen
+    const detectedDomains = detectDomain(cleanedText);
+    console.log('🏷️ Erkannte Domänen:', detectedDomains);
+    
+    // Extrahiere Named Entities
+    const entities = await extractNamedEntities(cleanedText);
+    console.log('🎭 Erkannte Entitäten:', entities);
+    
+    // Analysiere Satzebene für semantische Zusammenhänge
+    const sentences = cleanedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const semantics = await analyzeSentenceSemantics(sentences);
+    console.log('🧮 Semantische Analyse abgeschlossen:', semantics.length, 'Sätze');
+    
+    // Wende domänen-spezifische Korrekturen an
+    if (detectedDomains.length > 0) {
+      cleanedText = applyDomainSpecificCorrections(cleanedText, detectedDomains);
+      console.log('🎓 Nach domänen-spezifischen Korrekturen:', cleanedText);
+    }
+    
+    // Erweiterte AI-Korrektur mit Kontext
+    const context = {
+      domains: detectedDomains,
+      entities,
+      semantics
+    };
+    
+    cleanedText = await applyAdvancedAICorrection(cleanedText, context);
+    console.log('🤖 Nach erweiterter AI-Korrektur:', cleanedText);
   }
   
-  console.log('Finale bereinigte Transkription:', cleanedText);
+  console.log('✅ Finale bereinigte Transkription:', cleanedText);
   return cleanedText.trim();
 };
 
-// Vorschau-Funktion für Textverbesserungen
-export const previewTextImprovements = (originalText: string): {
+// Erweiterte Vorschau-Funktion für KI-basierte Textverbesserungen
+export const previewTextImprovements = async (originalText: string): Promise<{
   original: string;
   withoutFillers: string;
   withErrorCorrection: string;
   withStructureImprovement: string;
+  withContextualImprovements: string;
+  detectedDomains: string[];
+  entities: any[];
   final: string;
-} => {
+}> => {
   const withoutFillers = removeFillersAndNoises(originalText);
   const withErrorCorrection = correctCommonErrors(withoutFillers);
   const withStructureImprovement = improveSentenceStructure(withErrorCorrection);
-  const final = applyContextualImprovements(withStructureImprovement);
+  const withContextualImprovements = applyContextualImprovements(withStructureImprovement);
+  
+  // Erweiterte Analyse
+  const detectedDomains = detectDomain(withContextualImprovements);
+  const entities = await extractNamedEntities(withContextualImprovements);
+  
+  // Domänen-spezifische Korrekturen anwenden
+  let final = withContextualImprovements;
+  if (detectedDomains.length > 0) {
+    final = applyDomainSpecificCorrections(final, detectedDomains);
+  }
   
   return {
     original: originalText,
     withoutFillers,
     withErrorCorrection,
     withStructureImprovement,
+    withContextualImprovements,
+    detectedDomains,
+    entities,
     final
   };
+};
+
+// Hilfsfunktion für Domänen-Informationen
+export const getDomainInfo = () => ({
+  patterns: DOMAIN_PATTERNS,
+  corrections: DOMAIN_CORRECTIONS
+});
+
+// Hilfsfunktion zum Testen der KI-Modelle
+export const testAIModels = async (): Promise<{
+  textCorrection: boolean;
+  sentenceEmbedding: boolean;
+  ner: boolean;
+}> => {
+  const results = {
+    textCorrection: false,
+    sentenceEmbedding: false,
+    ner: false
+  };
+  
+  try {
+    const textModel = await initTextCorrectionModel();
+    results.textCorrection = !!textModel;
+  } catch (error) {
+    console.warn('Text correction model test failed:', error);
+  }
+  
+  try {
+    const embeddingModel = await initSentenceEmbeddingModel();
+    results.sentenceEmbedding = !!embeddingModel;
+  } catch (error) {
+    console.warn('Sentence embedding model test failed:', error);
+  }
+  
+  try {
+    const nerModel = await initNERModel();
+    results.ner = !!nerModel;
+  } catch (error) {
+    console.warn('NER model test failed:', error);
+  }
+  
+  return results;
 };

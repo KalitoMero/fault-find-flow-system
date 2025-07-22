@@ -47,6 +47,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
   const [showPreview, setShowPreview] = useState(false);
   const [showManualEdit, setShowManualEdit] = useState(false);
   const [manualText, setManualText] = useState('');
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -417,9 +420,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
     }
   };
 
-  const showTextPreview = () => {
-    if (rawTranscription) {
-      setShowPreview(true);
+  const showTextPreview = async () => {
+    if (!rawTranscription) return;
+    
+    setIsProcessing(true);
+    setProcessingStatus('Erstelle erweiterte Textvorschau...');
+    setShowPreview(true);
+    
+    try {
+      const preview = await previewTextImprovements(rawTranscription);
+      setPreviewData(preview);
+    } catch (error) {
+      console.error('Fehler bei Textvorschau:', error);
+      toast.error('Fehler beim Erstellen der Textvorschau');
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
@@ -600,30 +616,67 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, label })
             <DialogHeader>
               <DialogTitle>Textverbesserungs-Vorschau</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              {rawTranscription && (() => {
-                const preview = previewTextImprovements(rawTranscription);
-                return (
-                  <>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {isProcessing ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>{processingStatus}</span>
+                </div>
+              ) : previewData ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Original:</Label>
+                    <p className="mt-1 p-2 bg-muted rounded text-sm">{previewData.original}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Ohne Füllwörter:</Label>
+                    <p className="mt-1 p-2 bg-muted rounded text-sm">{previewData.withoutFillers}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Mit Fehlerkorrekturen:</Label>
+                    <p className="mt-1 p-2 bg-muted rounded text-sm">{previewData.withErrorCorrection}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Strukturverbesserungen:</Label>
+                    <p className="mt-1 p-2 bg-muted rounded text-sm">{previewData.withStructureImprovement}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Kontextuelle Verbesserungen:</Label>
+                    <p className="mt-1 p-2 bg-muted rounded text-sm">{previewData.withContextualImprovements}</p>
+                  </div>
+                  {previewData.detectedDomains && previewData.detectedDomains.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium text-red-600">Original:</Label>
-                      <p className="text-sm bg-red-50 p-2 rounded">{preview.original}</p>
+                      <Label className="text-sm font-medium text-muted-foreground">Erkannte Domänen:</Label>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {previewData.detectedDomains.map((domain: string) => (
+                          <Badge key={domain} variant="secondary" className="text-xs">
+                            {domain}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+                  )}
+                  {previewData.entities && previewData.entities.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium text-yellow-600">Ohne Füllwörter:</Label>
-                      <p className="text-sm bg-yellow-50 p-2 rounded">{preview.withoutFillers}</p>
+                      <Label className="text-sm font-medium text-muted-foreground">Erkannte Entitäten:</Label>
+                      <div className="mt-1 space-y-1">
+                        {previewData.entities.slice(0, 5).map((entity: any, idx: number) => (
+                          <div key={idx} className="text-xs bg-accent/10 p-2 rounded">
+                            <span className="font-medium">{entity.word}</span> - {entity.entity} 
+                            <span className="text-muted-foreground ml-2">({Math.round(entity.score * 100)}%)</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-blue-600">Fehlerkorrektur:</Label>
-                      <p className="text-sm bg-blue-50 p-2 rounded">{preview.withErrorCorrection}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-green-600">Finale Version:</Label>
-                      <p className="text-sm bg-green-50 p-2 rounded font-medium">{preview.final}</p>
-                    </div>
-                  </>
-                );
-              })()}
+                  )}
+                  <div>
+                    <Label className="text-sm font-medium text-primary">Finaler Text (mit KI-Verbesserungen):</Label>
+                    <p className="mt-1 p-2 bg-accent/10 rounded text-sm font-medium">{previewData.final}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Keine Vorschau verfügbar</p>
+              )}
             </div>
           </DialogContent>
         </Dialog>
