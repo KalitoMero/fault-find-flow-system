@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin, Download } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -29,6 +29,8 @@ import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
 import AdminManagement from './AdminManagement';
 import AdminAuthDialog from './AdminAuthDialog';
+import ExportSection from './ExportSection';
+import { getErrorReports } from '@/lib/storage';
 import { toast } from "sonner";
 
 interface SettingsModalProps {
@@ -203,7 +205,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -215,6 +217,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="machines" className="flex items-center space-x-2">
               <MapPin className="h-4 w-4" />
               <span>Feststellorte</span>
+            </TabsTrigger>
+            <TabsTrigger value="export" className="flex items-center space-x-2">
+              <Download className="h-4 w-4" />
+              <span>Export</span>
             </TabsTrigger>
             <TabsTrigger 
               value="admin" 
@@ -482,6 +488,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-4">
+            <ExportSection reports={getErrorReports()} />
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">

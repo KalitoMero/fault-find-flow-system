@@ -21,12 +21,8 @@ import { toast } from "sonner";
 const AdminManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [newAdminName, setNewAdminName] = useState('');
   const [newAdminUsername, setNewAdminUsername] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [newSettingsPassword, setNewSettingsPassword] = useState('');
-  const [confirmSettingsPassword, setConfirmSettingsPassword] = useState('');
 
   useEffect(() => {
     loadData();
@@ -46,10 +42,6 @@ const AdminManagement: React.FC = () => {
       toast.error('Bitte geben Sie ein Passwort ein');
       return;
     }
-    // Admins brauchen keine Abteilung - setze default Wert
-    if (!selectedDepartment && departments.length > 0) {
-      setSelectedDepartment(departments[0].id);
-    }
 
     // Prüfen ob Username bereits existiert
     const existingEmployee = employees.find(emp => emp.account?.username === newAdminUsername.trim());
@@ -60,8 +52,8 @@ const AdminManagement: React.FC = () => {
 
     const newAdmin: Employee = {
       id: generateId(),
-      name: newAdminName.trim() || newAdminUsername.trim(), // Fallback zum Username falls kein Name
-      departmentId: selectedDepartment || 'admin', // Admins brauchen keine echte Abteilung
+      name: newAdminUsername.trim(), // Use username as name
+      departmentId: 'admin', // Default admin department
       isTeamLeader: false,
       isAdmin: true,
       account: {
@@ -72,10 +64,8 @@ const AdminManagement: React.FC = () => {
     };
 
     saveEmployee(newAdmin);
-    setNewAdminName('');
     setNewAdminUsername('');
     setNewAdminPassword('');
-    setSelectedDepartment('');
     loadData();
     toast.success('Admin-Account erfolgreich erstellt');
   };
@@ -99,25 +89,6 @@ const AdminManagement: React.FC = () => {
     }
   };
 
-  const handleChangeSettingsPassword = () => {
-    if (!newSettingsPassword.trim()) {
-      toast.error('Bitte geben Sie ein neues Passwort ein');
-      return;
-    }
-    if (newSettingsPassword !== confirmSettingsPassword) {
-      toast.error('Passwörter stimmen nicht überein');
-      return;
-    }
-    if (newSettingsPassword.length < 4) {
-      toast.error('Passwort muss mindestens 4 Zeichen lang sein');
-      return;
-    }
-
-    setSettingsPassword(newSettingsPassword);
-    setNewSettingsPassword('');
-    setConfirmSettingsPassword('');
-    toast.success('Einstellungspasswort erfolgreich geändert');
-  };
 
   const getDepartmentName = (departmentId: string) => {
     const department = departments.find(d => d.id === departmentId);
@@ -135,20 +106,11 @@ const AdminManagement: React.FC = () => {
             <span>Neuen Admin-Account erstellen</span>
           </CardTitle>
           <CardDescription>
-            Erstellen Sie einen neuen Administrator-Account (Name und Abteilung optional)
+            Erstellen Sie einen neuen Administrator-Account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="adminName">Name (optional)</Label>
-              <Input
-                id="adminName"
-                value={newAdminName}
-                onChange={(e) => setNewAdminName(e.target.value)}
-                placeholder="Vor- und Nachname (optional)"
-              />
-            </div>
             <div>
               <Label htmlFor="adminUsername">Benutzername</Label>
               <Input
@@ -167,21 +129,6 @@ const AdminManagement: React.FC = () => {
                 onChange={(e) => setNewAdminPassword(e.target.value)}
                 placeholder="Passwort"
               />
-            </div>
-            <div>
-              <Label htmlFor="adminDepartment">Abteilung (optional)</Label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Abteilung auswählen (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <Button onClick={handleCreateAdmin}>

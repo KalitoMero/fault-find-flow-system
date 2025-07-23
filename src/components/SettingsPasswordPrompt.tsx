@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Settings, Lock } from 'lucide-react';
+import { getSettingsPassword } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
 interface SettingsPasswordPromptProps {
@@ -26,8 +27,8 @@ const SettingsPasswordPrompt: React.FC<SettingsPasswordPromptProps> = ({
     e.preventDefault();
     setIsLoading(true);
 
-    // Check password
-    if (password === '2034') {
+    // Check password against stored settings password
+    if (password === getSettingsPassword()) {
       toast.success('Zugang gewährt!');
       onSuccess();
       setPassword('');
