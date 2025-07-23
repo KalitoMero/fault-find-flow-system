@@ -237,49 +237,36 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Produktions-Fehlermeldungen</h1>
-                <p className="text-sm text-gray-500">Qualitätsmanagement System</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isAuthenticated && user ? (
-                <>
-                  <Badge variant="default">
-                    {user.role === 'admin' ? 'Administrator' : user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
-                  </Badge>
-                  {user.role === 'admin' && (
-                    <Button variant="outline" onClick={() => setShowSettingsPasswordDialog(true)}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Passwort ändern
-                    </Button>
-                  )}
-                  <Button variant="outline" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Abmelden
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" onClick={handleSettingsClick}>
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button onClick={handleLoginClick}>
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Buttons fixed in top right corner */}
+      <div className="fixed top-4 right-4 z-50 flex items-center space-x-4">
+        {isAuthenticated && user ? (
+          <>
+            <Badge variant="default">
+              {user.role === 'admin' ? 'Administrator' : user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
+            </Badge>
+            {user.role === 'admin' && (
+              <Button variant="outline" onClick={() => setShowSettingsPasswordDialog(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Passwort ändern
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Abmelden
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={handleSettingsClick}>
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button onClick={handleLoginClick}>
+              <LogIn className="h-4 w-4 mr-2" />
+              Login
+            </Button>
+          </>
+        )}
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
