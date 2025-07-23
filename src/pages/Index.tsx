@@ -388,36 +388,51 @@ const Index = () => {
           </div>
         ) : selectedTab === 'new-report' ? (
           // Neue Meldung Formular
-          <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
+          <div className="space-y-4">
+            <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
+              ← Zurück zur Startseite
+            </Button>
+            <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
+          </div>
         ) : selectedTab === 'report-access' ? (
           // Meldung Suchen Formular
-          <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
+          <div className="space-y-4">
+            <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
+              ← Zurück zur Startseite
+            </Button>
+            <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
+          </div>
         ) : (
           // Start screen mit runden Buttons
-          <div className="flex flex-col items-center space-y-8 py-12">
-            {/* Neue Meldung Button */}
-            <div className="flex flex-col items-center space-y-3">
-              <Button
-                onClick={() => setSelectedTab('new-report')}
-                size="lg"
-                className="h-20 w-20 rounded-full p-0"
-              >
-                <Plus className="h-8 w-8" />
-              </Button>
-              <span className="text-lg font-medium text-gray-700">Neue Meldung</span>
+          <div className="relative min-h-[calc(100vh-200px)] flex flex-col">
+            {/* Neue Meldung Button - zentriert */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="flex flex-col items-center space-y-4">
+                <Button
+                  onClick={() => setSelectedTab('new-report')}
+                  size="lg"
+                  variant="outline"
+                  className="h-32 w-32 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
+                >
+                  <Plus className="h-12 w-12 text-gray-700" />
+                </Button>
+                <span className="text-xl font-medium text-gray-700">Neue Meldung</span>
+              </div>
             </div>
 
-            {/* Meldung Suchen Button */}
-            <div className="flex flex-col items-center space-y-3">
-              <Button
-                onClick={() => setSelectedTab('report-access')}
-                variant="outline"
-                size="lg"
-                className="h-20 w-20 rounded-full p-0"
-              >
-                <Search className="h-8 w-8" />
-              </Button>
-              <span className="text-lg font-medium text-gray-700">Meldung Suchen</span>
+            {/* Meldung Suchen Button - am unteren Rand */}
+            <div className="flex justify-center pb-8">
+              <div className="flex flex-col items-center space-y-3">
+                <Button
+                  onClick={() => setSelectedTab('report-access')}
+                  variant="outline"
+                  size="lg"
+                  className="h-16 w-16 rounded-full p-0 hover-scale"
+                >
+                  <Search className="h-6 w-6" />
+                </Button>
+                <span className="text-sm font-medium text-gray-600">Meldung Suchen</span>
+              </div>
             </div>
           </div>
         )}
