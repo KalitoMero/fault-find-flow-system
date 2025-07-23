@@ -473,7 +473,7 @@ const Index = () => {
                   variant="outline"
                   className="h-48 w-48 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
                 >
-                  <Plus className="h-24 w-24 text-gray-700" />
+                  <Plus className="h-32 w-32 text-gray-700" />
                 </Button>
                 <span className="text-3xl font-medium text-gray-700">Neue Meldung</span>
               </div>
