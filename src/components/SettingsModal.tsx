@@ -56,6 +56,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       loadData();
+    } else {
+      // Reset admin authentication when modal is closed
+      setShowAdminPanel(false);
+      setShowAdminAuth(false);
     }
   }, [isOpen]);
 
