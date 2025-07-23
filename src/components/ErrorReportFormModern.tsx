@@ -60,7 +60,7 @@ const FloatingLabelInput: React.FC<{
           onBlur={() => setIsFocused(false)}
           placeholder=""
           required={required}
-          className={`modern-input pt-6 ${icon ? 'pl-10' : 'pl-3'}`}
+          className={`modern-input pt-4 ${icon ? 'pl-10' : 'pl-3'}`}
         />
         <Label htmlFor={id} className="floating-label">
           {label} {required && <span className="text-destructive">*</span>}
@@ -93,7 +93,7 @@ const FloatingLabelTextarea: React.FC<{
           placeholder=""
           required={required}
           rows={rows}
-          className="modern-input pt-6 min-h-[100px] resize-none"
+          className="modern-input pt-4 min-h-[100px] resize-none"
         />
         <Label htmlFor={id} className="floating-label">
           {label} {required && <span className="text-destructive">*</span>}
