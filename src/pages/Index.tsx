@@ -463,9 +463,9 @@ const Index = () => {
           </div>
         ) : (
           // Start screen mit runden Buttons
-          <div className="relative min-h-[calc(100vh-200px)] flex flex-col">
+          <div className="relative h-[calc(100vh-100px)] flex flex-col">
             {/* Neue Meldung Button - zentriert */}
-            <div className="flex-1 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center space-y-4">
                 <Button
                   onClick={() => setSelectedTab('new-report')}
@@ -480,7 +480,7 @@ const Index = () => {
             </div>
 
             {/* Meldung Suchen Button - am unteren Rand */}
-            <div className="flex justify-center pb-8">
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
               <div className="flex flex-col items-center space-y-3">
                 <Button
                   onClick={() => setSelectedTab('report-access')}
