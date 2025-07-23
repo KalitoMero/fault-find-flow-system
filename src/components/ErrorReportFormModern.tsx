@@ -393,41 +393,49 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <FloatingLabelTextarea
-                id="problemDescription"
-                label="Problembeschreibung"
-                value={problemDescription}
-                onChange={setProblemDescription}
-                placeholder="Beschreiben Sie das aufgetretene Problem detailliert..."
-                required
-                rows={4}
-              />
-              <AudioRecorderSimple 
-                onTranscription={(transcription, audioBlob) => {
-                  setProblemDescription(transcription);
-                  setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
-                }}
-                label="Problembeschreibung aufnehmen"
-              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <FloatingLabelTextarea
+                    id="problemDescription"
+                    label="Problembeschreibung"
+                    value={problemDescription}
+                    onChange={setProblemDescription}
+                    placeholder="Beschreiben Sie das aufgetretene Problem detailliert..."
+                    required
+                    rows={4}
+                  />
+                </div>
+                <AudioRecorderSimple 
+                  onTranscription={(transcription, audioBlob) => {
+                    setProblemDescription(transcription);
+                    setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+                  }}
+                  label="Problembeschreibung aufnehmen"
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
-              <FloatingLabelTextarea
-                id="correctiveAction"
-                label="Korrekturmaßnahme"
-                value={correctiveAction}
-                onChange={setCorrectiveAction}
-                placeholder="Beschreiben Sie die durchgeführten Korrekturmaßnahmen..."
-                required
-                rows={4}
-              />
-              <AudioRecorderSimple 
-                onTranscription={(transcription, audioBlob) => {
-                  setCorrectiveAction(transcription);
-                  setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
-                }}
-                label="Korrekturmaßnahme aufnehmen"
-              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <FloatingLabelTextarea
+                    id="correctiveAction"
+                    label="Korrekturmaßnahme"
+                    value={correctiveAction}
+                    onChange={setCorrectiveAction}
+                    placeholder="Beschreiben Sie die durchgeführten Korrekturmaßnahmen..."
+                    required
+                    rows={4}
+                  />
+                </div>
+                <AudioRecorderSimple 
+                  onTranscription={(transcription, audioBlob) => {
+                    setCorrectiveAction(transcription);
+                    setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+                  }}
+                  label="Korrekturmaßnahme aufnehmen"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -244,110 +244,96 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
   };
 
   return (
-    <Card className="glass-card border-primary/20 mt-3">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-medium text-primary flex items-center gap-2">
-            <Languages className="h-4 w-4" />
-            {label}
-          </h4>
-          <div className="flex space-x-2">
-            {detectedLanguage && (
-              <Badge variant="outline" className="bg-primary/10">
-                {detectedLanguage}
-              </Badge>
-            )}
-            {isSaved && (
-              <Badge variant="outline" className="bg-green-500/10 text-green-700">
-                Gespeichert
-              </Badge>
-            )}
+    <div className="flex items-center gap-2">
+      {/* Recording Controls */}
+      {!isRecording && !hasRecording && (
+        <Button
+          onClick={startRecording}
+          variant="outline"
+          size="sm"
+          className="h-12 w-12 p-0"
+        >
+          <Mic className="h-4 w-4" />
+        </Button>
+      )}
+
+      {isRecording && (
+        <div className="flex items-center gap-2">
+          <div className="audio-recording flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex gap-1">
+              <div className="audio-wave bg-red-500"></div>
+              <div className="audio-wave bg-red-500"></div>
+              <div className="audio-wave bg-red-500"></div>
+              <div className="audio-wave bg-red-500"></div>
+            </div>
+            <span className="text-red-700 font-mono text-xs">
+              {formatTime(recordingTime)}
+            </span>
           </div>
+          <Button
+            onClick={stopRecording}
+            variant="destructive"
+            size="sm"
+            className="h-12 w-12 p-0"
+          >
+            <MicOff className="h-4 w-4" />
+          </Button>
         </div>
+      )}
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center">
-          {/* Recording Controls */}
-          {!isRecording && !hasRecording && (
-            <Button
-              onClick={startRecording}
-              className="gradient-button flex-1 sm:flex-none"
-              size="lg"
-            >
-              <Mic className="h-4 w-4 mr-2" />
-              Aufnahme starten
-            </Button>
+      {hasRecording && !isSaved && (
+        <div className="flex gap-2">
+          <Button
+            onClick={saveAndTranscribe}
+            disabled={isTranscribing}
+            variant="outline"
+            size="sm"
+            className="h-12 w-12 p-0"
+          >
+            {isTranscribing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            onClick={resetRecording}
+            variant="outline"
+            size="sm"
+            className="h-12 w-12 p-0"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {isSaved && (
+        <Button
+          onClick={resetRecording}
+          variant="outline"
+          size="sm"
+          className="h-12 w-12 p-0"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
+      
+      {/* Status badges */}
+      {(detectedLanguage || isSaved) && (
+        <div className="flex gap-1 ml-2">
+          {detectedLanguage && (
+            <Badge variant="outline" className="bg-primary/10 text-xs">
+              {detectedLanguage}
+            </Badge>
           )}
-
-          {isRecording && (
-            <div className="flex items-center gap-3 flex-1">
-              <div className="audio-recording flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex gap-1">
-                  <div className="audio-wave bg-red-500"></div>
-                  <div className="audio-wave bg-red-500"></div>
-                  <div className="audio-wave bg-red-500"></div>
-                  <div className="audio-wave bg-red-500"></div>
-                </div>
-                <span className="text-red-700 font-mono text-sm">
-                  {formatTime(recordingTime)}
-                </span>
-              </div>
-              <Button
-                onClick={stopRecording}
-                variant="destructive"
-                size="lg"
-              >
-                <MicOff className="h-4 w-4 mr-2" />
-                Stopp
-              </Button>
-            </div>
-          )}
-
-          {hasRecording && !isSaved && (
-            <div className="flex gap-2 flex-1 sm:flex-none">
-              <Button
-                onClick={saveAndTranscribe}
-                disabled={isTranscribing}
-                className="gradient-button"
-                size="lg"
-              >
-                {isTranscribing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Transkribiert...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Transkribieren
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={resetRecording}
-                variant="outline"
-                size="lg"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
           {isSaved && (
-            <div className="flex gap-2 flex-1 sm:flex-none">
-              <Button
-                onClick={resetRecording}
-                variant="outline"
-                size="lg"
-                className="flex-1 sm:flex-none"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Neue Aufnahme
-              </Button>
-            </div>
+            <Badge variant="outline" className="bg-green-500/10 text-green-700 text-xs">
+              ✓
+            </Badge>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
