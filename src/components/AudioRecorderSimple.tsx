@@ -244,7 +244,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
   };
 
   return (
-    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '128px' }}>
+    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '112px', marginTop: '24px' }}>
       {/* Recording Controls */}
       {!isRecording && !hasRecording && (
         <Button
@@ -252,7 +252,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
           variant="destructive"
           size="sm"
           className="w-12 p-0"
-          style={{ height: '128px' }}
+          style={{ height: '112px' }}
         >
           <Mic className="h-4 w-4" />
         </Button>
@@ -265,11 +265,11 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
             variant="destructive"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '64px' }}
+            style={{ height: '56px' }}
           >
             <MicOff className="h-4 w-4" />
           </Button>
-          <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-12" style={{ height: '60px' }}>
+          <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-12" style={{ height: '52px' }}>
             <div className="flex flex-col gap-1 items-center">
               <div className="flex gap-1">
                 <div className="audio-wave bg-red-500 w-1 h-2"></div>
@@ -292,7 +292,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
             variant="outline"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '64px' }}
+            style={{ height: '56px' }}
           >
             {isTranscribing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -305,7 +305,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
             variant="outline"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '60px' }}
+            style={{ height: '52px' }}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -318,7 +318,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
           variant="outline"
           size="sm"
           className="w-12 p-0"
-          style={{ height: '128px' }}
+          style={{ height: '112px' }}
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
