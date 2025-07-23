@@ -14,6 +14,7 @@ import ErrorReportDetail from '@/components/ErrorReportDetail';
 import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
 import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
+import SettingsPasswordDialog from '@/components/SettingsPasswordDialog';
 import SettingsModal from '@/components/SettingsModal';
 import AdminDashboard from '@/components/AdminDashboard';
 import DeputySelection from '@/components/DeputySelection';
@@ -28,6 +29,7 @@ const Index = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSettingsPrompt, setShowSettingsPrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsPasswordDialog, setShowSettingsPasswordDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
@@ -251,6 +253,12 @@ const Index = () => {
                   <Badge variant="default">
                     {user.role === 'admin' ? 'Administrator' : user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
                   </Badge>
+                  {user.role === 'admin' && (
+                    <Button variant="outline" onClick={() => setShowSettingsPasswordDialog(true)}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Passwort ändern
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Abmelden
@@ -512,6 +520,12 @@ const Index = () => {
       <SettingsModal
         isOpen={showSettings}
         onClose={handleSettingsClose}
+      />
+
+      {/* Settings Password Dialog for Admins */}
+      <SettingsPasswordDialog
+        isOpen={showSettingsPasswordDialog}
+        onClose={() => setShowSettingsPasswordDialog(false)}
       />
     </div>
   );
