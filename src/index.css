@@ -134,15 +134,21 @@ All colors MUST be HSL.
   }
 
   .floating-label {
-    @apply absolute left-3 transition-all duration-300 pointer-events-none text-muted-foreground;
+    @apply absolute transition-all duration-300 pointer-events-none text-muted-foreground;
     top: 50%;
     transform: translateY(-50%);
+    left: 12px;
+  }
+
+  .floating-label-input:has(.modern-input.pl-10) .floating-label {
+    left: 40px;
   }
 
   .floating-label-input:focus-within .floating-label,
   .floating-label-input.has-value .floating-label {
     @apply text-xs text-primary font-medium;
     top: 0;
+    left: 12px;
     transform: translateY(-50%);
     background: hsl(var(--background));
     padding: 0 4px;
