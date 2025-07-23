@@ -32,6 +32,7 @@ const Index = () => {
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -96,6 +97,7 @@ const Index = () => {
     setShowLogin(false);
     setSelectedReport(null);
     setEditingReport(null);
+    setSelectedTab(null);
   };
 
   const handleLogout = () => {
@@ -233,8 +235,7 @@ const Index = () => {
               ) : (
                 <>
                   <Button variant="outline" onClick={handleSettingsClick}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Einstellungen
+                    <Settings className="h-4 w-4" />
                   </Button>
                   <Button onClick={handleLoginClick}>
                     <LogIn className="h-4 w-4 mr-2" />
@@ -385,36 +386,40 @@ const Index = () => {
               </CardContent>
             </Card>
           </div>
+        ) : selectedTab === 'new-report' ? (
+          // Neue Meldung Formular
+          <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
+        ) : selectedTab === 'report-access' ? (
+          // Meldung Suchen Formular
+          <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
         ) : (
-          // Mitarbeiter-Dashboard (Tabs mit Meldung Einsehen statt Dashboard)
-          <Tabs defaultValue="report-access" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="report-access" className="flex items-center space-x-2">
-                <Search className="h-4 w-4" />
-                <span>Meldung Einsehen</span>
-              </TabsTrigger>
-              <TabsTrigger value="new-report" className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Neue Meldung</span>
-              </TabsTrigger>
-              <TabsTrigger value="export" className="flex items-center space-x-2">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </TabsTrigger>
-            </TabsList>
+          // Start screen mit runden Buttons
+          <div className="flex flex-col items-center space-y-8 py-12">
+            {/* Neue Meldung Button */}
+            <div className="flex flex-col items-center space-y-3">
+              <Button
+                onClick={() => setSelectedTab('new-report')}
+                size="lg"
+                className="h-20 w-20 rounded-full p-0"
+              >
+                <Plus className="h-8 w-8" />
+              </Button>
+              <span className="text-lg font-medium text-gray-700">Neue Meldung</span>
+            </div>
 
-            <TabsContent value="report-access" className="space-y-6">
-              <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
-            </TabsContent>
-
-            <TabsContent value="new-report">
-              <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
-            </TabsContent>
-
-            <TabsContent value="export">
-              <ExportSection reports={errorReports} />
-            </TabsContent>
-          </Tabs>
+            {/* Meldung Suchen Button */}
+            <div className="flex flex-col items-center space-y-3">
+              <Button
+                onClick={() => setSelectedTab('report-access')}
+                variant="outline"
+                size="lg"
+                className="h-20 w-20 rounded-full p-0"
+              >
+                <Search className="h-8 w-8" />
+              </Button>
+              <span className="text-lg font-medium text-gray-700">Meldung Suchen</span>
+            </div>
+          </div>
         )}
       </div>
 
