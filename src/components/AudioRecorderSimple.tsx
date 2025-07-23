@@ -244,51 +244,52 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2">
       {/* Recording Controls */}
       {!isRecording && !hasRecording && (
         <Button
           onClick={startRecording}
-          variant="outline"
+          variant="destructive"
           size="sm"
-          className="h-12 w-12 p-0"
+          className="h-[100px] w-12 p-0"
         >
           <Mic className="h-4 w-4" />
         </Button>
       )}
 
       {isRecording && (
-        <div className="flex items-center gap-2">
-          <div className="audio-recording flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex gap-1">
-              <div className="audio-wave bg-red-500"></div>
-              <div className="audio-wave bg-red-500"></div>
-              <div className="audio-wave bg-red-500"></div>
-              <div className="audio-wave bg-red-500"></div>
-            </div>
-            <span className="text-red-700 font-mono text-xs">
-              {formatTime(recordingTime)}
-            </span>
-          </div>
+        <div className="flex flex-col gap-2">
           <Button
             onClick={stopRecording}
             variant="destructive"
             size="sm"
-            className="h-12 w-12 p-0"
+            className="h-[50px] w-12 p-0"
           >
             <MicOff className="h-4 w-4" />
           </Button>
+          <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg h-[46px] w-12">
+            <div className="flex flex-col gap-1 items-center">
+              <div className="flex gap-1">
+                <div className="audio-wave bg-red-500 w-1 h-2"></div>
+                <div className="audio-wave bg-red-500 w-1 h-3"></div>
+                <div className="audio-wave bg-red-500 w-1 h-2"></div>
+              </div>
+              <span className="text-red-700 font-mono text-[8px]">
+                {formatTime(recordingTime)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
       {hasRecording && !isSaved && (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             onClick={saveAndTranscribe}
             disabled={isTranscribing}
             variant="outline"
             size="sm"
-            className="h-12 w-12 p-0"
+            className="h-[50px] w-12 p-0"
           >
             {isTranscribing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -300,7 +301,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
             onClick={resetRecording}
             variant="outline"
             size="sm"
-            className="h-12 w-12 p-0"
+            className="h-[46px] w-12 p-0"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -312,7 +313,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
           onClick={resetRecording}
           variant="outline"
           size="sm"
-          className="h-12 w-12 p-0"
+          className="h-[100px] w-12 p-0"
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
@@ -320,14 +321,14 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       
       {/* Status badges */}
       {(detectedLanguage || isSaved) && (
-        <div className="flex gap-1 ml-2">
+        <div className="flex flex-col gap-1 mt-1">
           {detectedLanguage && (
-            <Badge variant="outline" className="bg-primary/10 text-xs">
+            <Badge variant="outline" className="bg-primary/10 text-[8px] px-1 py-0">
               {detectedLanguage}
             </Badge>
           )}
           {isSaved && (
-            <Badge variant="outline" className="bg-green-500/10 text-green-700 text-xs">
+            <Badge variant="outline" className="bg-green-500/10 text-green-700 text-[8px] px-1 py-0">
               ✓
             </Badge>
           )}
