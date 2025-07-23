@@ -147,3 +147,16 @@ export const initializeDefaultAdmin = () => {
     saveEmployee(defaultAdmin);
   }
 };
+
+// Logo management
+export const getLogo = (): string | null => {
+  return localStorage.getItem('app_logo');
+};
+
+export const setLogo = (logoDataUrl: string) => {
+  localStorage.setItem('app_logo', logoDataUrl);
+};
+
+export const removeLogo = () => {
+  localStorage.removeItem('app_logo');
+};

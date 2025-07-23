@@ -19,6 +19,7 @@ import SettingsModal from '@/components/SettingsModal';
 import AdminDashboard from '@/components/AdminDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber, deleteErrorReport } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
@@ -527,6 +528,9 @@ const Index = () => {
         isOpen={showSettingsPasswordDialog}
         onClose={() => setShowSettingsPasswordDialog(false)}
       />
+
+      {/* Logo Component - Fixed to bottom right */}
+      <Logo />
     </div>
   );
 };

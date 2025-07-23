@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin, Download } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin, Download, Upload, Image } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -23,7 +23,10 @@ import {
   deleteMachine,
   getEmployeesByDepartment,
   generateId,
-  initializeDefaultAdmin 
+  initializeDefaultAdmin,
+  getLogo,
+  setLogo,
+  removeLogo
 } from '@/lib/settingsStorage';
 import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
@@ -52,6 +55,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [accountManagementEmployee, setAccountManagementEmployee] = useState<Employee | null>(null);
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [currentLogo, setCurrentLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,6 +84,43 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setDepartments(getDepartments());
     setEmployees(getEmployees());
     setMachines(getMachines());
+    setCurrentLogo(getLogo());
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Bitte wählen Sie eine Bilddatei aus');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Die Datei ist zu groß. Bitte wählen Sie eine Datei unter 2MB aus.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setLogo(dataUrl);
+      setCurrentLogo(dataUrl);
+      // Trigger custom event to update logo display
+      window.dispatchEvent(new Event('logoUpdated'));
+      toast.success('Logo erfolgreich hochgeladen');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    removeLogo();
+    setCurrentLogo(null);
+    // Trigger custom event to update logo display
+    window.dispatchEvent(new Event('logoUpdated'));
+    toast.success('Logo entfernt');
   };
 
   const handleAddDepartment = () => {
@@ -209,7 +250,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -225,6 +266,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="export" className="flex items-center space-x-2">
               <Download className="h-4 w-4" />
               <span>Export</span>
+            </TabsTrigger>
+            <TabsTrigger value="company" className="flex items-center space-x-2">
+              <Image className="h-4 w-4" />
+              <span>Unternehmen</span>
             </TabsTrigger>
             <TabsTrigger 
               value="admin" 
@@ -496,6 +541,79 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           <TabsContent value="export" className="space-y-4">
             <ExportSection reports={getErrorReports()} />
+          </TabsContent>
+
+          <TabsContent value="company" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Firmenlogo</CardTitle>
+                <CardDescription>
+                  Laden Sie das Logo Ihres Unternehmens hoch. Es wird in der unteren rechten Ecke jeder Seite angezeigt.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentLogo ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Aktuelles Logo:</span>
+                        <img 
+                          src={currentLogo} 
+                          alt="Aktuelles Logo" 
+                          className="w-10 h-10 object-contain border rounded"
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleLogoRemove}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Logo entfernen
+                      </Button>
+                    </div>
+                    <div>
+                      <Label htmlFor="logo-upload-replace">Logo ersetzen</Label>
+                      <Input
+                        id="logo-upload-replace"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Unterstützte Formate: JPG, PNG, GIF. Maximale Größe: 2MB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Kein Logo hochgeladen
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        Laden Sie das Logo Ihres Unternehmens hoch
+                      </p>
+                      <div className="max-w-xs mx-auto">
+                        <Label htmlFor="logo-upload" className="sr-only">Logo hochladen</Label>
+                        <Input
+                          id="logo-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="cursor-pointer"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Unterstützte Formate: JPG, PNG, GIF. Maximale Größe: 2MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">
