@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2 } from 'lucide-react';
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown } from 'lucide-react';
 import ErrorReportForm from '@/components/ErrorReportForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
@@ -15,6 +15,7 @@ import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
 import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
 import SettingsModal from '@/components/SettingsModal';
+import AdminDashboard from '@/components/AdminDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +34,8 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -69,15 +72,27 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, user]);
 
-  // Filter reports based on search term and status
-  const filteredReports = errorReports.filter(report => {
-    const matchesSearch = searchTerm === '' || 
-      report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and sort reports based on search term, status, and sort preferences
+  const filteredReports = errorReports
+    .filter(report => {
+      const matchesSearch = searchTerm === '' || 
+        report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'date') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === 'orderNumber') {
+        comparison = a.orderNumber.localeCompare(b.orderNumber);
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   const handleNewReport = () => {
     loadData();
@@ -175,6 +190,15 @@ const Index = () => {
     return isUserDeputy(user.username);
   };
 
+  const handleToggleSort = (newSortBy: 'date' | 'orderNumber') => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('desc');
+    }
+  };
+
   // Calculate pending reports count for team leaders
   const pendingReportsCount = errorReports.filter(report => report.approvalStatus === 'pending').length;
 
@@ -225,7 +249,7 @@ const Index = () => {
               {isAuthenticated && user ? (
                 <>
                   <Badge variant="default">
-                    {user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
+                    {user.role === 'admin' ? 'Administrator' : user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
                   </Badge>
                   <Button variant="outline" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -251,7 +275,10 @@ const Index = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
         {isAuthenticated && user ? (
-          // Dashboard für alle angemeldeten Benutzer (Teamleiter und Mitarbeiter)
+          user.role === 'admin' ? (
+            // Admin Dashboard
+            <AdminDashboard currentUser={user.username} />
+          ) : (
           <div className="space-y-6">
             {/* Status-Anzeige für Teamleiter */}
             {user.role === 'teamleader' && pendingReportsCount > 0 && (
@@ -297,27 +324,52 @@ const Index = () => {
                   }
                 </CardDescription>
                 {user.role === 'teamleader' && (
-                  <div className="flex items-center space-x-4 mt-4">
-                    <div className="flex items-center space-x-2">
-                      <Search className="h-4 w-4 text-gray-500" />
-                      <Input
-                        placeholder="Nach Auftragsnummer suchen..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="max-w-sm"
-                      />
+                  <div className="flex flex-col space-y-4 mt-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Search className="h-4 w-4 text-gray-500" />
+                        <Input
+                          placeholder="Nach Auftragsnummer suchen..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="max-w-sm"
+                        />
+                      </div>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Status filtern" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Status</SelectItem>
+                          <SelectItem value="pending">Zur Prüfung</SelectItem>
+                          <SelectItem value="approved">Freigegeben</SelectItem>
+                          <SelectItem value="rejected">Abgelehnt</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Status filtern" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alle Status</SelectItem>
-                        <SelectItem value="pending">Zur Prüfung</SelectItem>
-                        <SelectItem value="approved">Freigegeben</SelectItem>
-                        <SelectItem value="rejected">Abgelehnt</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    
+                    {/* Sortierungsoptionen */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">Sortieren nach:</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleSort('date')}
+                        className={sortBy === 'date' ? 'bg-gray-100' : ''}
+                      >
+                        <ArrowUpDown className="h-4 w-4 mr-1" />
+                        Datum {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleSort('orderNumber')}
+                        className={sortBy === 'orderNumber' ? 'bg-gray-100' : ''}
+                      >
+                        <ArrowUpDown className="h-4 w-4 mr-1" />
+                        Auftragsnummer {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardHeader>
@@ -369,14 +421,24 @@ const Index = () => {
                              report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
                           </Badge>
                           {user.role === 'teamleader' && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={(e) => handleDeleteClick(report, e)}
-                              className="ml-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => handleEditClick(report, e)}
+                                className="ml-2"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={(e) => handleDeleteClick(report, e)}
+                                className="ml-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -385,7 +447,8 @@ const Index = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
+            </div>
+          )
         ) : selectedTab === 'new-report' ? (
           // Neue Meldung Formular
           <div className="space-y-4">
@@ -412,9 +475,9 @@ const Index = () => {
                   onClick={() => setSelectedTab('new-report')}
                   size="lg"
                   variant="outline"
-                  className="h-32 w-32 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
+                  className="h-40 w-40 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
                 >
-                  <Plus className="h-12 w-12 text-gray-700" />
+                  <Plus className="h-16 w-16 text-gray-700" />
                 </Button>
                 <span className="text-xl font-medium text-gray-700">Neue Meldung</span>
               </div>

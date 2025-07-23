@@ -25,7 +25,7 @@ export interface ErrorReport {
   rejectedAt?: string;
 }
 
-import { getEmployees } from './settingsStorage';
+import { getEmployees, getDepartments } from './settingsStorage';
 
 export const getErrorReports = (): ErrorReport[] => {
   const stored = localStorage.getItem('production_error_reports');
@@ -256,4 +256,31 @@ export const searchErrorReportsByOrderNumber = (searchTerm: string): ErrorReport
   return reports.filter(report => 
     report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
+};
+
+// Admin Dashboard - Teamleiter Statistiken
+export const getTeamLeaderStatistics = () => {
+  const reports = getErrorReports();
+  const employees = getEmployees();
+  const departments = getDepartments();
+  
+  // Finde alle Teamleiter mit Accounts
+  const teamLeaders = employees.filter(emp => emp.isTeamLeader && emp.account?.username);
+  
+  return teamLeaders.map(leader => {
+    const username = leader.account!.username;
+    const department = departments.find(d => d.id === leader.departmentId);
+    
+    // Finde alle Meldungen die diesem Teamleiter zugewiesen sind
+    const assignedReports = reports.filter(report => report.assignedTeamLeader === username);
+    const pendingReports = assignedReports.filter(report => report.approvalStatus === 'pending');
+    
+    return {
+      username,
+      name: leader.name,
+      department: department?.name || 'Unbekannte Abteilung',
+      totalReports: assignedReports.length,
+      pendingReports: pendingReports.length
+    };
+  });
 };

@@ -3,6 +3,7 @@ export interface Employee {
   name: string;
   departmentId: string;
   isTeamLeader?: boolean;
+  isAdmin?: boolean;
   account?: {
     username: string;
     email: string;
@@ -112,4 +113,13 @@ export const saveMachine = (machine: Machine) => {
 export const deleteMachine = (machineId: string) => {
   const machines = getMachines().filter(m => m.id !== machineId);
   localStorage.setItem('production_machines', JSON.stringify(machines));
+};
+
+// Settings password management
+export const getSettingsPassword = (): string => {
+  return localStorage.getItem('settings_password') || 'admin';
+};
+
+export const setSettingsPassword = (password: string) => {
+  localStorage.setItem('settings_password', password);
 };

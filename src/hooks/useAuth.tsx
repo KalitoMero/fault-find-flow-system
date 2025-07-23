@@ -4,7 +4,7 @@ import { getEmployees } from '@/lib/settingsStorage';
 
 interface User {
   username: string;
-  role: 'teamleader' | 'employee';
+  role: 'teamleader' | 'employee' | 'admin';
   name: string;
 }
 
@@ -43,9 +43,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     if (employeeAccount) {
+      let role: 'teamleader' | 'employee' | 'admin' = 'employee';
+      if (employeeAccount.isAdmin) {
+        role = 'admin';
+      } else if (employeeAccount.isTeamLeader) {
+        role = 'teamleader';
+      }
+      
       const user = { 
         username, 
-        role: employeeAccount.isTeamLeader ? 'teamleader' as const : 'employee' as const,
+        role,
         name: employeeAccount.name
       };
       setUser(user);
