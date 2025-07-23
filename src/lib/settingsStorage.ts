@@ -123,3 +123,27 @@ export const getSettingsPassword = (): string => {
 export const setSettingsPassword = (password: string) => {
   localStorage.setItem('settings_password', password);
 };
+
+// Initialize default admin if not exists
+export const initializeDefaultAdmin = () => {
+  const employees = getEmployees();
+  const defaultAdminExists = employees.find(emp => 
+    emp.isAdmin && emp.account?.username === 'admin'
+  );
+
+  if (!defaultAdminExists) {
+    const defaultAdmin: Employee = {
+      id: generateId(),
+      name: 'Administrator',
+      departmentId: 'admin',
+      isTeamLeader: false,
+      isAdmin: true,
+      account: {
+        username: 'admin',
+        email: 'admin@admin.local',
+        password: 'admin'
+      }
+    };
+    saveEmployee(defaultAdmin);
+  }
+};

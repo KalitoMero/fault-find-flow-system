@@ -38,10 +38,6 @@ const AdminManagement: React.FC = () => {
   };
 
   const handleCreateAdmin = () => {
-    if (!newAdminName.trim()) {
-      toast.error('Bitte geben Sie einen Namen ein');
-      return;
-    }
     if (!newAdminUsername.trim()) {
       toast.error('Bitte geben Sie einen Benutzernamen ein');
       return;
@@ -64,7 +60,7 @@ const AdminManagement: React.FC = () => {
 
     const newAdmin: Employee = {
       id: generateId(),
-      name: newAdminName.trim(),
+      name: newAdminName.trim() || newAdminUsername.trim(), // Fallback zum Username falls kein Name
       departmentId: selectedDepartment || 'admin', // Admins brauchen keine echte Abteilung
       isTeamLeader: false,
       isAdmin: true,
@@ -132,48 +128,7 @@ const AdminManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Einstellungspasswort ändern */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Key className="h-5 w-5" />
-            <span>Einstellungspasswort ändern</span>
-          </CardTitle>
-          <CardDescription>
-            Ändern Sie das Passwort für den Zugang zu den Einstellungen
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="newPassword">Neues Passwort</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newSettingsPassword}
-                onChange={(e) => setNewSettingsPassword(e.target.value)}
-                placeholder="Neues Passwort eingeben"
-              />
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmSettingsPassword}
-                onChange={(e) => setConfirmSettingsPassword(e.target.value)}
-                placeholder="Passwort wiederholen"
-              />
-            </div>
-          </div>
-          <Button onClick={handleChangeSettingsPassword}>
-            <Key className="h-4 w-4 mr-2" />
-            Passwort ändern
-          </Button>
-        </CardContent>
-      </Card>
 
-      {/* Admin-Account erstellen */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -181,18 +136,18 @@ const AdminManagement: React.FC = () => {
             <span>Neuen Admin-Account erstellen</span>
           </CardTitle>
           <CardDescription>
-            Erstellen Sie einen neuen Administrator-Account
+            Erstellen Sie einen neuen Administrator-Account (Name und Abteilung optional)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="adminName">Name</Label>
+              <Label htmlFor="adminName">Name (optional)</Label>
               <Input
                 id="adminName"
                 value={newAdminName}
                 onChange={(e) => setNewAdminName(e.target.value)}
-                placeholder="Vor- und Nachname"
+                placeholder="Vor- und Nachname (optional)"
               />
             </div>
             <div>

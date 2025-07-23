@@ -22,7 +22,8 @@ import {
   deleteEmployee, 
   deleteMachine,
   getEmployeesByDepartment,
-  generateId 
+  generateId,
+  initializeDefaultAdmin 
 } from '@/lib/settingsStorage';
 import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
@@ -65,6 +66,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   }, [employees, selectedDepartmentFilter]);
 
   const loadData = () => {
+    // Initialize default admin if needed
+    initializeDefaultAdmin();
     setDepartments(getDepartments());
     setEmployees(getEmployees());
     setMachines(getMachines());
@@ -196,7 +199,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="departments" className="space-y-4">
+        <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
@@ -213,7 +216,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger 
               value="admin" 
               className="flex items-center space-x-2"
-              onClick={handleAdminTabClick}
             >
               <Shield className="h-4 w-4" />
               <span>Administration</span>
