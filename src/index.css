@@ -37,7 +37,26 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 0 84% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    
+    /* Modern Design Tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(0 84% 60%), hsl(340 75% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96.1%), hsl(220 20% 93%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.05));
+    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.08);
+    --shadow-elegant: 0 10px 30px -10px hsl(0 84% 60% / 0.3);
+    --shadow-soft: 0 4px 20px -2px hsl(0 0% 0% / 0.1);
+    --border-glass: hsl(0 0% 100% / 0.18);
+    --backdrop-blur: blur(16px);
+    
+    /* Enhanced Interactive States */
+    --hover-scale: 1.02;
+    --hover-shadow: 0 8px 25px -5px hsl(0 84% 60% / 0.25);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Form Enhancement */
+    --form-focus-glow: 0 0 0 3px hsl(0 84% 60% / 0.1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -85,6 +104,14 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 0 84% 60%;
+    
+    /* Dark Mode Enhancements */
+    --gradient-primary: linear-gradient(135deg, hsl(0 84% 60%), hsl(340 75% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(217.2 32.6% 17.5%), hsl(220 25% 15%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
+    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.3);
+    --shadow-elegant: 0 10px 30px -10px hsl(0 84% 60% / 0.4);
+    --border-glass: hsl(0 0% 100% / 0.1);
   }
 }
 
@@ -99,19 +126,72 @@ All colors MUST be HSL.
   }
 }
 
-/* Touch-optimierte Styles für Windows-Terminals */
+/* Modern Form Styles */
 @layer components {
-  /* Mindestgröße für Touch-Targets */
+  /* Floating Label Inputs */
+  .floating-label-input {
+    @apply relative transition-all duration-300;
+  }
+
+  .floating-label {
+    @apply absolute left-3 transition-all duration-300 pointer-events-none text-muted-foreground;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .floating-label-input:focus-within .floating-label,
+  .floating-label-input.has-value .floating-label {
+    @apply text-xs text-primary font-medium;
+    top: 0;
+    transform: translateY(-50%);
+    background: hsl(var(--background));
+    padding: 0 4px;
+  }
+
+  /* Glass Morphism Card */
+  .glass-card {
+    background: var(--gradient-glass);
+    backdrop-filter: var(--backdrop-blur);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* Modern Input Styles */
+  .modern-input {
+    @apply transition-all duration-300 border-border bg-background/50 rounded-xl;
+  }
+
+  .modern-input:focus {
+    @apply border-primary bg-background;
+    box-shadow: var(--form-focus-glow);
+  }
+
+  /* Form Sections */
+  .form-section {
+    @apply space-y-6 p-6 rounded-xl border border-border/50 bg-gradient-to-br from-background to-secondary/30;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Gradient Buttons */
+  .gradient-button {
+    background: var(--gradient-primary);
+    @apply border-0 text-white shadow-lg transition-all duration-300 rounded-xl;
+  }
+
+  .gradient-button:hover {
+    box-shadow: var(--hover-shadow);
+    transform: scale(var(--hover-scale));
+  }
+
+  /* Touch-optimized elements */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
 
-  /* Größere Buttons für Touch-Geräte */
   .btn-touch {
     @apply h-12 px-6 text-lg;
   }
 
-  /* Große Eingabefelder */
   .input-touch {
     @apply h-12 text-lg px-4;
   }

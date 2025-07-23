@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown } from 'lucide-react';
-import ErrorReportForm from '@/components/ErrorReportForm';
+import ErrorReportFormModern from '@/components/ErrorReportFormModern';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
 import LoginForm from '@/components/LoginForm';
@@ -451,7 +451,7 @@ const Index = () => {
             <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
               ← Zurück zur Startseite
             </Button>
-            <ErrorReportForm onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
+            <ErrorReportFormModern onReportCreated={handleNewReport} refreshDepartments={refreshDepartments} />
           </div>
         ) : selectedTab === 'report-access' ? (
           // Meldung Suchen Formular
