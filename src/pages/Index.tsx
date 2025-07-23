@@ -466,16 +466,16 @@ const Index = () => {
           <div className="relative h-[calc(100vh-100px)] flex flex-col">
             {/* Neue Meldung Button - zentriert */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex flex-col items-center space-y-4">
+              <div className="flex flex-col items-center space-y-6">
                 <Button
                   onClick={() => setSelectedTab('new-report')}
                   size="lg"
                   variant="outline"
-                  className="h-32 w-32 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
+                  className="h-48 w-48 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
                 >
-                  <Plus className="h-16 w-16 text-gray-700" />
+                  <Plus className="h-24 w-24 text-gray-700" />
                 </Button>
-                <span className="text-xl font-medium text-gray-700">Neue Meldung</span>
+                <span className="text-3xl font-medium text-gray-700">Neue Meldung</span>
               </div>
             </div>
 
