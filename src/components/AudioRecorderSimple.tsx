@@ -244,7 +244,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
   };
 
   return (
-    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '112px', marginTop: '24px' }}>
+    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '112px', paddingTop: '6px' }}>
       {/* Recording Controls */}
       {!isRecording && !hasRecording && (
         <Button
@@ -259,7 +259,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       )}
 
       {isRecording && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" style={{ height: '112px' }}>
           <Button
             onClick={stopRecording}
             variant="destructive"
@@ -285,7 +285,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       )}
 
       {hasRecording && !isSaved && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" style={{ height: '112px' }}>
           <Button
             onClick={saveAndTranscribe}
             disabled={isTranscribing}
@@ -313,15 +313,17 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       )}
 
       {isSaved && (
-        <Button
-          onClick={resetRecording}
-          variant="outline"
-          size="sm"
-          className="w-12 p-0"
-          style={{ height: '112px' }}
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <div style={{ height: '112px' }}>
+          <Button
+            onClick={resetRecording}
+            variant="outline"
+            size="sm"
+            className="w-12 p-0"
+            style={{ height: '112px' }}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
       )}
       
       {/* Status badges - positioned at bottom */}
