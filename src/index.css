@@ -162,8 +162,12 @@ All colors MUST be HSL.
   }
 
   .modern-input:focus {
-    @apply border-primary bg-background;
+    @apply border-primary bg-background ring-0 ring-offset-0;
     box-shadow: var(--form-focus-glow);
+  }
+
+  .modern-input:focus-visible {
+    @apply ring-0 ring-offset-0 outline-none;
   }
 
   /* Form Sections */

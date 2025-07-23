@@ -41,8 +41,10 @@ const FloatingLabelInput: React.FC<{
   type?: string;
   icon?: React.ReactNode;
 }> = ({ id, label, value, onChange, placeholder, required, type = "text", icon }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
   return (
-    <div className={`floating-label-input ${value ? 'has-value' : ''}`}>
+    <div className={`floating-label-input ${value || isFocused ? 'has-value' : ''}`}>
       <div className="relative">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10">
@@ -54,7 +56,9 @@ const FloatingLabelInput: React.FC<{
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder=""
           required={required}
           className={`modern-input pt-6 ${icon ? 'pl-10' : 'pl-3'}`}
         />
@@ -75,14 +79,18 @@ const FloatingLabelTextarea: React.FC<{
   required?: boolean;
   rows?: number;
 }> = ({ id, label, value, onChange, placeholder, required, rows = 3 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
   return (
-    <div className={`floating-label-input ${value ? 'has-value' : ''}`}>
+    <div className={`floating-label-input ${value || isFocused ? 'has-value' : ''}`}>
       <div className="relative">
         <Textarea
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder=""
           required={required}
           rows={rows}
           className="modern-input pt-6 min-h-[100px] resize-none"
@@ -268,19 +276,6 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   return (
     <div className="animate-fade-in space-y-8">
-      <Card className="glass-card border-primary/20">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Neue Fehlermeldung erstellen
-          </CardTitle>
-          <CardDescription className="text-lg text-muted-foreground">
-            Erfassen Sie eine neue Fehlermeldung für die Qualitätssicherung
-          </CardDescription>
-        </CardHeader>
-      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Grunddaten */}
