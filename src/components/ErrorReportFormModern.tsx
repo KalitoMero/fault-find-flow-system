@@ -299,7 +299,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               />
               <FloatingLabelInput
                 id="afoNumber"
-                label="AFO-Nummer"
+                label="AFO-Nummer (Optional)"
                 value={afoNumber}
                 onChange={setAfoNumber}
                 placeholder="z.B. AFO-12345"
