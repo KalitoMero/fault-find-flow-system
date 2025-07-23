@@ -23,6 +23,12 @@ const fallbackTestAccounts = [
   { username: 'Test2', password: 'Test1' }
 ];
 
+// Standard-Admin Account
+const defaultAdminAccount = {
+  username: 'admin',
+  password: 'admin'
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
@@ -54,6 +60,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         username, 
         role,
         name: employeeAccount.name
+      };
+      setUser(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      return true;
+    }
+
+    // Standard-Admin Account prüfen
+    if (username === defaultAdminAccount.username && password === defaultAdminAccount.password) {
+      const user = { 
+        username, 
+        role: 'admin' as const,
+        name: 'Administrator'
       };
       setUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));

@@ -475,7 +475,7 @@ const Index = () => {
                   onClick={() => setSelectedTab('new-report')}
                   size="lg"
                   variant="outline"
-                  className="h-40 w-40 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
+                  className="h-32 w-32 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"
                 >
                   <Plus className="h-16 w-16 text-gray-700" />
                 </Button>

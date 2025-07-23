@@ -50,9 +50,9 @@ const AdminManagement: React.FC = () => {
       toast.error('Bitte geben Sie ein Passwort ein');
       return;
     }
-    if (!selectedDepartment) {
-      toast.error('Bitte wählen Sie eine Abteilung aus');
-      return;
+    // Admins brauchen keine Abteilung - setze default Wert
+    if (!selectedDepartment && departments.length > 0) {
+      setSelectedDepartment(departments[0].id);
     }
 
     // Prüfen ob Username bereits existiert
@@ -65,7 +65,7 @@ const AdminManagement: React.FC = () => {
     const newAdmin: Employee = {
       id: generateId(),
       name: newAdminName.trim(),
-      departmentId: selectedDepartment,
+      departmentId: selectedDepartment || 'admin', // Admins brauchen keine echte Abteilung
       isTeamLeader: false,
       isAdmin: true,
       account: {
@@ -215,10 +215,10 @@ const AdminManagement: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="adminDepartment">Abteilung</Label>
+              <Label htmlFor="adminDepartment">Abteilung (optional)</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Abteilung auswählen" />
+                  <SelectValue placeholder="Abteilung auswählen (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((department) => (
@@ -230,15 +230,10 @@ const AdminManagement: React.FC = () => {
               </Select>
             </div>
           </div>
-          <Button onClick={handleCreateAdmin} disabled={departments.length === 0}>
+          <Button onClick={handleCreateAdmin}>
             <Plus className="h-4 w-4 mr-2" />
             Admin erstellen
           </Button>
-          {departments.length === 0 && (
-            <p className="text-sm text-orange-600">
-              Erstellen Sie zuerst eine Abteilung, bevor Sie Admin-Accounts erstellen können.
-            </p>
-          )}
         </CardContent>
       </Card>
 

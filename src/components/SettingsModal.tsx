@@ -27,6 +27,7 @@ import {
 import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
 import AdminManagement from './AdminManagement';
+import AdminAuthDialog from './AdminAuthDialog';
 import { toast } from "sonner";
 
 interface SettingsModalProps {
@@ -46,6 +47,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('all');
   const [accountCreationEmployee, setAccountCreationEmployee] = useState<Employee | null>(null);
   const [accountManagementEmployee, setAccountManagementEmployee] = useState<Employee | null>(null);
+  const [showAdminAuth, setShowAdminAuth] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -175,6 +178,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     loadData();
   };
 
+  const handleAdminTabClick = () => {
+    setShowAdminAuth(true);
+  };
+
+  const handleAdminAuthSuccess = () => {
+    setShowAdminPanel(true);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -199,7 +210,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               <MapPin className="h-4 w-4" />
               <span>Feststellorte</span>
             </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center space-x-2">
+            <TabsTrigger 
+              value="admin" 
+              className="flex items-center space-x-2"
+              onClick={handleAdminTabClick}
+            >
               <Shield className="h-4 w-4" />
               <span>Administration</span>
             </TabsTrigger>
@@ -465,7 +480,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">
-            <AdminManagement />
+            {showAdminPanel ? (
+              <AdminManagement />
+            ) : (
+              <div className="text-center py-8">
+                <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Administrator-Zugang erforderlich
+                </h3>
+                <p className="text-gray-500">
+                  Klicken Sie auf den Administration-Tab, um sich zu authentifizieren.
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -483,14 +510,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         />
       )}
 
-      {accountManagementEmployee && (
-        <AccountManagementDialog
-          isOpen={!!accountManagementEmployee}
-          onClose={() => setAccountManagementEmployee(null)}
-          employee={accountManagementEmployee}
-          onAccountUpdated={handleAccountUpdated}
+        {accountManagementEmployee && (
+          <AccountManagementDialog
+            isOpen={!!accountManagementEmployee}
+            onClose={() => setAccountManagementEmployee(null)}
+            employee={accountManagementEmployee}
+            onAccountUpdated={handleAccountUpdated}
+          />
+        )}
+
+        <AdminAuthDialog
+          isOpen={showAdminAuth}
+          onClose={() => setShowAdminAuth(false)}
+          onSuccess={handleAdminAuthSuccess}
         />
-      )}
     </Dialog>
   );
 };
