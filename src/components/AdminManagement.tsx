@@ -128,6 +128,46 @@ const AdminManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Einstellungspasswort ändern */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Key className="h-5 w-5" />
+            <span>Einstellungspasswort ändern</span>
+          </CardTitle>
+          <CardDescription>
+            Ändern Sie das Passwort für den Zugang zu den Einstellungen
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="newSettingsPassword">Neues Passwort</Label>
+              <Input
+                id="newSettingsPassword"
+                type="password"
+                value={newSettingsPassword}
+                onChange={(e) => setNewSettingsPassword(e.target.value)}
+                placeholder="Neues Einstellungspasswort"
+              />
+            </div>
+            <div>
+              <Label htmlFor="confirmSettingsPassword">Passwort bestätigen</Label>
+              <Input
+                id="confirmSettingsPassword"
+                type="password"
+                value={confirmSettingsPassword}
+                onChange={(e) => setConfirmSettingsPassword(e.target.value)}
+                placeholder="Passwort bestätigen"
+              />
+            </div>
+          </div>
+          <Button onClick={handleChangeSettingsPassword}>
+            <Key className="h-4 w-4 mr-2" />
+            Passwort ändern
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

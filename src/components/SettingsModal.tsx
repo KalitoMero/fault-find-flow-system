@@ -58,10 +58,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
+    // Filter out admin accounts from regular employee view
+    const nonAdminEmployees = employees.filter(emp => !emp.isAdmin);
+    
     if (selectedDepartmentFilter === 'all') {
-      setFilteredEmployees(employees);
+      setFilteredEmployees(nonAdminEmployees);
     } else {
-      setFilteredEmployees(employees.filter(emp => emp.departmentId === selectedDepartmentFilter));
+      setFilteredEmployees(nonAdminEmployees.filter(emp => emp.departmentId === selectedDepartmentFilter));
     }
   }, [employees, selectedDepartmentFilter]);
 
