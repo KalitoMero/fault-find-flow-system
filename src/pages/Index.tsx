@@ -140,7 +140,12 @@ const Index = () => {
 
   const handleReportClick = (report: ErrorReport) => {
     if (isAuthenticated) {
-      setSelectedReport(report);
+      // Teamleiter gehen direkt zur Bearbeitung
+      if (user?.role === 'teamleader') {
+        setEditingReport(report);
+      } else {
+        setSelectedReport(report);
+      }
     } else {
       // Für Mitarbeiter: nur freigegebene Meldungen anklickbar
       if (report.approvalStatus === 'approved') {
@@ -417,24 +422,14 @@ const Index = () => {
                              report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
                           </Badge>
                           {user.role === 'teamleader' && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => handleEditClick(report, e)}
-                                className="ml-2"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={(e) => handleDeleteClick(report, e)}
-                                className="ml-2"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => handleDeleteClick(report, e)}
+                              className="ml-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
                       </div>
