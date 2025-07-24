@@ -401,7 +401,6 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     value={problemDescription}
                     onChange={setProblemDescription}
                     placeholder="Beschreiben Sie das aufgetretene Problem detailliert..."
-                    required
                     rows={4}
                   />
                 </div>
