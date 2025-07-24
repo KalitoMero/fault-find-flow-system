@@ -309,11 +309,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             
             <FloatingLabelInput
               id="defectiveQuantity"
-              label="Fehlerhafte Menge"
+              label="Menge"
               type="number"
               value={defectiveQuantity}
               onChange={setDefectiveQuantity}
-              placeholder="Anzahl fehlerhafter Teile"
+              placeholder="Anzahl"
               required
               icon={<Package className="h-4 w-4" />}
             />

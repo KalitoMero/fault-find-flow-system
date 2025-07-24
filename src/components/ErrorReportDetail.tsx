@@ -284,10 +284,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-600">Beanstandete Menge:</span>
-                    <p className="font-medium">{report.defectiveQuantity}</p>
-                  </div>
+                   <div>
+                     <span className="text-sm text-gray-600">Menge:</span>
+                     <p className="font-medium">{report.defectiveQuantity}</p>
+                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Ersteller:</span>
                     <p className="font-medium">{report.creator}</p>

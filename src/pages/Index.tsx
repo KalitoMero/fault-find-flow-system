@@ -140,8 +140,8 @@ const Index = () => {
 
   const handleReportClick = (report: ErrorReport) => {
     if (isAuthenticated) {
-      // Teamleiter gehen direkt zur Bearbeitung
-      if (user?.role === 'teamleader') {
+      // Teamleiter gehen direkt zur Bearbeitung, außer bei pending Status (dann Detail-Ansicht für Freigabe)
+      if (user?.role === 'teamleader' && report.approvalStatus !== 'pending') {
         setEditingReport(report);
       } else {
         setSelectedReport(report);
