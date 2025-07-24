@@ -150,7 +150,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
     try {
       if (!orderNumber || !defectiveQuantity || 
-          !problemDescription || !correctiveAction || 
+          !problemDescription || 
           !selectedDepartment || !selectedEmployee) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
@@ -424,7 +424,6 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     value={correctiveAction}
                     onChange={setCorrectiveAction}
                     placeholder="Beschreiben Sie die durchgeführten Korrekturmaßnahmen..."
-                    required
                     rows={4}
                   />
                 </div>
