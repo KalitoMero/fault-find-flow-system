@@ -248,6 +248,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       {/* Recording Controls */}
       {!isRecording && !hasRecording && (
         <Button
+          type="button"
           onClick={startRecording}
           variant="destructive"
           size="sm"
@@ -261,6 +262,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       {isRecording && (
         <div className="flex flex-col gap-2" style={{ height: '112px' }}>
           <Button
+            type="button"
             onClick={stopRecording}
             variant="destructive"
             size="sm"
@@ -287,6 +289,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       {hasRecording && !isSaved && (
         <div className="flex flex-col gap-2" style={{ height: '112px' }}>
           <Button
+            type="button"
             onClick={saveAndTranscribe}
             disabled={isTranscribing}
             variant="outline"
@@ -301,6 +304,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
             )}
           </Button>
           <Button
+            type="button"
             onClick={resetRecording}
             variant="outline"
             size="sm"
@@ -315,6 +319,7 @@ const AudioRecorderSimple: React.FC<AudioRecorderSimpleProps> = ({ onTranscripti
       {isSaved && (
         <div style={{ height: '112px' }}>
           <Button
+            type="button"
             onClick={resetRecording}
             variant="outline"
             size="sm"
