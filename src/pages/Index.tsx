@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown } from 'lucide-react';
 import ErrorReportFormModern from '@/components/ErrorReportFormModern';
+import StepByStepForm from '@/components/StepByStepForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
 import LoginForm from '@/components/LoginForm';
@@ -39,6 +40,7 @@ const Index = () => {
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showStepForm, setShowStepForm] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
 
   const loadData = () => {
@@ -97,8 +99,13 @@ const Index = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
+  const handleCreateReport = () => {
+    setShowStepForm(true);
+  };
+
   const handleNewReport = () => {
     loadData();
+    setShowStepForm(false);
     toast.success("Fehlermeldung erfolgreich erstellt!");
   };
 
@@ -209,6 +216,16 @@ const Index = () => {
 
   // Calculate pending reports count for team leaders
   const pendingReportsCount = errorReports.filter(report => report.approvalStatus === 'pending').length;
+
+  // Zeige Schritt-für-Schritt Formular
+  if (showStepForm) {
+    return (
+      <StepByStepForm 
+        onReportCreated={handleNewReport}
+        onClose={() => setShowStepForm(false)}
+      />
+    );
+  }
 
   // Zeige Login-Formular
   if (showLogin && !isAuthenticated) {
@@ -463,7 +480,7 @@ const Index = () => {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center space-y-6">
                 <Button
-                  onClick={() => setSelectedTab('new-report')}
+                  onClick={handleCreateReport}
                   size="lg"
                   variant="outline"
                   className="h-48 w-48 rounded-full p-0 bg-white border-2 border-gray-300 hover:bg-gray-50 animate-fade-in hover-scale"

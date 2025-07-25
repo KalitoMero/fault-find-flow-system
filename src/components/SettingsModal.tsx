@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin, Download, Upload, Image } from 'lucide-react';
+import { Trash2, Plus, Building, Users, UserPlus, Shield, Settings, MapPin, Download, Upload, Image, FileSpreadsheet } from 'lucide-react';
 import { 
   Department, 
   Employee, 
@@ -32,6 +32,7 @@ import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
 import AdminManagement from './AdminManagement';
 import AdminAuthDialog from './AdminAuthDialog';
+import ExcelUploadSettings from './ExcelUploadSettings';
 import ExportSection from './ExportSection';
 import { getErrorReports } from '@/lib/storage';
 import { toast } from "sonner";
@@ -250,7 +251,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -270,6 +271,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="company" className="flex items-center space-x-2">
               <Image className="h-4 w-4" />
               <span>Unternehmen</span>
+            </TabsTrigger>
+            <TabsTrigger value="excel" className="flex items-center space-x-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Excel-Import</span>
             </TabsTrigger>
             <TabsTrigger 
               value="admin" 
@@ -614,6 +619,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="excel">
+            <ExcelUploadSettings />
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">
