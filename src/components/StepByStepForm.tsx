@@ -304,7 +304,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     {field.icon}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-green-800">{field.label}</p>
-                      <p className="text-sm text-green-600 truncate">{field.value}</p>
+                      {field.type === 'textarea' ? (
+                        <div className="text-sm text-green-600">
+                          <p className="whitespace-pre-wrap break-words">{field.value}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-green-600 truncate">{field.value}</p>
+                      )}
                     </div>
                     <Edit3 className="h-4 w-4 text-green-600" />
                   </div>
@@ -327,13 +333,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             <div className="flex flex-col items-center space-y-4">
               {currentField.type === 'textarea' ? (
                 <div className="w-full max-w-md space-y-4">
-                  {/* Show full text above if there's content */}
-                  {currentField.value && (
-                    <div className="p-4 bg-gray-50 rounded-lg border">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{currentField.value}</p>
-                    </div>
-                  )}
-                  
                   <div className="flex gap-2 items-start">
                     <Textarea
                       value={currentField.value}
