@@ -183,6 +183,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     if (currentStep === 0 && currentField.value.includes('.')) {
       console.log('Parsing order number:', currentField.value); // Debug log
       parseOrderNumber(currentField.value);
+      
+      // Mark current field as completed
+      setFields(prev => prev.map((field, index) => 
+        index === currentStep ? { ...field, completed: true } : field
+      ));
+      
+      // Skip directly to step 2 (defectiveQuantity) since AFO is auto-filled
+      setCurrentStep(2);
+      return;
     }
 
     setFields(prev => prev.map((field, index) => 
@@ -194,12 +203,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       setCurrentStep(originalStep);
       setOriginalStep(0); // Reset original step
     } else if (currentStep < fields.length - 1) {
-      // Skip AFO if already parsed from order number
-      if (currentStep === 0 && fields[1].completed) {
-        setCurrentStep(2);
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
+      setCurrentStep(currentStep + 1);
     }
   };
 
