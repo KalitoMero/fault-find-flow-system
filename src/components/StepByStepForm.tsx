@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
@@ -35,7 +35,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     problemDescription?: string;
     correctiveAction?: string;
   }>({});
-  const [showKeypad, setShowKeypad] = useState(false);
+  const [showKeypad, setShowKeypad] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [fields, setFields] = useState<FormField[]>([
@@ -63,7 +63,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       id: 'defectiveQuantity',
       label: 'Menge',
       value: '',
-      type: 'number',
+      type: 'text',
       required: true,
       completed: false,
       icon: <Package className="h-4 w-4" />,
@@ -73,7 +73,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       id: 'personalNumber',
       label: 'Personalnummer',
       value: '',
-      type: 'number',
+      type: 'text',
       required: true,
       completed: false,
       icon: <User className="h-4 w-4" />,
@@ -278,6 +278,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Back to Home Button */}
+        <div className="flex justify-start">
+          <Button 
+            onClick={onClose}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Zurück zur Startseite
+          </Button>
+        </div>
+
         {/* Completed Fields */}
         {completedFields.length > 0 && (
           <Card className="bg-white/80 backdrop-blur-sm">
@@ -303,7 +315,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         )}
 
         {/* Current Field */}
-        <Card className="bg-white shadow-xl">
+        <Card className="bg-white shadow-xl min-h-[600px] flex flex-col justify-center">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl flex items-center justify-center gap-3">
               {currentField.icon}
@@ -311,19 +323,26 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               {currentField.required && <span className="text-red-500">*</span>}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 flex-1 flex flex-col justify-center">
             <div className="flex flex-col items-center space-y-4">
               {currentField.type === 'textarea' ? (
                 <div className="w-full max-w-md space-y-4">
-                  <Textarea
-                    value={currentField.value}
-                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                    placeholder={currentField.placeholder}
-                    rows={4}
-                    className="text-center text-lg"
-                  />
-                  {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                    <div className="flex justify-center">
+                  {/* Show full text above if there's content */}
+                  {currentField.value && (
+                    <div className="p-4 bg-gray-50 rounded-lg border">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{currentField.value}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 items-start">
+                    <Textarea
+                      value={currentField.value}
+                      onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                      placeholder={currentField.placeholder}
+                      rows={4}
+                      className="text-center text-lg flex-1"
+                    />
+                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
                       <AudioRecorderSimple 
                         onTranscription={(transcription, audioBlob) => {
                           handleFieldUpdate(currentField.id, transcription);
@@ -331,28 +350,26 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         }}
                         label={`${currentField.label} aufnehmen`}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
-                <Input
-                  type={currentField.type}
-                  value={currentField.value}
-                  onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                  placeholder={currentField.placeholder}
-                  className="text-center text-xl max-w-md h-14"
-                  onFocus={() => setShowKeypad(showNumericKeypad)}
-                  onBlur={() => setTimeout(() => setShowKeypad(false), 200)}
-                />
-              )}
-
-              {/* Touch Keypad */}
-              {showKeypad && showNumericKeypad && (
-                <TouchKeypad
-                  onInput={handleKeypadInput}
-                  onBackspace={handleKeypadBackspace}
-                  className="mt-4"
-                />
+                <div className="flex flex-col items-center space-y-4">
+                  <Input
+                    type="text"
+                    value={currentField.value}
+                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    placeholder={currentField.placeholder}
+                    className="text-center text-xl max-w-md h-14"
+                  />
+                  
+                  {/* Touch Keypad - Always visible for non-textarea fields */}
+                  <TouchKeypad
+                    onInput={handleKeypadInput}
+                    onBackspace={handleKeypadBackspace}
+                    className="mt-4"
+                  />
+                </div>
               )}
             </div>
 
