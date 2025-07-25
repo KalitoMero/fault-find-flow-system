@@ -275,7 +275,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   };
 
   const currentField = fields[currentStep];
-  const completedFields = fields.slice(0, currentStep).filter(f => f.completed);
+  const completedFields = fields.filter(f => f.completed && f.id !== currentField.id);
   const isLastStep = currentStep === fields.length - 1;
   const showNumericKeypad = currentField && (currentField.type === 'number' || currentField.type === 'text');
 
