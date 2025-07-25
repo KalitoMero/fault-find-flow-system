@@ -105,7 +105,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setEmployees(getEmployees());
   }, []);
 
-  // Parse AFO from order number if it contains a dot
+  // Parse AFO from order number if it contains a dot (when moving to next step)
   const parseOrderNumber = (orderNum: string) => {
     const dotIndex = orderNum.indexOf('.');
     if (dotIndex !== -1) {
@@ -114,20 +114,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       setFields(prev => prev.map(field => {
         if (field.id === 'orderNumber') {
-          return { ...field, value: orderPart, completed: true };
+          return { ...field, value: orderPart };
         }
         if (field.id === 'afoNumber') {
           return { ...field, value: afoPart, completed: true };
         }
         return field;
       }));
-      
-      // Skip AFO field if it contains a dot
-      if (afoPart.includes('.')) {
-        setCurrentStep(2); // Skip to quantity
-      } else {
-        setCurrentStep(2); // Skip AFO since it's parsed
-      }
     }
   };
 
@@ -194,6 +187,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setFields(prev => prev.map((field, index) => 
       index === currentStep ? { ...field, completed: true } : field
     ));
+
+    // Parse order number when leaving the field
+    if (currentStep === 0 && currentField.value.includes('.')) {
+      parseOrderNumber(currentField.value);
+    }
 
     if (currentStep < fields.length - 1) {
       // Skip AFO if already parsed from order number
@@ -294,23 +292,40 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         {completedFields.length > 0 && (
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {completedFields.map((field, index) => (
+              <div className="space-y-3">
+                {/* Number fields in a row - 4 columns with AFO smaller */}
+                <div className="grid grid-cols-4 gap-3">
+                  {completedFields.filter(f => f.type !== 'textarea').map((field, index) => (
+                    <div
+                      key={field.id}
+                      onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
+                      className={`flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${
+                        field.id === 'afoNumber' ? 'col-span-1' : 'col-span-1'
+                      }`}
+                    >
+                      {field.icon}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-green-800">{field.label}</p>
+                        <p className="text-sm text-green-600 truncate">{field.value}</p>
+                      </div>
+                      <Edit3 className="h-3 w-3 text-green-600" />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Text areas full width */}
+                {completedFields.filter(f => f.type === 'textarea').map((field, index) => (
                   <div
                     key={field.id}
-                    onClick={() => handleFieldClick(index)}
-                    className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+                    onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
+                    className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
                   >
                     {field.icon}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-green-800">{field.label}</p>
-                      {field.type === 'textarea' ? (
-                        <div className="text-sm text-green-600">
-                          <p className="whitespace-pre-wrap break-words">{field.value}</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-green-600 truncate">{field.value}</p>
-                      )}
+                      <div className="text-sm text-green-600">
+                        <p className="whitespace-pre-wrap break-words">{field.value}</p>
+                      </div>
                     </div>
                     <Edit3 className="h-4 w-4 text-green-600" />
                   </div>
