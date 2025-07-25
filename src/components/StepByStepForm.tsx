@@ -156,18 +156,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setFields(prev => prev.map(field => {
       if (field.id === fieldId) {
         const updated = { ...field, value, completed: value.length > 0 };
-        
-        // Special handling for order number parsing
-        if (fieldId === 'orderNumber' && value.includes('.')) {
-          setTimeout(() => parseOrderNumber(value), 100);
-        }
-        
         return updated;
       }
       return field;
     }));
     
-    // Check Excel data when order number or AFO is updated
+    // Check Excel data when order number or AFO is updated (but not during parsing)
     if (fieldId === 'orderNumber' || fieldId === 'afoNumber') {
       const orderField = fields.find(f => f.id === 'orderNumber');
       const afoField = fields.find(f => f.id === 'afoNumber');
@@ -185,14 +179,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       return;
     }
 
+    // Parse order number when leaving the order number field (step 0)
+    if (currentStep === 0 && currentField.value.includes('.')) {
+      console.log('Parsing order number:', currentField.value); // Debug log
+      parseOrderNumber(currentField.value);
+    }
+
     setFields(prev => prev.map((field, index) => 
       index === currentStep ? { ...field, completed: true } : field
     ));
-
-    // Parse order number when leaving the field
-    if (currentStep === 0 && currentField.value.includes('.')) {
-      parseOrderNumber(currentField.value);
-    }
 
     // Return to original step or go to next step
     if (originalStep > currentStep && originalStep < fields.length) {
