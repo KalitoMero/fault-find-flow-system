@@ -30,6 +30,7 @@ interface FormField {
 
 const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [originalStep, setOriginalStep] = useState(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [audioFiles, setAudioFiles] = useState<{
     problemDescription?: string;
@@ -193,7 +194,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       parseOrderNumber(currentField.value);
     }
 
-    if (currentStep < fields.length - 1) {
+    // Return to original step or go to next step
+    if (originalStep > currentStep && originalStep < fields.length) {
+      setCurrentStep(originalStep);
+      setOriginalStep(0); // Reset original step
+    } else if (currentStep < fields.length - 1) {
       // Skip AFO if already parsed from order number
       if (currentStep === 0 && fields[1].completed) {
         setCurrentStep(2);
@@ -205,6 +210,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   const handleFieldClick = (index: number) => {
     if (fields[index].completed) {
+      setOriginalStep(currentStep); // Remember where we came from
       setCurrentStep(index);
     }
   };
@@ -275,18 +281,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Back to Home Button */}
-        <div className="flex justify-start">
-          <Button 
-            onClick={onClose}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Zurück zur Startseite
-          </Button>
-        </div>
+      {/* Back to Home Button - Fixed top left */}
+      <div className="fixed top-4 left-4 z-10">
+        <Button 
+          onClick={onClose}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Home className="h-4 w-4" />
+          Zurück zur Startseite
+        </Button>
+      </div>
+
+      <div className="max-w-4xl mx-auto space-y-4 pt-16">
 
         {/* Completed Fields */}
         {completedFields.length > 0 && (
