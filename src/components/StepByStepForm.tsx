@@ -217,6 +217,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   const handleKeypadInput = (value: string) => {
     const currentField = fields[currentStep];
+    console.log('handleKeypadInput called with:', value, 'for field:', currentField.id); // Debug log
+    
+    // Allow decimal point only for order number field
+    if (value === '.' && currentField.id !== 'orderNumber') {
+      console.log('Decimal point blocked for field:', currentField.id); // Debug log
+      return;
+    }
+    
     handleFieldUpdate(currentField.id, currentField.value + value);
   };
 
@@ -390,6 +398,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   <TouchKeypad
                     onInput={handleKeypadInput}
                     onBackspace={handleKeypadBackspace}
+                    allowDecimal={currentField.id === 'orderNumber'}
                     className="mt-4"
                   />
                 </div>
