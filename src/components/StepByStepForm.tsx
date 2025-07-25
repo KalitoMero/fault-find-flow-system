@@ -382,6 +382,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
                     placeholder={currentField.placeholder}
                     className="text-center text-xl max-w-md h-14"
+                    pattern={currentField.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
+                    inputMode={currentField.id === 'orderNumber' ? 'decimal' : 'numeric'}
                   />
                   
                   {/* Touch Keypad - Always visible for non-textarea fields */}
