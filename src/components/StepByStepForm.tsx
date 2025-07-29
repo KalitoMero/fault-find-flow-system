@@ -250,10 +250,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     if (fieldId === 'orderNumber' || fieldId === 'afoNumber') {
       const orderField = fields.find(f => f.id === 'orderNumber');
       const afoField = fields.find(f => f.id === 'afoNumber');
-      setTimeout(() => checkExcelData(
-        fieldId === 'orderNumber' ? value : orderField?.value || '',
-        fieldId === 'afoNumber' ? value : afoField?.value
-      ), 100);
+      
+      const orderNumber = fieldId === 'orderNumber' ? value : orderField?.value || '';
+      const afoNumber = fieldId === 'afoNumber' ? value : afoField?.value || '';
+      
+      // Nur prüfen wenn BEIDE Nummern vorhanden sind
+      if (orderNumber && afoNumber) {
+        setTimeout(() => checkExcelData(orderNumber, afoNumber), 100);
+      }
     }
   };
 
