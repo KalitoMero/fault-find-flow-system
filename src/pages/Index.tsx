@@ -258,7 +258,7 @@ const Index = () => {
   const stats = getErrorReportStatistics();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-50">
       {/* Buttons fixed in top right corner */}
       <div className="fixed top-4 right-4 z-50 flex items-center space-x-4">
         {isAuthenticated && user ? (
