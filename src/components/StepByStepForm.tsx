@@ -446,7 +446,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 {/* Excel Status Info */}
                 {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                       {excelDepartment && (
                         <div>
                           <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
