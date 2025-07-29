@@ -8,6 +8,8 @@ interface ExcelSettings {
   afoNumberColumn: string;
   departmentColumn?: string;
   additionalColumns: ExcelColumn[];
+  fileName?: string;
+  rowCount?: number;
 }
 
 interface ExcelData {

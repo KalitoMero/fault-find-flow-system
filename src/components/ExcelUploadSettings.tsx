@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
-import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } from '@/lib/excelStorage';
+import { saveExcelData, saveExcelSettings, getExcelSettings, getExcelData, clearExcelData } from '@/lib/excelStorage';
 import { toast } from "sonner";
 
 interface ExcelColumn {
@@ -23,6 +23,8 @@ const ExcelUploadSettings: React.FC = () => {
   const [additionalColumns, setAdditionalColumns] = useState<ExcelColumn[]>([]);
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnRef, setNewColumnRef] = useState('');
+  const [fileName, setFileName] = useState<string>('');
+  const [rowCount, setRowCount] = useState<number>(0);
 
   useEffect(() => {
     const settings = getExcelSettings();
@@ -31,6 +33,18 @@ const ExcelUploadSettings: React.FC = () => {
       setAfoNumberColumn(settings.afoNumberColumn);
       setDepartmentColumn(settings.departmentColumn || '');
       setAdditionalColumns(settings.additionalColumns);
+      setFileName(settings.fileName || '');
+      setRowCount(settings.rowCount || 0);
+    }
+    
+    // Load existing Excel data
+    const existingData = getExcelData();
+    if (existingData) {
+      setExcelData(existingData.data);
+      // Extract columns from the first row
+      if (existingData.data.length > 0) {
+        setColumns(Object.keys(existingData.data[0]));
+      }
     }
   }, []);
 
@@ -63,6 +77,8 @@ const ExcelUploadSettings: React.FC = () => {
 
       setExcelData(data);
       setColumns(headers);
+      setFileName(uploadedFile.name);
+      setRowCount(data.length);
       toast.success(`Excel-Datei erfolgreich geladen (${data.length} Zeilen)`);
     } catch (error) {
       console.error('Error reading file:', error);
@@ -101,7 +117,9 @@ const ExcelUploadSettings: React.FC = () => {
       orderNumberColumn,
       afoNumberColumn,
       departmentColumn: departmentColumn || undefined,
-      additionalColumns
+      additionalColumns,
+      fileName,
+      rowCount
     });
 
     toast.success('Excel-Einstellungen gespeichert');
@@ -116,6 +134,8 @@ const ExcelUploadSettings: React.FC = () => {
     setAfoNumberColumn('');
     setDepartmentColumn('');
     setAdditionalColumns([]);
+    setFileName('');
+    setRowCount(0);
     toast.success('Excel-Daten gelöscht');
   };
 
@@ -140,10 +160,10 @@ const ExcelUploadSettings: React.FC = () => {
                 className="cursor-pointer"
               />
             </div>
-            {file && (
+            {(file || fileName) && (
               <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
                 <Upload className="h-4 w-4" />
-                {file.name} ({excelData.length} Zeilen geladen)
+                {file?.name || fileName} ({file ? excelData.length : rowCount} Zeilen geladen)
               </div>
             )}
           </div>
