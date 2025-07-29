@@ -109,6 +109,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setEmployees(getEmployees());
   }, []);
 
+  // useEffect für Excel-Überprüfung wenn AFO-Nummer sich ändert
+  useEffect(() => {
+    const orderField = fields.find(f => f.id === 'orderNumber');
+    const afoField = fields.find(f => f.id === 'afoNumber');
+    
+    if (orderField?.value && afoField?.value) {
+      console.log('useEffect triggered: checking Excel data for', orderField.value, afoField.value);
+      setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
+    }
+  }, [fields.find(f => f.id === 'afoNumber')?.value]);
+
   // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
   const findTeamLeaderForDepartment = (departmentName: string): string => {
     const employees = getEmployees();
@@ -139,10 +150,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Parse AFO from order number if it contains a dot (when moving to next step)
   const parseOrderNumber = (orderNum: string) => {
+    console.log('parseOrderNumber called with:', orderNum);
     const dotIndex = orderNum.indexOf('.');
     if (dotIndex !== -1) {
       const orderPart = orderNum.substring(0, dotIndex);
       const afoPart = orderNum.substring(dotIndex + 1);
+      console.log('Parsed order:', orderPart, 'AFO:', afoPart);
       
       setFields(prev => prev.map(field => {
         if (field.id === 'orderNumber') {
@@ -153,6 +166,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         }
         return field;
       }));
+      
+      // Excel-Überprüfung nach dem Parsen mit Delay
+      setTimeout(() => {
+        console.log('Triggering Excel check after parseOrderNumber');
+        checkExcelData(orderPart, afoPart);
+      }, 200);
     }
   };
 
@@ -240,6 +259,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   };
 
   const handleFieldUpdate = (fieldId: string, value: string) => {
+    console.log('handleFieldUpdate called:', fieldId, value);
     setFields(prev => prev.map(field => {
       if (field.id === fieldId) {
         const updated = { ...field, value, completed: value.length > 0 };
@@ -256,8 +276,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const orderNumber = fieldId === 'orderNumber' ? value : orderField?.value || '';
       const afoNumber = fieldId === 'afoNumber' ? value : afoField?.value || '';
       
+      console.log('Field update check:', { fieldId, orderNumber, afoNumber });
+      
       // Nur prüfen wenn BEIDE Nummern vorhanden sind
       if (orderNumber && afoNumber) {
+        console.log('Both numbers present, triggering Excel check');
         setTimeout(() => checkExcelData(orderNumber, afoNumber), 100);
       }
     }
@@ -288,6 +311,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setFields(prev => prev.map((field, index) => 
       index === currentStep ? { ...field, completed: true } : field
     ));
+
+    // Excel-Überprüfung beim Weiterklicken wenn beide Nummern vorhanden sind
+    const orderField = fields.find(f => f.id === 'orderNumber');
+    const afoField = fields.find(f => f.id === 'afoNumber');
+    if (orderField?.value && afoField?.value) {
+      console.log('handleNext: triggering Excel check');
+      setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
+    }
 
     // Return to original step or go to next step
     if (originalStep > currentStep && originalStep < fields.length) {
@@ -447,6 +478,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               {currentField.label}
               {currentField.required && <span className="text-red-500">*</span>}
             </CardTitle>
+            {/* Debug info */}
+            {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+              <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                <p><strong>Excel-Status:</strong></p>
+                {excelDepartment && <p>Abteilung: {excelDepartment}</p>}
+                {assignedTeamLeader !== 'System' && <p>Teamleiter: {assignedTeamLeader}</p>}
+                {Object.keys(additionalExcelData).length > 0 && (
+                  <p>Zusatzdaten: {Object.keys(additionalExcelData).join(', ')}</p>
+                )}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6 flex-1 flex flex-col justify-center">
             <div className="flex flex-col items-center space-y-4">
