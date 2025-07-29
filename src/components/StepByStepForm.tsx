@@ -241,11 +241,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       return;
     }
 
-    const employee = employees.find(emp => emp.id === fields.find(f => f.id === 'personalNumber')?.value);
-    if (!employee) {
-      toast.error('Mitarbeiter mit dieser Personalnummer nicht gefunden');
-      return;
-    }
+    // Personalnummer wird direkt verwendet ohne Mitarbeiter-Validierung
 
     setIsSubmitting(true);
 
@@ -256,8 +252,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
-        creator: employee.name,
-        personalNumber: employee.id,
+        creator: fields.find(f => f.id === 'personalNumber')?.value || '',
+        personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,
         problemDescription: fields.find(f => f.id === 'problemDescription')?.value || '',
         errorCause: fields.find(f => f.id === 'problemDescription')?.value || '',
