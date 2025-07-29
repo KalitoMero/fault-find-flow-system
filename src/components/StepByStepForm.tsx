@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
-import { getEmployees, Employee } from '@/lib/settingsStorage';
+import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import TouchKeypad from './TouchKeypad';
@@ -39,6 +39,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [showKeypad, setShowKeypad] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [excelDepartment, setExcelDepartment] = useState<string>('');
+  const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
 
   const [fields, setFields] = useState<FormField[]>([
     {
@@ -82,6 +83,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       placeholder: 'Personalnummer'
     },
     {
+      id: 'detectionLocation',
+      label: 'Feststellort',
+      value: '',
+      type: 'text',
+      required: false,
+      completed: false,
+      icon: <Settings className="h-4 w-4" />,
+      placeholder: 'Feststellort'
+    },
+    {
       id: 'problemDescription',
       label: 'Problembeschreibung',
       value: '',
@@ -106,6 +117,34 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   useEffect(() => {
     setEmployees(getEmployees());
   }, []);
+
+  // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
+  const findTeamLeaderForDepartment = (departmentName: string): string => {
+    const employees = getEmployees();
+    const departments = getDepartments();
+    
+    // Finde die Abteilung basierend auf dem Namen
+    const department = departments.find(d => d.name === departmentName);
+    if (!department) {
+      console.log('No department found for name:', departmentName);
+      return 'System';
+    }
+    
+    // Finde Teamleiter in dieser Abteilung
+    const teamLeader = employees.find(emp => 
+      emp.isTeamLeader && 
+      emp.departmentId === department.id && 
+      emp.account?.username
+    );
+    
+    if (teamLeader && teamLeader.account?.username) {
+      console.log('Team leader found for department', departmentName, ':', teamLeader.account.username);
+      return teamLeader.account.username;
+    }
+    
+    console.log('No team leader found for department:', departmentName);
+    return 'System';
+  };
 
   // Parse AFO from order number if it contains a dot (when moving to next step)
   const parseOrderNumber = (orderNum: string) => {
@@ -147,42 +186,53 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       console.log('Column mappings:', { orderColumnName, afoColumnName, departmentColumnName });
       
+      // Suche nach einer Zeile wo BEIDE Nummern übereinstimmen
       const matchingRow = excelData.data.find(row => {
-        const orderMatch = row[orderColumnName] === orderNumber;
-        const afoMatch = afoNumber && row[afoColumnName] === afoNumber;
+        const orderMatch = row[orderColumnName] && row[orderColumnName].toString() === orderNumber;
+        const afoMatch = afoNumber && row[afoColumnName] && row[afoColumnName].toString() === afoNumber;
         console.log('Checking row:', { orderValue: row[orderColumnName], afoValue: row[afoColumnName], orderMatch, afoMatch });
-        return orderMatch || afoMatch;
+        // Beide Nummern müssen übereinstimmen
+        return orderMatch && afoMatch;
       });
       
       if (matchingRow) {
-        console.log('Matching row found:', matchingRow);
+        console.log('Matching row found (both numbers match):', matchingRow);
         
         // Auto-fill department if available
         if (departmentColumnName && matchingRow[departmentColumnName]) {
           const departmentName = matchingRow[departmentColumnName];
           console.log('Department found:', departmentName);
           setExcelDepartment(departmentName);
+          
+          // Finde und setze den passenden Teamleiter
+          const teamLeader = findTeamLeaderForDepartment(departmentName);
+          setAssignedTeamLeader(teamLeader);
+          console.log('Assigned team leader:', teamLeader);
         } else {
           console.log('No department column or value found');
+          setExcelDepartment('');
+          setAssignedTeamLeader('System');
         }
         
-        // Auto-fill additional data from Excel
-        const additionalInfo = excelData.settings.additionalColumns
-          .map(col => {
-            const colIndex = parseInt(col.column) - 1;
-            const colName = headers[colIndex];
-            return `${col.name}: ${matchingRow[colName]}`;
-          })
-          .join('\n');
-        
-        if (additionalInfo) {
-          setFields(prev => prev.map(field => {
-            if (field.id === 'problemDescription' && !field.value) {
-              return { ...field, value: additionalInfo };
-            }
-            return field;
-          }));
-        }
+        // Auto-fill Feststellort from Excel additional columns
+        excelData.settings.additionalColumns.forEach(col => {
+          const colIndex = parseInt(col.column) - 1;
+          const colName = headers[colIndex];
+          const value = matchingRow[colName];
+          
+          if (col.name === 'Feststellort' && value) {
+            setFields(prev => prev.map(field => {
+              if (field.id === 'detectionLocation' && !field.value) {
+                return { ...field, value: value, completed: true };
+              }
+              return field;
+            }));
+          }
+        });
+      } else {
+        console.log('No matching row found where both order number and AFO match');
+        setExcelDepartment(''); // Reset if no match
+        setAssignedTeamLeader('System');
       }
     }
   };
@@ -290,12 +340,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         creator: fields.find(f => f.id === 'personalNumber')?.value || '',
         personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,
+        detectionLocation: fields.find(f => f.id === 'detectionLocation')?.value || undefined,
         problemDescription: fields.find(f => f.id === 'problemDescription')?.value || '',
         errorCause: fields.find(f => f.id === 'problemDescription')?.value || '',
         correctiveAction: fields.find(f => f.id === 'correctiveAction')?.value || '',
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        assignedTeamLeader: excelDepartment ? `${excelDepartment}-Teamleiter` : 'System',
+        assignedTeamLeader: assignedTeamLeader,
         excelDepartment: excelDepartment || undefined,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };

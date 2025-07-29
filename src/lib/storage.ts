@@ -5,6 +5,7 @@ export interface ErrorReport {
   machine: string;
   defectiveQuantity: number;
   totalDefectiveQuantity: number;
+  detectionLocation?: string;
   problemDescription: string;
   errorCause: string;
   correctiveAction: string;
@@ -23,6 +24,7 @@ export interface ErrorReport {
   approvedAt?: string;
   rejectedBy?: string;
   rejectedAt?: string;
+  excelDepartment?: string;
 }
 
 import { getEmployees, getDepartments } from './settingsStorage';
