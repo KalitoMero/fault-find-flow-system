@@ -278,6 +278,12 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                     <span className="text-sm text-gray-600">Feststellort:</span>
                     <p className="font-medium">{machineName}</p>
                   </div>
+                  {report.excelDepartment && (
+                    <div>
+                      <span className="text-sm text-gray-600">Abteilung:</span>
+                      <p className="font-medium">{report.excelDepartment}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -295,6 +301,24 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                 </div>
               </div>
             </div>
+
+            {/* Zusätzliche Excel-Informationen */}
+            {report.additionalExcelData && Object.keys(report.additionalExcelData).length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Zusätzliche Informationen</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(report.additionalExcelData).map(([key, value]) => (
+                      <div key={key}>
+                        <span className="text-sm text-gray-600">{key}:</span>
+                        <p className="font-medium">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator />
 

@@ -42,6 +42,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
 
+  // Helper function to get team leader display name
+  const getTeamLeaderDisplayName = (username: string): string => {
+    const employee = employees.find(emp => emp.account?.username === username);
+    return employee ? employee.name : username;
+  };
+
   const [fields, setFields] = useState<FormField[]>([
     {
       id: 'orderNumber',
@@ -449,7 +455,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       )}
                       {assignedTeamLeader !== 'System' && (
                         <div>
-                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{assignedTeamLeader}</span>
+                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
                         </div>
                       )}
                       {Object.entries(additionalExcelData).map(([key, value]) => (
