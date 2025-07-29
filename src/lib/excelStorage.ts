@@ -10,6 +10,10 @@ interface ExcelSettings {
   additionalColumns: ExcelColumn[];
   fileName?: string;
   rowCount?: number;
+  // New fields for easier data lookup
+  orderColumnName?: string;
+  afoColumnName?: string;
+  departmentColumnName?: string;
 }
 
 interface ExcelData {

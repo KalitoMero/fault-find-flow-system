@@ -26,6 +26,8 @@ const ExcelUploadSettings: React.FC = () => {
   const [newColumnRef, setNewColumnRef] = useState('');
   const [fileName, setFileName] = useState<string>('');
   const [rowCount, setRowCount] = useState<number>(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     const settings = getExcelSettings();
@@ -53,42 +55,47 @@ const ExcelUploadSettings: React.FC = () => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
-    // Validate file type
-    const allowedTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
+    console.log('=== EXCEL IMPORT DEBUG ===');
+    console.log('File name:', uploadedFile.name);
+    console.log('File type:', uploadedFile.type);
+    console.log('File size:', uploadedFile.size, 'bytes');
+
+    // Enhanced file type validation
+    const fileName = uploadedFile.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
     
-    const isValidType = allowedTypes.includes(uploadedFile.type) || 
-                       uploadedFile.name.match(/\.(csv|xlsx|xls)$/i);
-    
-    if (!isValidType) {
-      toast.error('Bitte wählen Sie eine gültige Excel- oder CSV-Datei aus.');
+    if (!isCSV && !isExcel) {
+      toast.error('Bitte wählen Sie eine gültige Excel (.xlsx, .xls) oder CSV-Datei aus.');
       return;
     }
 
     try {
       setFile(uploadedFile);
-      console.log('Processing file:', uploadedFile.name, 'Type:', uploadedFile.type);
       
       let parsedData: any[] = [];
       let headers: string[] = [];
       
-      if (uploadedFile.name.toLowerCase().endsWith('.csv')) {
-        console.log('Processing as CSV file');
-        // Parse CSV
+      if (isCSV) {
+        console.log('🔍 Processing CSV file...');
         const text = await uploadedFile.text();
+        console.log('Raw CSV content (first 200 chars):', text.substring(0, 200));
+        
         const lines = text.split('\n').filter(line => line.trim());
         if (lines.length === 0) {
           throw new Error('CSV-Datei ist leer');
         }
         
-        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-        console.log('CSV Headers:', headers);
+        // Enhanced CSV parsing with better delimiter detection
+        const firstLine = lines[0];
+        const delimiter = firstLine.includes(';') ? ';' : ',';
+        console.log('Detected delimiter:', delimiter);
+        
+        headers = firstLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+        console.log('📋 CSV Headers found:', headers);
         
         parsedData = lines.slice(1).map((line, index) => {
-          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
           const row: any = {};
           headers.forEach((header, headerIndex) => {
             row[header] = values[headerIndex] || '';
@@ -97,64 +104,103 @@ const ExcelUploadSettings: React.FC = () => {
         }).filter(row => Object.values(row).some(val => val !== ''));
         
       } else {
-        console.log('Processing as Excel file');
-        // Parse Excel using xlsx
+        console.log('🔍 Processing Excel file...');
         const arrayBuffer = await uploadedFile.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        console.log('ArrayBuffer size:', arrayBuffer.byteLength);
         
-        // Get first worksheet
+        // Enhanced Excel parsing with better error handling
+        const workbook = XLSX.read(arrayBuffer, { 
+          type: 'array',
+          cellText: false,
+          cellHTML: false,
+          sheetStubs: false
+        });
+        
+        console.log('📊 Workbook loaded. Sheets:', workbook.SheetNames);
+        
         const sheetName = workbook.SheetNames[0];
         if (!sheetName) {
           throw new Error('Excel-Datei enthält keine Arbeitsblätter');
         }
         
         const worksheet = workbook.Sheets[sheetName];
+        console.log('📄 Using sheet:', sheetName);
         
-        // Convert to JSON with header row
+        // Get range information
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+        console.log('📐 Sheet range:', range);
+        
+        // Convert to JSON with proper handling
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
           header: 1,
-          defval: '',
-          raw: false
+          raw: false,
+          blankrows: false
         }) as any[][];
+        
+        console.log('📥 Raw JSON data rows:', jsonData.length);
         
         if (jsonData.length === 0) {
           throw new Error('Excel-Datei ist leer');
         }
         
-        headers = jsonData[0].map(h => String(h).trim());
-        console.log('Excel Headers:', headers);
+        // Clean and validate headers
+        headers = jsonData[0]
+          .map(h => String(h || '').trim())
+          .filter(h => h !== '');
         
-        parsedData = jsonData.slice(1).map((row, index) => {
-          const rowData: any = {};
-          headers.forEach((header, headerIndex) => {
-            rowData[header] = String(row[headerIndex] || '').trim();
-          });
-          return rowData;
-        }).filter(row => Object.values(row).some(val => val !== ''));
+        console.log('📋 Excel Headers found:', headers);
+        
+        if (headers.length === 0) {
+          throw new Error('Keine gültigen Spaltenüberschriften gefunden');
+        }
+        
+        // Process data rows with better validation
+        parsedData = jsonData.slice(1)
+          .filter(row => row && row.length > 0)
+          .map((row, index) => {
+            const rowData: any = {};
+            headers.forEach((header, headerIndex) => {
+              const cellValue = row[headerIndex];
+              rowData[header] = String(cellValue || '').trim();
+            });
+            return rowData;
+          })
+          .filter(row => Object.values(row).some(val => val !== ''));
       }
       
       if (parsedData.length === 0) {
         throw new Error('Keine gültigen Datenzeilen gefunden');
       }
       
-      console.log('Parsed data:', parsedData.length, 'rows');
-      console.log('Sample row:', parsedData[0]);
+      console.log('✅ Successfully parsed:', parsedData.length, 'data rows');
+      console.log('📋 Final headers:', headers);
+      console.log('🔍 Sample data row:', parsedData[0]);
+      
+      // Validate data structure
+      const sampleRow = parsedData[0];
+      const validColumns = Object.keys(sampleRow).filter(key => key.trim() !== '');
+      console.log('✨ Valid columns:', validColumns);
       
       setExcelData(parsedData);
       setColumns(headers);
       setFileName(uploadedFile.name);
       setRowCount(parsedData.length);
+      setShowPreview(true);
       
-      toast.success(`Datei erfolgreich geladen: ${parsedData.length} Zeilen`);
+      toast.success(`✅ Datei erfolgreich geladen: ${parsedData.length} Zeilen, ${headers.length} Spalten`);
+      
     } catch (error) {
-      console.error('Error reading file:', error);
-      toast.error(`Fehler beim Lesen der Datei: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      console.error('❌ Error processing file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      toast.error(`Fehler beim Verarbeiten der Datei: ${errorMessage}`);
+      
       // Reset state on error
       setFile(null);
       setExcelData([]);
       setColumns([]);
       setFileName('');
       setRowCount(0);
+      setShowPreview(false);
     }
   };
 
@@ -168,6 +214,34 @@ const ExcelUploadSettings: React.FC = () => {
 
   const removeAdditionalColumn = (index: number) => {
     setAdditionalColumns(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const testColumnMapping = () => {
+    if (!orderNumberColumn || !afoNumberColumn || excelData.length === 0) {
+      toast.error('Bitte laden Sie zuerst eine Datei und wählen Sie die Spalten aus.');
+      return;
+    }
+
+    console.log('=== COLUMN MAPPING TEST ===');
+    
+    // Convert column numbers to actual column names
+    const orderColName = columns[parseInt(orderNumberColumn) - 1];
+    const afoColName = columns[parseInt(afoNumberColumn) - 1];
+    
+    console.log('Order column name:', orderColName);
+    console.log('AFO column name:', afoColName);
+    
+    // Test with first few rows
+    const testRows = excelData.slice(0, 3);
+    console.log('Testing with rows:', testRows);
+    
+    testRows.forEach((row, index) => {
+      const orderValue = row[orderColName];
+      const afoValue = row[afoColName];
+      console.log(`Row ${index + 1}: Order="${orderValue}", AFO="${afoValue}"`);
+    });
+
+    toast.success(`✅ Test erfolgreich! Order-Spalte: "${orderColName}", AFO-Spalte: "${afoColName}"`);
   };
 
   const handleSave = () => {
@@ -186,35 +260,54 @@ const ExcelUploadSettings: React.FC = () => {
       return;
     }
 
-    // Validate column selections
+    // Enhanced validation with proper column name mapping
     const orderColumnIndex = parseInt(orderNumberColumn) - 1;
     const afoColumnIndex = parseInt(afoNumberColumn) - 1;
     
-    if (orderColumnIndex >= columns.length || afoColumnIndex >= columns.length) {
-      toast.error('Ungültige Spaltenauswahl. Bitte überprüfen Sie Ihre Einstellungen.');
+    if (orderColumnIndex < 0 || orderColumnIndex >= columns.length) {
+      toast.error(`Ungültige Auftragsnummer-Spalte. Verfügbare Spalten: 1-${columns.length}`);
+      return;
+    }
+    
+    if (afoColumnIndex < 0 || afoColumnIndex >= columns.length) {
+      toast.error(`Ungültige AFO-Nummer-Spalte. Verfügbare Spalten: 1-${columns.length}`);
       return;
     }
 
-    console.log('Saving settings:', {
-      orderNumberColumn,
-      afoNumberColumn,
-      departmentColumn,
-      additionalColumns,
-      fileName,
-      rowCount: excelData.length
-    });
+    // Map column numbers to actual column names for storage
+    const orderColName = columns[orderColumnIndex];
+    const afoColName = columns[afoColumnIndex];
+    const deptColName = departmentColumn ? columns[parseInt(departmentColumn) - 1] : undefined;
 
-    saveExcelData(excelData);
-    saveExcelSettings({
+    console.log('=== SAVING SETTINGS ===');
+    console.log('Column mappings:');
+    console.log(`- Order Number: Column ${orderNumberColumn} = "${orderColName}"`);
+    console.log(`- AFO Number: Column ${afoNumberColumn} = "${afoColName}"`);
+    console.log(`- Department: Column ${departmentColumn} = "${deptColName}"`);
+    
+    // Test data access
+    const sampleRow = excelData[0];
+    console.log('Sample data access:');
+    console.log(`- Order value: "${sampleRow[orderColName]}"`);
+    console.log(`- AFO value: "${sampleRow[afoColName]}"`);
+
+    const settings = {
       orderNumberColumn,
       afoNumberColumn,
       departmentColumn: departmentColumn || undefined,
       additionalColumns,
       fileName,
-      rowCount: excelData.length
-    });
+      rowCount: excelData.length,
+      // Store actual column names for easier lookup
+      orderColumnName: orderColName,
+      afoColumnName: afoColName,
+      departmentColumnName: deptColName
+    };
 
-    toast.success('Excel-Einstellungen und Daten erfolgreich gespeichert!');
+    saveExcelData(excelData);
+    saveExcelSettings(settings);
+
+    toast.success(`✅ Einstellungen gespeichert! ${excelData.length} Zeilen verfügbar.`);
   };
 
   const handleClear = () => {
@@ -228,6 +321,7 @@ const ExcelUploadSettings: React.FC = () => {
     setAdditionalColumns([]);
     setFileName('');
     setRowCount(0);
+    setShowPreview(false);
     toast.success('Excel-Daten gelöscht');
   };
 
@@ -253,56 +347,180 @@ const ExcelUploadSettings: React.FC = () => {
               />
             </div>
             {(file || fileName) && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
-                <Upload className="h-4 w-4" />
-                {file?.name || fileName} ({file ? excelData.length : rowCount} Zeilen geladen)
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Upload className="h-4 w-4" />
+                  {file?.name || fileName} ({file ? excelData.length : rowCount} Zeilen geladen)
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(!showPreview)}
+                  >
+                    {showPreview ? 'Vorschau ausblenden' : 'Daten-Vorschau anzeigen'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDebugMode(!debugMode)}
+                  >
+                    {debugMode ? 'Debug aus' : 'Debug an'}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
+      {showPreview && excelData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>📊 Daten-Vorschau</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                Erste 3 Zeilen der geladenen Daten:
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300 text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-300 px-2 py-1 text-left font-medium">#</th>
+                      {columns.map((col, index) => (
+                        <th key={index} className="border border-gray-300 px-2 py-1 text-left font-medium">
+                          {index + 1}: {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {excelData.slice(0, 3).map((row, rowIndex) => (
+                      <tr key={rowIndex} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-2 py-1 font-medium">{rowIndex + 1}</td>
+                        {columns.map((col, colIndex) => (
+                          <td key={colIndex} className="border border-gray-300 px-2 py-1">
+                            {String(row[col] || '').substring(0, 50)}
+                            {String(row[col] || '').length > 50 ? '...' : ''}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {debugMode && columns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🔍 Debug-Informationen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-sm">
+              <div>
+                <strong>Verfügbare Spalten:</strong>
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {columns.map((col, index) => (
+                    <div key={index} className="p-2 bg-gray-50 rounded">
+                      <span className="font-mono">{index + 1}: </span>
+                      <span>"{col}"</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <strong>Erste Datenzeile (Rohformat):</strong>
+                <pre className="mt-2 p-3 bg-gray-50 rounded overflow-x-auto text-xs">
+                  {JSON.stringify(excelData[0], null, 2)}
+                </pre>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {columns.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Spalten-Zuordnung</CardTitle>
+            <CardTitle>🔗 Spalten-Zuordnung</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="order-column">Auftragsnummer Spalte *</Label>
-                <Input
-                  id="order-column"
-                  type="number"
-                  min="1"
-                  value={orderNumberColumn}
-                  onChange={(e) => setOrderNumberColumn(e.target.value)}
-                  placeholder="Spalten-Nummer eingeben"
-                />
+                <div className="mt-1">
+                  <Input
+                    id="order-column"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    value={orderNumberColumn}
+                    onChange={(e) => setOrderNumberColumn(e.target.value)}
+                    placeholder={`1-${columns.length}`}
+                  />
+                  {orderNumberColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(orderNumberColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
                 <Label htmlFor="afo-column">AFO-Nummer Spalte *</Label>
-                <Input
-                  id="afo-column"
-                  type="number"
-                  min="1"
-                  value={afoNumberColumn}
-                  onChange={(e) => setAfoNumberColumn(e.target.value)}
-                  placeholder="Spalten-Nummer eingeben"
-                />
+                <div className="mt-1">
+                  <Input
+                    id="afo-column"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    value={afoNumberColumn}
+                    onChange={(e) => setAfoNumberColumn(e.target.value)}
+                    placeholder={`1-${columns.length}`}
+                  />
+                  {afoNumberColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(afoNumberColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
                 <Label htmlFor="departmentColumn">Abteilung (Optional)</Label>
-                <Input
-                  id="departmentColumn"
-                  type="text"
-                  placeholder="z.B. 3 (Spaltennummer)"
-                  value={departmentColumn}
-                  onChange={(e) => setDepartmentColumn(e.target.value)}
-                />
+                <div className="mt-1">
+                  <Input
+                    id="departmentColumn"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    placeholder={`1-${columns.length}`}
+                    value={departmentColumn}
+                    onChange={(e) => setDepartmentColumn(e.target.value)}
+                  />
+                  {departmentColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(departmentColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+            
+            <div className="pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={testColumnMapping}
+                disabled={!orderNumberColumn || !afoNumberColumn}
+              >
+                🧪 Spalten-Zuordnung testen
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -366,7 +584,7 @@ const ExcelUploadSettings: React.FC = () => {
       )}
 
       <div className="flex gap-4">
-        <Button onClick={handleSave} disabled={!orderNumberColumn || !afoNumberColumn}>
+        <Button onClick={handleSave} disabled={!orderNumberColumn || !afoNumberColumn || excelData.length === 0}>
           <Save className="h-4 w-4 mr-2" />
           Einstellungen speichern
         </Button>
