@@ -25,6 +25,7 @@ export interface ErrorReport {
   rejectedBy?: string;
   rejectedAt?: string;
   excelDepartment?: string;
+  additionalExcelData?: Record<string, any>;
 }
 
 import { getEmployees, getDepartments } from './settingsStorage';

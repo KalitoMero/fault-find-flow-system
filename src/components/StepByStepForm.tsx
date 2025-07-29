@@ -40,6 +40,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [excelDepartment, setExcelDepartment] = useState<string>('');
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
+  const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
 
   const [fields, setFields] = useState<FormField[]>([
     {
@@ -81,16 +82,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       completed: false,
       icon: <User className="h-4 w-4" />,
       placeholder: 'Personalnummer'
-    },
-    {
-      id: 'detectionLocation',
-      label: 'Feststellort',
-      value: '',
-      type: 'text',
-      required: false,
-      completed: false,
-      icon: <Settings className="h-4 w-4" />,
-      placeholder: 'Feststellort'
     },
     {
       id: 'problemDescription',
@@ -167,6 +158,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Check Excel data for auto-completion
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
+    console.log('checkExcelData called with:', { orderNumber, afoNumber });
     const excelData = getExcelData();
     if (excelData && excelData.data.length > 0) {
       console.log('Excel data found:', excelData.data.length, 'rows');
@@ -185,12 +177,22 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const departmentColumnName = departmentColumnIndex !== null ? headers[departmentColumnIndex] : null;
       
       console.log('Column mappings:', { orderColumnName, afoColumnName, departmentColumnName });
+      console.log('Looking for order:', orderNumber, 'and AFO:', afoNumber);
       
       // Suche nach einer Zeile wo BEIDE Nummern übereinstimmen
       const matchingRow = excelData.data.find(row => {
-        const orderMatch = row[orderColumnName] && row[orderColumnName].toString() === orderNumber;
-        const afoMatch = afoNumber && row[afoColumnName] && row[afoColumnName].toString() === afoNumber;
-        console.log('Checking row:', { orderValue: row[orderColumnName], afoValue: row[afoColumnName], orderMatch, afoMatch });
+        const orderValue = row[orderColumnName]?.toString().trim();
+        const afoValue = row[afoColumnName]?.toString().trim();
+        const orderMatch = orderValue === orderNumber.toString().trim();
+        const afoMatch = afoNumber && afoValue === afoNumber.toString().trim();
+        console.log('Checking row:', { 
+          orderValue, 
+          afoValue, 
+          orderMatch, 
+          afoMatch,
+          searchOrder: orderNumber.toString().trim(),
+          searchAfo: afoNumber?.toString().trim()
+        });
         // Beide Nummern müssen übereinstimmen
         return orderMatch && afoMatch;
       });
@@ -214,21 +216,21 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           setAssignedTeamLeader('System');
         }
         
-        // Auto-fill Feststellort from Excel additional columns
+        // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile
+        const additionalExcelData: Record<string, any> = {};
         excelData.settings.additionalColumns.forEach(col => {
           const colIndex = parseInt(col.column) - 1;
           const colName = headers[colIndex];
           const value = matchingRow[colName];
           
-          if (col.name === 'Feststellort' && value) {
-            setFields(prev => prev.map(field => {
-              if (field.id === 'detectionLocation' && !field.value) {
-                return { ...field, value: value, completed: true };
-              }
-              return field;
-            }));
+          if (value) {
+            additionalExcelData[col.name] = value;
           }
         });
+        
+        // Speichere die zusätzlichen Excel-Daten im State
+        setAdditionalExcelData(additionalExcelData);
+        console.log('Additional Excel data saved:', additionalExcelData);
       } else {
         console.log('No matching row found where both order number and AFO match');
         setExcelDepartment(''); // Reset if no match
@@ -352,6 +354,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         approvalStatus: 'pending' as const,
         assignedTeamLeader: assignedTeamLeader,
         excelDepartment: excelDepartment || undefined,
+        additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
