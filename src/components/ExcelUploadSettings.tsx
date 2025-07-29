@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, getExcelData, clearExcelData } from '@/lib/excelStorage';
 import { toast } from "sonner";
+import * as XLSX from 'xlsx';
 
 interface ExcelColumn {
   name: string;
@@ -52,37 +53,108 @@ const ExcelUploadSettings: React.FC = () => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
-    if (!uploadedFile.name.endsWith('.csv') && !uploadedFile.name.endsWith('.xlsx')) {
-      toast.error('Bitte laden Sie eine CSV- oder Excel-Datei hoch');
+    // Validate file type
+    const allowedTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    const isValidType = allowedTypes.includes(uploadedFile.type) || 
+                       uploadedFile.name.match(/\.(csv|xlsx|xls)$/i);
+    
+    if (!isValidType) {
+      toast.error('Bitte wählen Sie eine gültige Excel- oder CSV-Datei aus.');
       return;
     }
 
-    setFile(uploadedFile);
-
     try {
-      const text = await uploadedFile.text();
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      setFile(uploadedFile);
+      console.log('Processing file:', uploadedFile.name, 'Type:', uploadedFile.type);
       
-      const data = lines.slice(1)
-        .filter(line => line.trim())
-        .map(line => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      let parsedData: any[] = [];
+      let headers: string[] = [];
+      
+      if (uploadedFile.name.toLowerCase().endsWith('.csv')) {
+        console.log('Processing as CSV file');
+        // Parse CSV
+        const text = await uploadedFile.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length === 0) {
+          throw new Error('CSV-Datei ist leer');
+        }
+        
+        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        console.log('CSV Headers:', headers);
+        
+        parsedData = lines.slice(1).map((line, index) => {
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
           const row: any = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index] || '';
+          headers.forEach((header, headerIndex) => {
+            row[header] = values[headerIndex] || '';
           });
           return row;
-        });
-
-      setExcelData(data);
+        }).filter(row => Object.values(row).some(val => val !== ''));
+        
+      } else {
+        console.log('Processing as Excel file');
+        // Parse Excel using xlsx
+        const arrayBuffer = await uploadedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Get first worksheet
+        const sheetName = workbook.SheetNames[0];
+        if (!sheetName) {
+          throw new Error('Excel-Datei enthält keine Arbeitsblätter');
+        }
+        
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON with header row
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          header: 1,
+          defval: '',
+          raw: false
+        }) as any[][];
+        
+        if (jsonData.length === 0) {
+          throw new Error('Excel-Datei ist leer');
+        }
+        
+        headers = jsonData[0].map(h => String(h).trim());
+        console.log('Excel Headers:', headers);
+        
+        parsedData = jsonData.slice(1).map((row, index) => {
+          const rowData: any = {};
+          headers.forEach((header, headerIndex) => {
+            rowData[header] = String(row[headerIndex] || '').trim();
+          });
+          return rowData;
+        }).filter(row => Object.values(row).some(val => val !== ''));
+      }
+      
+      if (parsedData.length === 0) {
+        throw new Error('Keine gültigen Datenzeilen gefunden');
+      }
+      
+      console.log('Parsed data:', parsedData.length, 'rows');
+      console.log('Sample row:', parsedData[0]);
+      
+      setExcelData(parsedData);
       setColumns(headers);
       setFileName(uploadedFile.name);
-      setRowCount(data.length);
-      toast.success(`Excel-Datei erfolgreich geladen (${data.length} Zeilen)`);
+      setRowCount(parsedData.length);
+      
+      toast.success(`Datei erfolgreich geladen: ${parsedData.length} Zeilen`);
     } catch (error) {
       console.error('Error reading file:', error);
-      toast.error('Fehler beim Lesen der Datei');
+      toast.error(`Fehler beim Lesen der Datei: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      // Reset state on error
+      setFile(null);
+      setExcelData([]);
+      setColumns([]);
+      setFileName('');
+      setRowCount(0);
     }
   };
 
@@ -109,20 +181,40 @@ const ExcelUploadSettings: React.FC = () => {
       return;
     }
 
-    if (excelData.length > 0) {
-      saveExcelData(excelData);
+    if (excelData.length === 0) {
+      toast.error('Keine Daten zum Speichern vorhanden.');
+      return;
     }
 
+    // Validate column selections
+    const orderColumnIndex = parseInt(orderNumberColumn) - 1;
+    const afoColumnIndex = parseInt(afoNumberColumn) - 1;
+    
+    if (orderColumnIndex >= columns.length || afoColumnIndex >= columns.length) {
+      toast.error('Ungültige Spaltenauswahl. Bitte überprüfen Sie Ihre Einstellungen.');
+      return;
+    }
+
+    console.log('Saving settings:', {
+      orderNumberColumn,
+      afoNumberColumn,
+      departmentColumn,
+      additionalColumns,
+      fileName,
+      rowCount: excelData.length
+    });
+
+    saveExcelData(excelData);
     saveExcelSettings({
       orderNumberColumn,
       afoNumberColumn,
       departmentColumn: departmentColumn || undefined,
       additionalColumns,
       fileName,
-      rowCount
+      rowCount: excelData.length
     });
 
-    toast.success('Excel-Einstellungen gespeichert');
+    toast.success('Excel-Einstellungen und Daten erfolgreich gespeichert!');
   };
 
   const handleClear = () => {
