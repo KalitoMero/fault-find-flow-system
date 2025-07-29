@@ -436,7 +436,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         </Button>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-4 pt-2">
+      <div className="max-w-4xl mx-auto space-y-4">
 
         {/* Completed Fields */}
         {completedFields.length > 0 && (
