@@ -38,6 +38,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   }>({});
   const [showKeypad, setShowKeypad] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [excelDepartment, setExcelDepartment] = useState<string>('');
 
   const [fields, setFields] = useState<FormField[]>([
     {
@@ -135,6 +136,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       );
       
       if (matchingRow) {
+        // Auto-fill department if available
+        if (excelData.settings.departmentColumn && matchingRow[excelData.settings.departmentColumn]) {
+          const departmentName = matchingRow[excelData.settings.departmentColumn];
+          setExcelDepartment(departmentName);
+        }
+        
         // Auto-fill additional data from Excel
         const additionalInfo = excelData.settings.additionalColumns
           .map(col => `${col.name}: ${matchingRow[col.column]}`)
@@ -260,7 +267,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         correctiveAction: fields.find(f => f.id === 'correctiveAction')?.value || '',
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        assignedTeamLeader: '', // Will be assigned based on department
+        assignedTeamLeader: excelDepartment ? `${excelDepartment}-Teamleiter` : 'System',
+        excelDepartment: excelDepartment || undefined,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 

@@ -19,6 +19,7 @@ const ExcelUploadSettings: React.FC = () => {
   const [columns, setColumns] = useState<string[]>([]);
   const [orderNumberColumn, setOrderNumberColumn] = useState('');
   const [afoNumberColumn, setAfoNumberColumn] = useState('');
+  const [departmentColumn, setDepartmentColumn] = useState('');
   const [additionalColumns, setAdditionalColumns] = useState<ExcelColumn[]>([]);
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnRef, setNewColumnRef] = useState('');
@@ -28,6 +29,7 @@ const ExcelUploadSettings: React.FC = () => {
     if (settings) {
       setOrderNumberColumn(settings.orderNumberColumn);
       setAfoNumberColumn(settings.afoNumberColumn);
+      setDepartmentColumn(settings.departmentColumn || '');
       setAdditionalColumns(settings.additionalColumns);
     }
   }, []);
@@ -98,6 +100,7 @@ const ExcelUploadSettings: React.FC = () => {
     saveExcelSettings({
       orderNumberColumn,
       afoNumberColumn,
+      departmentColumn: departmentColumn || undefined,
       additionalColumns
     });
 
@@ -111,6 +114,7 @@ const ExcelUploadSettings: React.FC = () => {
     setColumns([]);
     setOrderNumberColumn('');
     setAfoNumberColumn('');
+    setDepartmentColumn('');
     setAdditionalColumns([]);
     toast.success('Excel-Daten gelöscht');
   };
@@ -174,6 +178,17 @@ const ExcelUploadSettings: React.FC = () => {
                   value={afoNumberColumn}
                   onChange={(e) => setAfoNumberColumn(e.target.value)}
                   placeholder="Spalten-Nummer eingeben"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="departmentColumn">Abteilung (Optional)</Label>
+                <Input
+                  id="departmentColumn"
+                  type="text"
+                  placeholder="z.B. 3 (Spaltennummer)"
+                  value={departmentColumn}
+                  onChange={(e) => setDepartmentColumn(e.target.value)}
                 />
               </div>
             </div>
