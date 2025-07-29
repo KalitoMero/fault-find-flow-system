@@ -110,7 +110,7 @@ const ExcelUploadSettings: React.FC = () => {
         
         // Fix Excel parsing with correct configuration
         const workbook = XLSX.read(arrayBuffer, { 
-          type: 'buffer',
+          type: 'array',
           raw: true,
           cellText: true,
           codepage: 65001
