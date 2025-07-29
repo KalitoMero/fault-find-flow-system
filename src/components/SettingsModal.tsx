@@ -251,7 +251,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -259,10 +259,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="employees" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Mitarbeiter</span>
-            </TabsTrigger>
-            <TabsTrigger value="machines" className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4" />
-              <span>Feststellorte</span>
             </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center space-x-2">
               <Download className="h-4 w-4" />
@@ -487,62 +483,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="machines" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Neuen Feststellort erstellen</CardTitle>
-                <CardDescription>
-                  Fügen Sie einen neuen Feststellort hinzu
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex space-x-2">
-                  <div className="flex-1">
-                    <Label htmlFor="machineName">Feststellort</Label>
-                    <Input
-                      id="machineName"
-                      value={newMachineName}
-                      onChange={(e) => setNewMachineName(e.target.value)}
-                      placeholder="z.B. Halle 1 - Arbeitsplatz 3"
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddMachine()}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleAddMachine}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Hinzufügen
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Vorhandene Feststellorte</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {machines.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">Keine Feststellorte vorhanden</p>
-                ) : (
-                  <div className="space-y-2">
-                    {machines.map((machine) => (
-                      <div key={machine.id} className="flex items-center justify-between p-3 border rounded">
-                        <span className="font-medium">{machine.name}</span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteMachine(machine.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="export" className="space-y-4">
             <ExportSection reports={getErrorReports()} />

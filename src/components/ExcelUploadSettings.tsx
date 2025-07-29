@@ -82,7 +82,12 @@ const ExcelUploadSettings: React.FC = () => {
 
   const handleSave = () => {
     if (!orderNumberColumn) {
-      toast.error('Bitte wählen Sie eine Spalte für die Auftragsnummer');
+      toast.error('Bitte geben Sie eine Spalten-Nummer für die Auftragsnummer ein');
+      return;
+    }
+
+    if (!afoNumberColumn) {
+      toast.error('Bitte geben Sie eine Spalten-Nummer für die AFO-Nummer ein');
       return;
     }
 
@@ -150,30 +155,26 @@ const ExcelUploadSettings: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="order-column">Auftragsnummer Spalte *</Label>
-                <Select value={orderNumberColumn} onValueChange={setOrderNumberColumn}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Spalte auswählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {columns.map(col => (
-                      <SelectItem key={col} value={col}>{col}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="order-column"
+                  type="number"
+                  min="1"
+                  value={orderNumberColumn}
+                  onChange={(e) => setOrderNumberColumn(e.target.value)}
+                  placeholder="Spalten-Nummer eingeben"
+                />
               </div>
 
               <div>
-                <Label htmlFor="afo-column">AFO-Nummer Spalte</Label>
-                <Select value={afoNumberColumn} onValueChange={setAfoNumberColumn}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Spalte auswählen (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {columns.map(col => (
-                      <SelectItem key={col} value={col}>{col}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="afo-column">AFO-Nummer Spalte *</Label>
+                <Input
+                  id="afo-column"
+                  type="number"
+                  min="1"
+                  value={afoNumberColumn}
+                  onChange={(e) => setAfoNumberColumn(e.target.value)}
+                  placeholder="Spalten-Nummer eingeben"
+                />
               </div>
             </div>
           </CardContent>
@@ -198,16 +199,14 @@ const ExcelUploadSettings: React.FC = () => {
               </div>
               <div>
                 <Label htmlFor="column-ref">Spalte</Label>
-                <Select value={newColumnRef} onValueChange={setNewColumnRef}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Spalte auswählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {columns.map(col => (
-                      <SelectItem key={col} value={col}>{col}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="column-ref"
+                  type="number"
+                  min="1"
+                  value={newColumnRef}
+                  onChange={(e) => setNewColumnRef(e.target.value)}
+                  placeholder="Spalten-Nummer eingeben"
+                />
               </div>
               <div className="flex items-end">
                 <Button onClick={addAdditionalColumn} disabled={!newColumnName || !newColumnRef}>
@@ -240,7 +239,7 @@ const ExcelUploadSettings: React.FC = () => {
       )}
 
       <div className="flex gap-4">
-        <Button onClick={handleSave} disabled={!orderNumberColumn}>
+        <Button onClick={handleSave} disabled={!orderNumberColumn || !afoNumberColumn}>
           <Save className="h-4 w-4 mr-2" />
           Einstellungen speichern
         </Button>
