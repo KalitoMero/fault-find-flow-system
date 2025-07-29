@@ -242,7 +242,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           const colName = headers[colIndex];
           const value = matchingRow[colName];
           
-          if (value) {
+          console.log('Processing additional column:', {
+            columnName: col.name,
+            columnIndex: col.column,
+            colIndex,
+            colName,
+            value,
+            availableKeys: Object.keys(matchingRow)
+          });
+          
+          if (value !== undefined && value !== null && value !== '') {
             additionalExcelData[col.name] = value;
           }
         });
@@ -428,6 +437,30 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="space-y-3">
+                {/* Excel Status Info */}
+                {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800 mb-2">Excel-Daten gefunden:</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {excelDepartment && (
+                        <div>
+                          <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
+                        </div>
+                      )}
+                      {assignedTeamLeader !== 'System' && (
+                        <div>
+                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{assignedTeamLeader}</span>
+                        </div>
+                      )}
+                      {Object.entries(additionalExcelData).map(([key, value]) => (
+                        <div key={key}>
+                          <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Number fields in a row - 4 columns with AFO smaller */}
                 <div className="grid grid-cols-4 gap-3">
                   {completedFields.filter(f => f.type !== 'textarea').map((field, index) => (
@@ -478,17 +511,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               {currentField.label}
               {currentField.required && <span className="text-red-500">*</span>}
             </CardTitle>
-            {/* Debug info */}
-            {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
-              <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                <p><strong>Excel-Status:</strong></p>
-                {excelDepartment && <p>Abteilung: {excelDepartment}</p>}
-                {assignedTeamLeader !== 'System' && <p>Teamleiter: {assignedTeamLeader}</p>}
-                {Object.keys(additionalExcelData).length > 0 && (
-                  <p>Zusatzdaten: {Object.keys(additionalExcelData).join(', ')}</p>
-                )}
-              </div>
-            )}
           </CardHeader>
           <CardContent className="space-y-6 flex-1 flex flex-col justify-center">
             <div className="flex flex-col items-center space-y-4">
