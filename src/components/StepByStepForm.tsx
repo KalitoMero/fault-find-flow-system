@@ -130,21 +130,49 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
     const excelData = getExcelData();
     if (excelData && excelData.data.length > 0) {
-      const matchingRow = excelData.data.find(row => 
-        row[excelData.settings.orderNumberColumn] === orderNumber ||
-        (afoNumber && row[excelData.settings.afoNumberColumn] === afoNumber)
-      );
+      console.log('Excel data found:', excelData.data.length, 'rows');
+      console.log('Excel settings:', excelData.settings);
+      
+      // Convert column numbers to column names (headers)
+      const headers = Object.keys(excelData.data[0]);
+      console.log('Available headers:', headers);
+      
+      const orderColumnIndex = parseInt(excelData.settings.orderNumberColumn) - 1;
+      const afoColumnIndex = parseInt(excelData.settings.afoNumberColumn) - 1;
+      const departmentColumnIndex = excelData.settings.departmentColumn ? parseInt(excelData.settings.departmentColumn) - 1 : null;
+      
+      const orderColumnName = headers[orderColumnIndex];
+      const afoColumnName = headers[afoColumnIndex];
+      const departmentColumnName = departmentColumnIndex !== null ? headers[departmentColumnIndex] : null;
+      
+      console.log('Column mappings:', { orderColumnName, afoColumnName, departmentColumnName });
+      
+      const matchingRow = excelData.data.find(row => {
+        const orderMatch = row[orderColumnName] === orderNumber;
+        const afoMatch = afoNumber && row[afoColumnName] === afoNumber;
+        console.log('Checking row:', { orderValue: row[orderColumnName], afoValue: row[afoColumnName], orderMatch, afoMatch });
+        return orderMatch || afoMatch;
+      });
       
       if (matchingRow) {
+        console.log('Matching row found:', matchingRow);
+        
         // Auto-fill department if available
-        if (excelData.settings.departmentColumn && matchingRow[excelData.settings.departmentColumn]) {
-          const departmentName = matchingRow[excelData.settings.departmentColumn];
+        if (departmentColumnName && matchingRow[departmentColumnName]) {
+          const departmentName = matchingRow[departmentColumnName];
+          console.log('Department found:', departmentName);
           setExcelDepartment(departmentName);
+        } else {
+          console.log('No department column or value found');
         }
         
         // Auto-fill additional data from Excel
         const additionalInfo = excelData.settings.additionalColumns
-          .map(col => `${col.name}: ${matchingRow[col.column]}`)
+          .map(col => {
+            const colIndex = parseInt(col.column) - 1;
+            const colName = headers[colIndex];
+            return `${col.name}: ${matchingRow[colName]}`;
+          })
           .join('\n');
         
         if (additionalInfo) {
