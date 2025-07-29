@@ -108,12 +108,12 @@ const ExcelUploadSettings: React.FC = () => {
         const arrayBuffer = await uploadedFile.arrayBuffer();
         console.log('ArrayBuffer size:', arrayBuffer.byteLength);
         
-        // Enhanced Excel parsing with better error handling
+        // Fix Excel parsing with correct configuration
         const workbook = XLSX.read(arrayBuffer, { 
-          type: 'array',
-          cellText: false,
-          cellHTML: false,
-          sheetStubs: false
+          type: 'buffer',
+          raw: true,
+          cellText: true,
+          codepage: 65001
         });
         
         console.log('📊 Workbook loaded. Sheets:', workbook.SheetNames);
@@ -130,10 +130,11 @@ const ExcelUploadSettings: React.FC = () => {
         const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
         console.log('📐 Sheet range:', range);
         
-        // Convert to JSON with proper handling
+        // Convert to JSON with UTF-8 text handling
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
           header: 1,
-          raw: false,
+          raw: true,
+          defval: '',
           blankrows: false
         }) as any[][];
         
