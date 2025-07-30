@@ -163,7 +163,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         <CardContent className="space-y-6">
           <div className="flex space-x-3">
             <Button onClick={handleNewReport} className="flex-1">
-              Neue Meldung erstellen
+              Neue Fehlermeldung erstellen
             </Button>
             <Button onClick={handlePrintReport} variant="outline">
               <Printer className="h-4 w-4 mr-2" />

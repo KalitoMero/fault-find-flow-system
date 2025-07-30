@@ -487,7 +487,7 @@ const Index = () => {
                 >
                   <Plus style={{ width: '128px', height: '128px' }} strokeWidth={1} className="text-gray-700" />
                 </Button>
-                <span className="text-3xl font-medium text-gray-700">Neue Meldung</span>
+                <span className="text-3xl font-medium text-gray-700">Neue Fehlermeldung</span>
               </div>
             </div>
 

@@ -70,16 +70,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       placeholder: 'z.B. AFO-12345'
     },
     {
-      id: 'defectiveQuantity',
-      label: 'Menge',
-      value: '',
-      type: 'text',
-      required: true,
-      completed: false,
-      icon: <Package className="h-4 w-4" />,
-      placeholder: 'Anzahl'
-    },
-    {
       id: 'personalNumber',
       label: 'Personalnummer',
       value: '',
@@ -88,6 +78,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       completed: false,
       icon: <User className="h-4 w-4" />,
       placeholder: 'Personalnummer'
+    },
+    {
+      id: 'defectiveQuantity',
+      label: 'Menge',
+      value: '',
+      type: 'text',
+      required: true,
+      completed: false,
+      icon: <Package className="h-4 w-4" />,
+      placeholder: 'Anzahl'
     },
     {
       id: 'problemDescription',

@@ -256,7 +256,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 size="lg"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Neue Meldung erstellen
+                Neue Fehlermeldung erstellen
               </Button>
               <Button 
                 onClick={handlePrintReport} 
