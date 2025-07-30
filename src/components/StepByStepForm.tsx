@@ -184,7 +184,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Check Excel data for auto-completion
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
     console.log('checkExcelData called with:', { orderNumber, afoNumber });
-    const excelData = getExcelData();
+    const excelData = await getExcelData();
     if (excelData && excelData.data.length > 0) {
       console.log('Excel data found:', excelData.data.length, 'rows');
       console.log('Excel settings:', excelData.settings);

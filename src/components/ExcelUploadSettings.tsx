@@ -41,14 +41,17 @@ const ExcelUploadSettings: React.FC = () => {
     }
     
     // Load existing Excel data
-    const existingData = getExcelData();
-    if (existingData) {
-      setExcelData(existingData.data);
-      // Extract columns from the first row
-      if (existingData.data.length > 0) {
-        setColumns(Object.keys(existingData.data[0]));
+    const loadExcelData = async () => {
+      const existingData = await getExcelData();
+      if (existingData) {
+        setExcelData(existingData.data);
+        // Extract columns from the first row
+        if (existingData.data.length > 0) {
+          setColumns(Object.keys(existingData.data[0]));
+        }
       }
-    }
+    };
+    loadExcelData();
   }, []);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,7 +248,7 @@ const ExcelUploadSettings: React.FC = () => {
     toast.success(`✅ Test erfolgreich! Order-Spalte: "${orderColName}", AFO-Spalte: "${afoColName}"`);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!orderNumberColumn) {
       toast.error('Bitte geben Sie eine Spalten-Nummer für die Auftragsnummer ein');
       return;
@@ -305,14 +308,14 @@ const ExcelUploadSettings: React.FC = () => {
       departmentColumnName: deptColName
     };
 
-    saveExcelData(excelData);
+    await saveExcelData(excelData);
     saveExcelSettings(settings);
 
     toast.success(`✅ Einstellungen gespeichert! ${excelData.length} Zeilen verfügbar.`);
   };
 
-  const handleClear = () => {
-    clearExcelData();
+  const handleClear = async () => {
+    await clearExcelData();
     setFile(null);
     setExcelData([]);
     setColumns([]);
