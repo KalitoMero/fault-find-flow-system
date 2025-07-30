@@ -525,6 +525,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     <Textarea
                       value={currentField.value}
                       onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
+                          e.preventDefault();
+                          handleNext();
+                        }
+                      }}
                       placeholder={currentField.placeholder}
                       rows={4}
                       className="text-center text-lg flex-1"
@@ -546,6 +552,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     type="text"
                     value={currentField.value}
                     onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && currentField.value.trim()) {
+                        e.preventDefault();
+                        handleNext();
+                      }
+                    }}
                     placeholder={currentField.placeholder}
                     className="text-center text-xl max-w-md h-14"
                     pattern={currentField.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
