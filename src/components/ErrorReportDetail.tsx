@@ -274,10 +274,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                     <span className="text-sm text-gray-600">AFO-Nummer:</span>
                     <p className="font-medium">{report.afoNumber}</p>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Feststellort:</span>
-                    <p className="font-medium">{machineName}</p>
-                  </div>
                   {report.excelDepartment && (
                     <div>
                       <span className="text-sm text-gray-600">Abteilung:</span>
