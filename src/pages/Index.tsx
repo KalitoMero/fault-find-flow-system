@@ -111,6 +111,14 @@ const Index = () => {
 
   const handleApprovalChange = () => {
     loadData();
+    // Aktualisiere selectedReport mit den neuesten Daten
+    if (selectedReport) {
+      const updatedReports = getErrorReports();
+      const updatedSelectedReport = updatedReports.find(r => r.id === selectedReport.id);
+      if (updatedSelectedReport) {
+        setSelectedReport(updatedSelectedReport);
+      }
+    }
     toast.success("Freigabestatus aktualisiert!");
   };
 
