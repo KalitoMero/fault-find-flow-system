@@ -24,15 +24,11 @@ export const exportToExcel = async (
   // Arbeitsblatt erstellen
   const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
   
-  // Spaltenbreite automatisch anpassen
-  const colWidths = headers.map((header, colIndex) => {
-    const headerLength = header.length;
-    const maxDataLength = Math.max(...data.map(row => String(row[colIndex] || '').length));
-    return { wch: Math.max(headerLength, maxDataLength, 10) };
-  });
+  // Spaltenbreite auf feste, moderate Werte setzen
+  const colWidths = headers.map(() => ({ wch: 20 })); // Alle Spalten 20 Zeichen breit
   ws['!cols'] = colWidths;
   
-  // Textumbruch für alle Zellen aktivieren
+  // Textumbruch und Zentrierung für alle Zellen aktivieren
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   for (let row = range.s.r; row <= range.e.r; row++) {
     for (let col = range.s.c; col <= range.e.c; col++) {
@@ -42,7 +38,8 @@ export const exportToExcel = async (
       if (!ws[cellAddress].s) ws[cellAddress].s = {};
       ws[cellAddress].s.alignment = { 
         wrapText: true,
-        vertical: 'top'
+        vertical: 'center',
+        horizontal: 'center'
       };
     }
   }
@@ -109,7 +106,6 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean): string[] => 
   if (fields.descriptions) {
     headers.push(
       'Problembeschreibung',
-      'Fehlerursache',
       'Korrekturmaßnahme'
     );
   }
@@ -197,7 +193,6 @@ const buildExcelCompatibleCSV = (
     if (fields.descriptions) {
       row.push(
         escapeCsvValue(report.problemDescription),
-        escapeCsvValue(report.errorCause),
         escapeCsvValue(report.correctiveAction)
       );
     }
@@ -275,7 +270,6 @@ const buildDataRows = (
     if (fields.descriptions) {
       row.push(
         report.problemDescription,
-        report.errorCause,
         report.correctiveAction
       );
     }
@@ -493,7 +487,6 @@ const buildCSVContent = (
     if (fields.descriptions) {
       row.push(
         escapeCsvValue(report.problemDescription),
-        escapeCsvValue(report.errorCause),
         escapeCsvValue(report.correctiveAction)
       );
     }
