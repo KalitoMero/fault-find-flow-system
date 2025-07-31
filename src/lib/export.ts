@@ -1,7 +1,7 @@
 // Export-Funktionen für Excel und CSV
-// Vereinfachte Implementierung - in Produktionsumgebung würden echte Libraries verwendet
 
 import { ErrorReport } from './storage';
+import * as XLSX from 'xlsx';
 
 interface ExportFields {
   basicInfo: boolean;
@@ -11,7 +11,7 @@ interface ExportFields {
   approval: boolean;
 }
 
-// Excel Export (als echte CSV-Datei mit Excel-kompatiblen Einstellungen)
+// Excel Export mit echter Excel-Datei und Formatierung
 export const exportToExcel = async (
   reports: ErrorReport[],
   fields: ExportFields,
@@ -19,18 +19,58 @@ export const exportToExcel = async (
   filename: string
 ): Promise<void> => {
   const headers = buildHeaders(fields, includeAudio);
-  const csvContent = buildExcelCompatibleCSV(reports, fields, includeAudio, headers);
+  const data = buildDataRows(reports, fields, includeAudio);
   
-  // BOM für UTF-8 Erkennung in Excel hinzufügen
-  const BOM = '\uFEFF';
-  const csvWithBOM = BOM + csvContent;
+  // Arbeitsblatt erstellen
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
   
-  const blob = new Blob([csvWithBOM], { 
-    type: 'text/csv;charset=utf-8' 
+  // Spaltenbreite automatisch anpassen
+  const colWidths = headers.map((header, colIndex) => {
+    const headerLength = header.length;
+    const maxDataLength = Math.max(...data.map(row => String(row[colIndex] || '').length));
+    return { wch: Math.max(headerLength, maxDataLength, 10) };
   });
+  ws['!cols'] = colWidths;
   
-  // Als .csv Datei speichern, die Excel direkt öffnen kann
-  downloadFile(blob, `${filename}.csv`);
+  // Textumbruch für alle Zellen aktivieren
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!ws[cellAddress]) continue;
+      
+      if (!ws[cellAddress].s) ws[cellAddress].s = {};
+      ws[cellAddress].s.alignment = { 
+        wrapText: true,
+        vertical: 'top'
+      };
+    }
+  }
+  
+  // Header-Formatierung (farbiger Hintergrund)
+  for (let col = 0; col < headers.length; col++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+    if (!ws[cellAddress]) continue;
+    
+    if (!ws[cellAddress].s) ws[cellAddress].s = {};
+    ws[cellAddress].s.fill = {
+      fgColor: { rgb: "4472C4" }
+    };
+    ws[cellAddress].s.font = {
+      color: { rgb: "FFFFFF" },
+      bold: true
+    };
+  }
+  
+  // AutoFilter für sortierbare Daten aktivieren
+  ws['!autofilter'] = { ref: ws['!ref'] };
+  
+  // Arbeitsmappe erstellen
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fehlermeldungen');
+  
+  // Als Excel-Datei speichern
+  XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
 // CSV Export
