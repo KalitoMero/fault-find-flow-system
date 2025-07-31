@@ -80,7 +80,7 @@ const processCellValue = (cell: any): string => {
     return formatExcelDate(cell.value);
   }
   
-  // For text or other types, use the text property or value
+  // For text or other types, use the text property or value as-is
   if (cell.text !== undefined) {
     return String(cell.text).trim();
   }
@@ -180,8 +180,8 @@ const ExcelUploadSettings: React.FC = () => {
           const row: any = {};
           headers.forEach((header, headerIndex) => {
             const value = values[headerIndex] || '';
-            // Try to format dates for CSV data as well
-            row[header] = formatExcelDate(value) || value;
+            // Keep original value as-is for CSV files
+            row[header] = value;
           });
           return row;
         }).filter(row => Object.values(row).some(val => val !== ''));
