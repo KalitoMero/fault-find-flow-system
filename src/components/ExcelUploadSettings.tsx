@@ -14,6 +14,84 @@ interface ExcelColumn {
   column: string;
 }
 
+// Helper function to format Excel date values
+const formatExcelDate = (value: any): string => {
+  if (!value) return '';
+  
+  // If it's already a string, return as is
+  if (typeof value === 'string') {
+    // Check if it looks like a date string
+    const dateTest = new Date(value);
+    if (!isNaN(dateTest.getTime())) {
+      return dateTest.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    return value;
+  }
+  
+  // If it's a number (Excel date serial number)
+  if (typeof value === 'number') {
+    // Excel date serial numbers start from 1900-01-01 (with some quirks)
+    const excelEpoch = new Date(1899, 11, 30); // Excel's epoch accounting for leap year bug
+    const date = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
+    
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  }
+  
+  // If it's already a Date object
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.toLocaleDateString('de-DE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  // Return original value if no date conversion possible
+  return String(value);
+};
+
+// Helper function to process cell values from Excel
+const processCellValue = (cell: any): string => {
+  if (!cell) return '';
+  
+  // Handle different cell types
+  if (cell.type === ExcelJS.ValueType.Date && cell.value instanceof Date) {
+    return formatExcelDate(cell.value);
+  }
+  
+  if (cell.type === ExcelJS.ValueType.Number && cell.numFmt && cell.numFmt.includes('d')) {
+    // This might be a date formatted as number
+    return formatExcelDate(cell.value);
+  }
+  
+  // For text or other types, use the text property or value
+  if (cell.text !== undefined) {
+    return String(cell.text).trim();
+  }
+  
+  if (cell.value !== undefined) {
+    return String(cell.value).trim();
+  }
+  
+  return '';
+};
+
 const ExcelUploadSettings: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
@@ -101,7 +179,9 @@ const ExcelUploadSettings: React.FC = () => {
           const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
           const row: any = {};
           headers.forEach((header, headerIndex) => {
-            row[header] = values[headerIndex] || '';
+            const value = values[headerIndex] || '';
+            // Try to format dates for CSV data as well
+            row[header] = formatExcelDate(value) || value;
           });
           return row;
         }).filter(row => Object.values(row).some(val => val !== ''));
@@ -124,27 +204,15 @@ const ExcelUploadSettings: React.FC = () => {
         
         console.log('📄 Using sheet:', worksheet.name);
         
-        // Extract data from worksheet
-        const jsonData: any[][] = [];
-        
-        worksheet.eachRow((row, rowNumber) => {
-          const rowData: any[] = [];
-          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            rowData[colNumber - 1] = cell.text || cell.value || '';
-          });
-          jsonData.push(rowData);
+        // Extract headers from first row
+        const headerRow = worksheet.getRow(1);
+        headers = [];
+        headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          const headerValue = processCellValue(cell);
+          if (headerValue.trim()) {
+            headers.push(headerValue.trim());
+          }
         });
-        
-        console.log('📥 Raw JSON data rows:', jsonData.length);
-        
-        if (jsonData.length === 0) {
-          throw new Error('Excel-Datei ist leer');
-        }
-        
-        // Clean and validate headers
-        headers = jsonData[0]
-          .map(h => String(h || '').trim())
-          .filter(h => h !== '');
         
         console.log('📋 Excel Headers found:', headers);
         
@@ -152,18 +220,27 @@ const ExcelUploadSettings: React.FC = () => {
           throw new Error('Keine gültigen Spaltenüberschriften gefunden');
         }
         
-        // Process data rows with better validation
-        parsedData = jsonData.slice(1)
-          .filter(row => row && row.length > 0)
-          .map((row, index) => {
-            const rowData: any = {};
-            headers.forEach((header, headerIndex) => {
-              const cellValue = row[headerIndex];
-              rowData[header] = String(cellValue || '').trim();
-            });
-            return rowData;
-          })
-          .filter(row => Object.values(row).some(val => val !== ''));
+        // Process data rows with improved date handling
+        parsedData = [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          if (rowNumber === 1) return; // Skip header row
+          
+          const rowData: any = {};
+          let hasData = false;
+          
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            if (colNumber <= headers.length) {
+              const header = headers[colNumber - 1];
+              const cellValue = processCellValue(cell);
+              rowData[header] = cellValue;
+              if (cellValue.trim()) hasData = true;
+            }
+          });
+          
+          if (hasData) {
+            parsedData.push(rowData);
+          }
+        });
       }
       
       if (parsedData.length === 0) {
