@@ -223,6 +223,24 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                             </p>
                           </div>
 
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="font-medium">Fehlerursache:</label>
+                              {selectedReport.audioFiles?.errorCause && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => playAudio(selectedReport.audioFiles!.errorCause!)}
+                                >
+                                  <Play className="h-4 w-4 mr-1" />
+                                  Audio
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-gray-700 p-3 bg-gray-50 rounded">
+                              {selectedReport.errorCause}
+                            </p>
+                          </div>
 
                           <div>
                             <div className="flex items-center justify-between mb-2">
