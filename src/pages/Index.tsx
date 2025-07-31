@@ -154,18 +154,27 @@ const Index = () => {
   };
 
   const handleReportClick = (report: ErrorReport) => {
+    // Immer die neueste Version der Meldung aus dem Storage holen
+    const latestReports = getErrorReports();
+    const latestReport = latestReports.find(r => r.id === report.id);
+    
+    if (!latestReport) {
+      toast.error("Fehlermeldung nicht gefunden");
+      return;
+    }
+
     if (isAuthenticated) {
-      // Teamleiter gehen direkt zur Bearbeitung, außer bei pending Status (dann Detail-Ansicht für Freigabe)
-      if (user?.role === 'teamleader' && report.approvalStatus !== 'pending') {
-        setEditingReport(report);
+      // Teamleiter können alle Meldungen bearbeiten oder ansehen
+      if (user?.role === 'teamleader') {
+        setSelectedReport(latestReport);
       } else {
-        setSelectedReport(report);
+        setSelectedReport(latestReport);
       }
     } else {
       // Für Mitarbeiter: nur freigegebene Meldungen anklickbar
-      if (report.approvalStatus === 'approved') {
-        setSelectedReport(report);
-      } else if (report.approvalStatus === 'pending') {
+      if (latestReport.approvalStatus === 'approved') {
+        setSelectedReport(latestReport);
+      } else if (latestReport.approvalStatus === 'pending') {
         toast.info("Diese Meldung ist noch zur Prüfung und kann nicht geöffnet werden");
       }
     }
