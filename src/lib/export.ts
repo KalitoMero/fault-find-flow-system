@@ -41,7 +41,7 @@ export const exportToExcel = async (
     // Header-Formatierung
     headerRow.eachCell((cell, colNumber) => {
       cell.font = { bold: true, color: { argb: 'FF000000' }, name: 'Calibri', size: 11 };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFA500' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF9CD2ED' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       cell.border = {
         top: { style: 'thin', color: { argb: 'FF000000' } },
