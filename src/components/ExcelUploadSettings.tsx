@@ -106,6 +106,8 @@ const ExcelUploadSettings: React.FC = () => {
   const [rowCount, setRowCount] = useState<number>(0);
   const [showPreview, setShowPreview] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [availableSheets, setAvailableSheets] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
 
   useEffect(() => {
     const settings = getExcelSettings();
@@ -197,76 +199,138 @@ const ExcelUploadSettings: React.FC = () => {
         
         console.log('📊 Workbook loaded. Sheets:', workbook.worksheets.map(ws => ws.name));
         
-        const worksheet = workbook.worksheets[0];
+        // Store available sheets for selection
+        const sheetNames = workbook.worksheets.map(ws => ws.name);
+        setAvailableSheets(sheetNames);
+        
+        // Use selected sheet or first sheet
+        let worksheet = workbook.worksheets[0];
+        if (selectedSheet && workbook.worksheets.find(ws => ws.name === selectedSheet)) {
+          worksheet = workbook.worksheets.find(ws => ws.name === selectedSheet)!;
+        }
+        
         if (!worksheet) {
           throw new Error('Excel-Datei enthält keine Arbeitsblätter');
         }
         
         console.log('📄 Using sheet:', worksheet.name);
+        console.log('📐 Worksheet dimensions:', worksheet.dimensions);
+        console.log('🔍 Actual row count:', worksheet.actualRowCount);
+        console.log('🔍 Actual column count:', worksheet.actualColumnCount);
         
-        // Extract headers from first row with improved robustness
-        const headerRow = worksheet.getRow(1);
+        // ENHANCED HEADER EXTRACTION - Search multiple rows and handle merged cells
         headers = [];
+        let headerRowIndex = 1;
         
-        // Try different approaches to get headers
-        // Approach 1: Use eachCell with includeEmpty
-        headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          const headerValue = processCellValue(cell);
-          if (headerValue && headerValue.trim()) {
-            headers.push(headerValue.trim());
-          }
-        });
-        
-        // Approach 2: If no headers found, try direct cell access
-        if (headers.length === 0) {
-          console.log('🔄 Trying alternative header extraction...');
-          const maxCol = headerRow.cellCount || 20; // Try up to 20 columns
-          for (let col = 1; col <= maxCol; col++) {
-            const cell = headerRow.getCell(col);
-            const headerValue = processCellValue(cell);
-            if (headerValue && headerValue.trim()) {
-              headers.push(headerValue.trim());
-            } else if (headers.length > 0) {
-              // Stop if we hit an empty cell after finding some headers
-              break;
+        // Try to find headers in first 5 rows
+        for (let rowNum = 1; rowNum <= Math.min(5, worksheet.actualRowCount || 5); rowNum++) {
+          console.log(`🔍 Checking row ${rowNum} for headers...`);
+          const currentRow = worksheet.getRow(rowNum);
+          const potentialHeaders: string[] = [];
+          
+          // Method 1: Try eachCell
+          currentRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const cellValue = processCellValue(cell);
+            
+            // Handle merged cells
+            if (cell.isMerged && cell.master) {
+              const masterValue = processCellValue(cell.master);
+              if (masterValue && masterValue.trim()) {
+                potentialHeaders.push(masterValue.trim());
+                return;
+              }
             }
+            
+            if (cellValue && cellValue.trim()) {
+              potentialHeaders.push(cellValue.trim());
+            }
+          });
+          
+          // Method 2: If eachCell failed, try direct access
+          if (potentialHeaders.length === 0) {
+            const maxCol = Math.max(
+              currentRow.cellCount || 0, 
+              worksheet.actualColumnCount || 0, 
+              worksheet.dimensions?.right || 0,
+              20
+            );
+            
+            for (let col = 1; col <= maxCol; col++) {
+              const cell = currentRow.getCell(col);
+              let cellValue = processCellValue(cell);
+              
+              // Enhanced cell value extraction
+              if (!cellValue && cell.value) {
+                cellValue = String(cell.value).trim();
+              }
+              if (!cellValue && cell.text) {
+                cellValue = String(cell.text).trim();
+              }
+              if (!cellValue && cell.result) {
+                cellValue = String(cell.result).trim();
+              }
+              
+              // Looser validation - accept headers with special characters
+              if (cellValue && cellValue.length > 0) {
+                potentialHeaders.push(cellValue);
+              } else if (potentialHeaders.length > 0) {
+                // Stop if we hit empty after finding headers
+                break;
+              }
+            }
+          }
+          
+          console.log(`Row ${rowNum} potential headers (${potentialHeaders.length}):`, potentialHeaders);
+          
+          // If we found good headers, use them
+          if (potentialHeaders.length >= 2) { // At least 2 columns
+            headers = potentialHeaders;
+            headerRowIndex = rowNum;
+            console.log(`✅ Using headers from row ${rowNum}:`, headers);
+            break;
           }
         }
         
-        // Approach 3: If still no headers, try using worksheet dimensions
-        if (headers.length === 0 && worksheet.dimensions) {
-          console.log('🔄 Trying dimension-based header extraction...');
-          const endCol = worksheet.dimensions.right || 20;
-          for (let col = 1; col <= endCol; col++) {
-            const cell = worksheet.getCell(1, col);
-            const headerValue = processCellValue(cell);
-            if (headerValue && headerValue.trim()) {
-              headers.push(headerValue.trim());
-            }
-          }
-        }
-        
-        console.log('📋 Excel Headers found:', headers);
+        console.log('📋 Final Excel Headers found:', headers);
+        console.log('📍 Header row index:', headerRowIndex);
         
         if (headers.length === 0) {
           throw new Error('Keine gültigen Spaltenüberschriften gefunden');
         }
         
-        // Process data rows with improved date handling
+        // Process data rows starting after the header row
         parsedData = [];
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          if (rowNumber === 1) return; // Skip header row
+          if (rowNumber <= headerRowIndex) return; // Skip header and preceding rows
           
           const rowData: any = {};
           let hasData = false;
           
+          // Try both eachCell and direct access for robust data extraction
+          const cellValues: string[] = [];
+          
+          // Method 1: eachCell
           row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
             if (colNumber <= headers.length) {
-              const header = headers[colNumber - 1];
               const cellValue = processCellValue(cell);
-              rowData[header] = cellValue;
+              cellValues[colNumber - 1] = cellValue;
               if (cellValue.trim()) hasData = true;
             }
+          });
+          
+          // Method 2: Fill gaps with direct access
+          for (let col = 1; col <= headers.length; col++) {
+            if (cellValues[col - 1] === undefined) {
+              const cell = row.getCell(col);
+              const cellValue = processCellValue(cell);
+              cellValues[col - 1] = cellValue;
+              if (cellValue.trim()) hasData = true;
+            }
+          }
+          
+          // Map values to headers
+          headers.forEach((header, index) => {
+            rowData[header] = cellValues[index] || '';
           });
           
           if (hasData) {
@@ -459,6 +523,35 @@ const ExcelUploadSettings: React.FC = () => {
                   <Upload className="h-4 w-4" />
                   {file?.name || fileName} ({file ? excelData.length : rowCount} Zeilen geladen)
                 </div>
+                
+                {availableSheets.length > 1 && (
+                  <div className="mt-2">
+                    <Label htmlFor="sheet-selector">Excel-Arbeitsblatt auswählen</Label>
+                    <Select 
+                      value={selectedSheet} 
+                      onValueChange={(value) => {
+                        setSelectedSheet(value);
+                        // Re-trigger file processing with new sheet
+                        if (file) {
+                          const event = { target: { files: [file] } } as any;
+                          handleFileUpload(event);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Arbeitsblatt wählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSheets.map((sheetName, index) => (
+                          <SelectItem key={index} value={sheetName}>
+                            📄 {sheetName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
