@@ -24,8 +24,13 @@ export const exportToExcel = async (
   // Arbeitsblatt erstellen
   const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
   
-  // Spaltenbreite auf feste, moderate Werte setzen
-  const colWidths = headers.map(() => ({ wch: 20 })); // Alle Spalten 20 Zeichen breit
+  // Spaltenbreite dynamisch setzen - spezielle Breite für Problembeschreibung und Korrekturmaßnahme
+  const colWidths = headers.map((header) => {
+    if (header === 'Problembeschreibung' || header === 'Korrekturmaßnahme') {
+      return { wch: 94.63 };
+    }
+    return { wch: 20 };
+  });
   ws['!cols'] = colWidths;
   
   // Textumbruch und Zentrierung für alle Zellen aktivieren
@@ -44,19 +49,33 @@ export const exportToExcel = async (
     }
   }
   
-  // Header-Formatierung (farbiger Hintergrund)
-  for (let col = 0; col < headers.length; col++) {
-    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-    if (!ws[cellAddress]) continue;
-    
-    if (!ws[cellAddress].s) ws[cellAddress].s = {};
-    ws[cellAddress].s.fill = {
-      fgColor: { rgb: "4472C4" }
-    };
-    ws[cellAddress].s.font = {
-      color: { rgb: "FFFFFF" },
-      bold: true
-    };
+  // Header-Formatierung (orange Hintergrund) und Rahmenlinien für alle Zellen
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!ws[cellAddress]) continue;
+      
+      if (!ws[cellAddress].s) ws[cellAddress].s = {};
+      
+      // Rahmenlinien für alle Zellen
+      ws[cellAddress].s.border = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
+      
+      // Spezielle Formatierung für Header-Zeile (orange)
+      if (row === 0) {
+        ws[cellAddress].s.fill = {
+          fgColor: { rgb: "FFA500" }
+        };
+        ws[cellAddress].s.font = {
+          color: { rgb: "000000" },
+          bold: true
+        };
+      }
+    }
   }
   
   // AutoFilter für sortierbare Daten aktivieren
@@ -89,7 +108,6 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean): string[] => 
 
   if (fields.basicInfo) {
     headers.push(
-      'Fehlermeldungs-ID',
       'Auftragsnummer',
       'AFO-Nummer',
       'Maschine'
@@ -253,7 +271,6 @@ const buildDataRows = (
 
     if (fields.basicInfo) {
       row.push(
-        report.id,
         report.orderNumber,
         report.afoNumber,
         report.machine
@@ -470,7 +487,6 @@ const buildCSVContent = (
 
     if (fields.basicInfo) {
       row.push(
-        escapeCsvValue(report.id),
         escapeCsvValue(report.orderNumber),
         escapeCsvValue(report.afoNumber),
         escapeCsvValue(report.machine)
