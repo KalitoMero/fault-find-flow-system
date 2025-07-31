@@ -204,15 +204,47 @@ const ExcelUploadSettings: React.FC = () => {
         
         console.log('📄 Using sheet:', worksheet.name);
         
-        // Extract headers from first row
+        // Extract headers from first row with improved robustness
         const headerRow = worksheet.getRow(1);
         headers = [];
+        
+        // Try different approaches to get headers
+        // Approach 1: Use eachCell with includeEmpty
         headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
           const headerValue = processCellValue(cell);
-          if (headerValue.trim()) {
+          if (headerValue && headerValue.trim()) {
             headers.push(headerValue.trim());
           }
         });
+        
+        // Approach 2: If no headers found, try direct cell access
+        if (headers.length === 0) {
+          console.log('🔄 Trying alternative header extraction...');
+          const maxCol = headerRow.cellCount || 20; // Try up to 20 columns
+          for (let col = 1; col <= maxCol; col++) {
+            const cell = headerRow.getCell(col);
+            const headerValue = processCellValue(cell);
+            if (headerValue && headerValue.trim()) {
+              headers.push(headerValue.trim());
+            } else if (headers.length > 0) {
+              // Stop if we hit an empty cell after finding some headers
+              break;
+            }
+          }
+        }
+        
+        // Approach 3: If still no headers, try using worksheet dimensions
+        if (headers.length === 0 && worksheet.dimensions) {
+          console.log('🔄 Trying dimension-based header extraction...');
+          const endCol = worksheet.dimensions.right || 20;
+          for (let col = 1; col <= endCol; col++) {
+            const cell = worksheet.getCell(1, col);
+            const headerValue = processCellValue(cell);
+            if (headerValue && headerValue.trim()) {
+              headers.push(headerValue.trim());
+            }
+          }
+        }
         
         console.log('📋 Excel Headers found:', headers);
         
