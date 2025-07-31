@@ -164,9 +164,13 @@ const Index = () => {
     }
 
     if (isAuthenticated) {
-      // Teamleiter können alle Meldungen bearbeiten oder ansehen
+      // Teamleiter: pending Meldungen direkt bearbeiten, andere zur Detail-Ansicht
       if (user?.role === 'teamleader') {
-        setSelectedReport(latestReport);
+        if (latestReport.approvalStatus === 'pending') {
+          setEditingReport(latestReport);
+        } else {
+          setSelectedReport(latestReport);
+        }
       } else {
         setSelectedReport(latestReport);
       }

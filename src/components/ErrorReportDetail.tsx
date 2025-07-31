@@ -168,8 +168,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {/* Edit Button für pending und abgelehnte Meldungen */}
-                {(report.approvalStatus === 'rejected' || report.approvalStatus === 'pending') && onEdit && (
+                {/* Edit Button nur für abgelehnte Meldungen */}
+                {report.approvalStatus === 'rejected' && onEdit && (
                   <Button
                     variant="outline"
                     size="sm"
