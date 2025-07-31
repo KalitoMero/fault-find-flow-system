@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, getExcelData, clearExcelData } from '@/lib/excelStorage';
 import { toast } from "sonner";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ExcelColumn {
   name: string;
@@ -111,35 +111,29 @@ const ExcelUploadSettings: React.FC = () => {
         const arrayBuffer = await uploadedFile.arrayBuffer();
         console.log('ArrayBuffer size:', arrayBuffer.byteLength);
         
-        // Fix Excel parsing with correct configuration
-        const workbook = XLSX.read(arrayBuffer, { 
-          type: 'array',
-          raw: true,
-          cellText: true,
-          codepage: 65001
-        });
+        // Use ExcelJS to read Excel files
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
         
-        console.log('📊 Workbook loaded. Sheets:', workbook.SheetNames);
+        console.log('📊 Workbook loaded. Sheets:', workbook.worksheets.map(ws => ws.name));
         
-        const sheetName = workbook.SheetNames[0];
-        if (!sheetName) {
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
           throw new Error('Excel-Datei enthält keine Arbeitsblätter');
         }
         
-        const worksheet = workbook.Sheets[sheetName];
-        console.log('📄 Using sheet:', sheetName);
+        console.log('📄 Using sheet:', worksheet.name);
         
-        // Get range information
-        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
-        console.log('📐 Sheet range:', range);
+        // Extract data from worksheet
+        const jsonData: any[][] = [];
         
-        // Convert to JSON with UTF-8 text handling
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
-          header: 1,
-          raw: true,
-          defval: '',
-          blankrows: false
-        }) as any[][];
+        worksheet.eachRow((row, rowNumber) => {
+          const rowData: any[] = [];
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            rowData[colNumber - 1] = cell.text || cell.value || '';
+          });
+          jsonData.push(rowData);
+        });
         
         console.log('📥 Raw JSON data rows:', jsonData.length);
         
