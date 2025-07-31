@@ -274,6 +274,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                     <span className="text-sm text-gray-600">AFO-Nummer:</span>
                     <p className="font-medium">{report.afoNumber}</p>
                   </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Ressource:</span>
+                    <p className="font-medium">{machineName}</p>
+                  </div>
                   {report.excelDepartment && (
                     <div>
                       <span className="text-sm text-gray-600">Abteilung:</span>
@@ -287,7 +291,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                 <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
                    <div>
-                     <span className="text-sm text-gray-600">Menge:</span>
+                     <span className="text-sm text-gray-600">Fehlermenge:</span>
                      <p className="font-medium">{report.defectiveQuantity}</p>
                    </div>
                   <div>
@@ -318,14 +322,19 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
 
             <Separator />
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-800">{report.problemDescription}</p>
-              </div>
-            </div>
+            {/* Nur für nicht-freigegebene Berichte die Fehlerursache anzeigen */}
+            {report.approvalStatus !== 'approved' && (
+              <>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-gray-800">{report.problemDescription}</p>
+                  </div>
+                </div>
 
-            <Separator />
+                <Separator />
+              </>
+            )}
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
