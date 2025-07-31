@@ -1,7 +1,7 @@
 // Export-Funktionen für Excel und CSV
 
 import { ErrorReport } from './storage';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ExportFields {
   basicInfo: boolean;
@@ -11,7 +11,7 @@ interface ExportFields {
   approval: boolean;
 }
 
-// Excel Export mit robuster Formatierung und Debug-Ausgabe
+// Excel Export mit ExcelJS
 export const exportToExcel = async (
   reports: ErrorReport[],
   fields: ExportFields,
@@ -19,128 +19,87 @@ export const exportToExcel = async (
   filename: string
 ): Promise<void> => {
   try {
-    console.log('🔧 Starting Excel export with enhanced formatting...');
+    console.log('🔧 Starting Excel export with ExcelJS...');
+    
+    // Neue Arbeitsmappe erstellen
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Fehlerberichts-System';
+    workbook.created = new Date();
+    
+    // Arbeitsblatt hinzufügen
+    const worksheet = workbook.addWorksheet('Fehlerberichte');
+    
     const headers = buildHeaders(fields, includeAudio);
     const data = buildDataRows(reports, fields, includeAudio);
     
     console.log('📊 Headers:', headers);
     console.log('📈 Data rows:', data.length);
     
-    // Leeres Arbeitsblatt erstellen für manuelle Zellensteuerung
-    const ws: any = {};
+    // Header-Zeile hinzufügen
+    const headerRow = worksheet.addRow(headers);
     
-    // Datenbereich definieren
-    const range = { s: { r: 0, c: 0 }, e: { r: data.length, c: headers.length - 1 } };
-    ws['!ref'] = XLSX.utils.encode_range(range);
-    
-    // Header-Zeile mit vollständiger Formatierung
-    headers.forEach((header, colIndex) => {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: colIndex });
-      ws[cellAddress] = {
-        v: header,
-        t: 's',
-        s: {
-          alignment: { 
-            horizontal: 'center', 
-            vertical: 'center', 
-            wrapText: true 
-          },
-          fill: { 
-            fgColor: { rgb: 'FFA500' } 
-          },
-          font: { 
-            bold: true, 
-            color: { rgb: '000000' },
-            name: 'Calibri',
-            sz: 11
-          },
-          border: {
-            top: { style: 'thin', color: { rgb: '000000' } },
-            bottom: { style: 'thin', color: { rgb: '000000' } },
-            left: { style: 'thin', color: { rgb: '000000' } },
-            right: { style: 'thin', color: { rgb: '000000' } }
-          }
-        }
+    // Header-Formatierung
+    headerRow.eachCell((cell, colNumber) => {
+      cell.font = { bold: true, color: { argb: 'FF000000' }, name: 'Calibri', size: 11 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFA500' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
       };
-      console.log(`🎨 Formatted header "${header}" in column ${colIndex}`);
+      console.log(`🎨 Formatted header "${headers[colNumber - 1]}" in column ${colNumber}`);
     });
     
-    // Daten-Zeilen mit vollständiger Formatierung
-    data.forEach((row, rowIndex) => {
-      row.forEach((cellValue, colIndex) => {
-        const cellAddress = XLSX.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
-        ws[cellAddress] = {
-          v: cellValue,
-          t: typeof cellValue === 'string' ? 's' : 'n',
-          s: {
-            alignment: { 
-              horizontal: 'center', 
-              vertical: 'center', 
-              wrapText: true 
-            },
-            font: {
-              name: 'Calibri',
-              sz: 10
-            },
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            }
-          }
+    // Datenzeilen hinzufügen
+    data.forEach((rowData) => {
+      const row = worksheet.addRow(rowData);
+      
+      // Zellenformatierung für Datenzeilen
+      row.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
     });
     
-    // Spaltenbreiten mit Debug-Ausgabe
-    const colWidths = headers.map((header, index) => {
+    // Spaltenbreiten festlegen
+    headers.forEach((header, index) => {
+      const col = worksheet.getColumn(index + 1);
       if (header === 'Problembeschreibung' || header === 'Korrekturmaßnahme') {
+        col.width = 94.63;
         console.log(`📏 Setting wide column "${header}" (index ${index}) to width 94.63`);
-        return { wch: 94.63 };
+      } else {
+        col.width = 20;
+        console.log(`📏 Setting standard column "${header}" (index ${index}) to width 20`);
       }
-      console.log(`📏 Setting standard column "${header}" (index ${index}) to width 20`);
-      return { wch: 20 };
     });
-    ws['!cols'] = colWidths;
-    
-    console.log('🎨 Applied cell formatting to all', (data.length + 1) * headers.length, 'cells');
-    console.log('📐 Applied column widths:', colWidths.map(w => w.wch));
     
     // AutoFilter aktivieren
-    ws['!autofilter'] = { ref: ws['!ref'] };
-    console.log('🔍 AutoFilter activated for range:', ws['!ref']);
-    
-    // Arbeitsmappe mit Metadaten erstellen
-    const wb = XLSX.utils.book_new();
-    wb.Props = {
-      Title: 'Fehlerberichte Export',
-      Subject: 'Formatierte Excel-Tabelle',
-      Author: 'Fehlerberichts-System',
-      CreatedDate: new Date()
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: data.length + 1, column: headers.length }
     };
+    console.log('🔍 AutoFilter activated');
     
-    XLSX.utils.book_append_sheet(wb, ws, 'Fehlerberichte');
-    console.log('📋 Worksheet "Fehlerberichte" added to workbook');
+    console.log('🎨 Applied cell formatting to all', (data.length + 1) * headers.length, 'cells');
     
-    // Excel-Datei mit optimierten Einstellungen schreiben
-    console.log('💾 Writing Excel file with cellStyles enabled...');
-    const wbout = XLSX.write(wb, { 
-      bookType: 'xlsx', 
-      type: 'array',
-      cellStyles: true,
-      sheetStubs: false,
-      bookSST: false
-    });
+    // Excel-Datei als Buffer erstellen
+    const buffer = await workbook.xlsx.writeBuffer();
     
-    // Blob mit korrektem MIME-Type erstellen
-    const blob = new Blob([wbout], { 
+    // Blob erstellen und downloaden
+    const blob = new Blob([buffer], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
     
-    // Download mit verbesserter Kompatibilität
     downloadFile(blob, `${filename}.xlsx`);
-    console.log('✅ Excel export completed successfully with full formatting');
+    console.log('✅ Excel export completed successfully with ExcelJS');
     
   } catch (error) {
     console.error('❌ Error during Excel export:', error);
