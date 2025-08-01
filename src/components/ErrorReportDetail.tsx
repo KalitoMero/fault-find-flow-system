@@ -320,19 +320,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
 
             <Separator />
 
-            {/* Nur für nicht-freigegebene Berichte die Fehlerursache anzeigen */}
-            {report.approvalStatus !== 'approved' && (
-              <>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-gray-800">{report.problemDescription}</p>
-                  </div>
-                </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-800">{report.problemDescription}</p>
+              </div>
+            </div>
 
-                <Separator />
-              </>
-            )}
+            <Separator />
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>

@@ -39,15 +39,40 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
   const handleApprove = async () => {
     if (!isAuthenticated || !user) return;
     
+    // First save changes
+    if (!formData.problemDescription.trim() || !formData.correctiveAction.trim()) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-      const approverName = currentEmployee?.name || user.username;
-      
-      updateErrorReportStatus(report.id, 'approved', undefined, approverName);
-      toast.success('Fehlermeldung wurde freigegeben!');
+      // Save changes and approve in one step
+      const allReports = getErrorReports();
+      const updatedReports = allReports.map(r => {
+        if (r.id === report.id) {
+          const employees = getEmployees();
+          const currentEmployee = employees.find(emp => emp.account?.username === user.username);
+          const approverName = currentEmployee?.name || user.username;
+          
+          return {
+            ...r,
+            problemDescription: formData.problemDescription,
+            correctiveAction: formData.correctiveAction,
+            defectiveQuantity: formData.defectiveQuantity,
+            approvalStatus: 'approved' as const,
+            approvedBy: approverName,
+            approvedAt: new Date().toISOString(),
+            rejectionReason: undefined,
+            rejectedBy: undefined,
+            rejectedAt: undefined,
+          };
+        }
+        return r;
+      });
+
+      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      toast.success('Fehlermeldung wurde gespeichert und freigegeben!');
       onSave();
     } catch (error) {
       toast.error('Fehler beim Freigeben der Meldung');
@@ -62,15 +87,40 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
       return;
     }
     
+    // First save changes
+    if (!formData.problemDescription.trim() || !formData.correctiveAction.trim()) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-      const rejectorName = currentEmployee?.name || user.username;
-      
-      updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
-      toast.success('Fehlermeldung wurde abgelehnt!');
+      // Save changes and reject in one step
+      const allReports = getErrorReports();
+      const updatedReports = allReports.map(r => {
+        if (r.id === report.id) {
+          const employees = getEmployees();
+          const currentEmployee = employees.find(emp => emp.account?.username === user.username);
+          const rejectorName = currentEmployee?.name || user.username;
+          
+          return {
+            ...r,
+            problemDescription: formData.problemDescription,
+            correctiveAction: formData.correctiveAction,
+            defectiveQuantity: formData.defectiveQuantity,
+            approvalStatus: 'rejected' as const,
+            rejectionReason: rejectionReason,
+            rejectedBy: rejectorName,
+            rejectedAt: new Date().toISOString(),
+            approvedBy: undefined,
+            approvedAt: undefined,
+          };
+        }
+        return r;
+      });
+
+      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      toast.success('Fehlermeldung wurde gespeichert und abgelehnt!');
       onSave();
       setShowRejectionForm(false);
       setRejectionReason('');
@@ -179,15 +229,6 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge()}
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSaveChanges}
-                  disabled={isSubmitting}
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  {isSubmitting ? 'Speichere...' : 'Änderungen speichern'}
-                </Button>
               </div>
             </CardTitle>
             <CardDescription>
