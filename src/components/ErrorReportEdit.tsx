@@ -73,7 +73,9 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
       // Speichere alle Berichte zurück
       localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
       
-      toast.success("Fehlermeldung erfolgreich aktualisiert und zur erneuten Prüfung eingereicht!");
+      toast.success(report.approvalStatus === 'rejected' 
+        ? "Fehlermeldung erfolgreich aktualisiert und zur erneuten Prüfung eingereicht!"
+        : "Fehlermeldung erfolgreich aktualisiert!");
       onSave();
       
     } catch (error) {
@@ -107,13 +109,15 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
               <span>Fehlermeldung #{report.id} bearbeiten</span>
             </CardTitle>
             <CardDescription>
-              Diese Meldung wurde abgelehnt und kann bearbeitet werden. Nach dem Speichern wird sie zur erneuten Prüfung eingereicht.
+              {report.approvalStatus === 'rejected' 
+                ? 'Diese Meldung wurde abgelehnt und kann bearbeitet werden. Nach dem Speichern wird sie zur erneuten Prüfung eingereicht.'
+                : 'Bearbeiten Sie die Meldungsdetails. Nach dem Speichern wird die Meldung aktualisiert.'}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Ablehnungsgrund anzeigen */}
-            {report.rejectionReason && (
+            {/* Ablehnungsgrund anzeigen nur bei abgelehnten Meldungen */}
+            {report.approvalStatus === 'rejected' && report.rejectionReason && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <h3 className="font-semibold text-red-800 mb-2">Grund für Ablehnung:</h3>
                 <p className="text-red-700">{report.rejectionReason}</p>
