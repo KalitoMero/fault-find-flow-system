@@ -138,6 +138,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
   const machines = getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
+  
+  // Hole Ressource-Daten aus additionalExcelData oder machine field
+  const resourceValue = report.additionalExcelData?.Ressource || machineName || report.machine;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -276,7 +279,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Ressource:</span>
-                    <p className="font-medium">{machineName || report.machine || 'Nicht angegeben'}</p>
+                    <p className="font-medium">{resourceValue || 'Nicht angegeben'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Abteilung:</span>
