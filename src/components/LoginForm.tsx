@@ -89,11 +89,6 @@ const LoginForm = ({ onBack }: LoginFormProps) => {
                 )}
               </Button>
             </form>
-            <div className="mt-4 text-sm text-gray-600 text-center">
-              <p>Test-Accounts:</p>
-              <p>Test / Test1</p>
-              <p>Test2 / Test1</p>
-            </div>
           </CardContent>
         </Card>
       </div>
