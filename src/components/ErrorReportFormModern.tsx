@@ -149,7 +149,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     setIsSubmitting(true);
 
     try {
-      if (!orderNumber || !defectiveQuantity || 
+      if (!orderNumber || !afoNumber || !defectiveQuantity || 
           !problemDescription || 
           !selectedDepartment || !selectedEmployee) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
@@ -299,10 +299,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               />
               <FloatingLabelInput
                 id="afoNumber"
-                label="AFO-Nummer (Optional)"
+                label="AFO-Nummer"
                 value={afoNumber}
                 onChange={setAfoNumber}
                 placeholder="z.B. AFO-12345"
+                required
                 icon={<Hash className="h-4 w-4" />}
               />
             </div>

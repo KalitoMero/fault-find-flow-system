@@ -64,7 +64,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       label: 'AFO-Nummer',
       value: '',
       type: 'text',
-      required: false,
+      required: true,
       completed: false,
       icon: <Hash className="h-4 w-4" />,
       placeholder: 'z.B. AFO-12345'

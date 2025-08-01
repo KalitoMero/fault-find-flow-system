@@ -66,7 +66,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setIsSubmitting(true);
 
     try {
-      if (!orderNumber || !defectiveQuantity || 
+      if (!orderNumber || !afoNumber || !defectiveQuantity || 
           !problemDescription || !correctiveAction || 
           !selectedDepartment || !selectedEmployee) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
@@ -200,12 +200,13 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               />
             </div>
             <div>
-              <Label htmlFor="afoNumber">AFO-Nummer</Label>
+              <Label htmlFor="afoNumber">AFO-Nummer *</Label>
               <Input
                 id="afoNumber"
                 value={afoNumber}
                 onChange={(e) => setAfoNumber(e.target.value)}
                 placeholder="z.B. AFO-12345"
+                required
               />
             </div>
           </div>
