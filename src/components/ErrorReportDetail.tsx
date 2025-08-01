@@ -276,7 +276,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Ressource:</span>
-                    <p className="font-medium">{machineName}</p>
+                    <p className="font-medium">{machineName || report.machine || 'Nicht angegeben'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Abteilung:</span>
