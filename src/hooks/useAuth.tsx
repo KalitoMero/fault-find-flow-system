@@ -17,11 +17,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fallback Test-Accounts falls keine Einstellungen vorhanden sind
-const fallbackTestAccounts = [
-  { username: 'Test', password: 'Test1' },
-  { username: 'Test2', password: 'Test1' }
-];
 
 // Standard-Admin Account
 const defaultAdminAccount = {
@@ -78,21 +73,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true;
     }
 
-    // Fallback zu den ursprünglichen Test-Accounts (diese sind immer Teamleiter)
-    const fallbackAccount = fallbackTestAccounts.find(
-      acc => acc.username === username && acc.password === password
-    );
-
-    if (fallbackAccount) {
-      const user = { 
-        username, 
-        role: 'teamleader' as const,
-        name: username
-      };
-      setUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return true;
-    }
 
     return false;
   };
