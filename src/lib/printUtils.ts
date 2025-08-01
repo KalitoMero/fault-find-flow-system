@@ -235,7 +235,7 @@ export const printErrorReport = (report: ErrorReport) => {
 
       <div class="section">
         <div class="section-title">Auftragsdaten</div>
-        <div class="order-data-grid">
+        <div class="grid">
           <div class="field">
             <div class="field-label">Auftragsnummer:</div>
             <div class="field-value">${report.orderNumber}</div>
@@ -245,12 +245,12 @@ export const printErrorReport = (report: ErrorReport) => {
             <div class="field-value">${report.afoNumber || '-'}</div>
           </div>
           <div class="field">
-            <div class="field-label">Feststellort:</div>
-            <div class="field-value">${machineName || '-'}</div>
-          </div>
-          <div class="field">
             <div class="field-label">Beanstandete Menge:</div>
             <div class="field-value">${report.defectiveQuantity}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Zusätzliche Information:</div>
+            <div class="field-value">${report.additionalInfo || '-'}</div>
           </div>
         </div>
       </div>
