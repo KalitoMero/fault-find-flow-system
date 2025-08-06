@@ -126,15 +126,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
 
-  // DEBUG: Test if showReview is working
-  if (showReview) {
-    console.log("Review aktiv!");
-    return <div>REVIEW AKTIV</div>;
-  }
 
   useEffect(() => {
     loadDepartmentsData();
   }, [refreshDepartments]);
+
+  const loadDepartmentsData = () => {
+    setDepartments(getDepartments());
+    setEmployees(getEmployees());
+    setMachines(getMachines());
+  };
 
   useEffect(() => {
     if (showSuccess) {
@@ -147,26 +148,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     }
   }, [showSuccess]);
 
-  const loadDepartmentsData = () => {
-    setDepartments(getDepartments());
-    setEmployees(getEmployees());
-    setMachines(getMachines());
-  };
 
-  // Parse AFO from order number if it contains a dot
-  const parseOrderNumber = (orderNum: string) => {
-    const dotIndex = orderNum.indexOf('.');
-    if (dotIndex !== -1) {
-      const orderPart = orderNum.substring(0, dotIndex);
-      const afoPart = orderNum.substring(dotIndex + 1);
-      
-      // Only set if AFO number is empty to avoid infinite loop
-      if (!afoNumber) {
-        setOrderNumber(orderPart);
-        setAfoNumber(afoPart);
-      }
-    }
-  };
 
   // Check if all required fields are complete
   const isFormComplete = () => {
@@ -195,12 +177,9 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("SUBMIT CLICKED");
 
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-
-    console.log("Teamleiter:", teamLeader);
 
     if (!teamLeader) {
       toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
@@ -213,7 +192,6 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       return;
     }
 
-    console.log("setShowReview TRUE");
     setShowReview(true);
   };
 
