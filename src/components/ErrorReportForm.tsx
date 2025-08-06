@@ -37,6 +37,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     correctiveAction?: string;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
 
   useEffect(() => {
@@ -63,16 +64,22 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!orderNumber || !afoNumber || !defectiveQuantity || 
+        !problemDescription || !correctiveAction || 
+        !selectedDepartment || !selectedEmployee) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
+    // Show review screen
+    setShowReview(true);
+  };
+
+  const handleFinalSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      if (!orderNumber || !afoNumber || !defectiveQuantity || 
-          !problemDescription || !correctiveAction || 
-          !selectedDepartment || !selectedEmployee) {
-        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-        return;
-      }
-
       // Find team leader for the selected department
       const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
       const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
@@ -111,6 +118,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
       
       // Show success state and store created report
       setShowSuccess(true);
+      setShowReview(false);
       setLastCreatedReport(report);
       
       onReportCreated();
@@ -120,6 +128,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditReport = () => {
+    setShowReview(false);
   };
 
   const handleNewReport = () => {
@@ -146,6 +158,80 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const filteredEmployees = selectedDepartment 
     ? employees.filter(emp => emp.departmentId === selectedDepartment)
     : [];
+
+  if (showReview) {
+    const selectedDept = departments.find(dept => dept.id === selectedDepartment);
+    const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
+    const selectedMach = machines.find(mach => mach.id === machine);
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
+            <span>Fehlermeldung überprüfen</span>
+          </CardTitle>
+          <CardDescription>
+            Bitte überprüfen Sie Ihre Eingaben vor dem finalen Erstellen der Fehlermeldung
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Auftragsnummer</Label>
+              <p className="text-sm bg-muted p-2 rounded">{orderNumber}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">AFO-Nummer</Label>
+              <p className="text-sm bg-muted p-2 rounded">{afoNumber}</p>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Fehlerhafte Menge</Label>
+            <p className="text-sm bg-muted p-2 rounded">{defectiveQuantity}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Abteilung</Label>
+              <p className="text-sm bg-muted p-2 rounded">{selectedDept?.name}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Ersteller</Label>
+              <p className="text-sm bg-muted p-2 rounded">{selectedEmp?.name}</p>
+            </div>
+          </div>
+
+          {machine && (
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Feststellort</Label>
+              <p className="text-sm bg-muted p-2 rounded">{selectedMach?.name}</p>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Problembeschreibung</Label>
+            <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{problemDescription}</p>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Korrekturmaßnahme</Label>
+            <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{correctiveAction}</p>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <Button onClick={handleEditReport} variant="outline" className="flex-1">
+              Bearbeiten
+            </Button>
+            <Button onClick={handleFinalSubmit} disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? 'Wird erstellt...' : 'Abschicken'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (showSuccess) {
     return (
