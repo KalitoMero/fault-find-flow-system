@@ -164,46 +164,91 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   // Handle order number change with parsing
   const handleOrderNumberChange = (value: string) => {
-    setOrderNumber(value);
-    
-    // Parse if contains dot and AFO is empty
+    // Parse if contains dot
     const dotIndex = value.indexOf('.');
-    if (dotIndex !== -1 && !afoNumber) {
+    if (dotIndex !== -1) {
       const orderPart = value.substring(0, dotIndex);
       const afoPart = value.substring(dotIndex + 1);
       
-      setTimeout(() => {
-        setOrderNumber(orderPart);
-        setAfoNumber(afoPart);
-      }, 0);
+      setOrderNumber(orderPart);
+      setAfoNumber(afoPart);
+    } else {
+      setOrderNumber(value);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== VALIDIERUNG GESTARTET ===');
+    console.log('orderNumber:', orderNumber);
+    console.log('afoNumber:', afoNumber);
+    console.log('defectiveQuantity:', defectiveQuantity);
+    console.log('problemDescription:', problemDescription);
+    console.log('selectedDepartment:', selectedDepartment);
+    console.log('selectedEmployee:', selectedEmployee);
+    
     // Validation
-    if (!orderNumber || !afoNumber || !defectiveQuantity || 
-        !problemDescription || 
-        !selectedDepartment || !selectedEmployee) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+    if (!orderNumber) {
+      console.log('❌ Fehlende Auftragsnummer');
+      toast.error('Bitte geben Sie eine Auftragsnummer ein');
       return;
     }
 
+    if (!afoNumber) {
+      console.log('❌ Fehlende AFO-Nummer');
+      toast.error('Bitte geben Sie eine AFO-Nummer ein');
+      return;
+    }
+
+    if (!defectiveQuantity) {
+      console.log('❌ Fehlende Fehlermenge');
+      toast.error('Bitte geben Sie die Fehlermenge ein');
+      return;
+    }
+
+    if (!problemDescription) {
+      console.log('❌ Fehlende Problembeschreibung');
+      toast.error('Bitte beschreiben Sie das Problem');
+      return;
+    }
+
+    if (!selectedDepartment) {
+      console.log('❌ Fehlende Abteilung');
+      toast.error('Bitte wählen Sie eine Abteilung aus');
+      return;
+    }
+
+    if (!selectedEmployee) {
+      console.log('❌ Fehlender Mitarbeiter');
+      toast.error('Bitte wählen Sie einen Mitarbeiter aus');
+      return;
+    }
+
+    console.log('✅ Alle Grundvalidierungen bestanden');
+
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
+    console.log('departmentEmployees:', departmentEmployees);
+    
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
+    console.log('teamLeader:', teamLeader);
     
     if (!teamLeader) {
+      console.log('❌ Kein Teamleiter gefunden');
       toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
       return;
     }
 
     const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
+    console.log('selectedEmp:', selectedEmp);
+    
     if (!selectedEmp) {
+      console.log('❌ Ausgewählter Mitarbeiter nicht gefunden');
       toast.error('Ausgewählter Mitarbeiter nicht gefunden');
       return;
     }
 
+    console.log('✅ Alle Validierungen bestanden - Zeige Review Screen');
     // Show review screen instead of directly creating
     setShowReview(true);
   };
