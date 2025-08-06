@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +41,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [excelDepartment, setExcelDepartment] = useState<string>('');
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
+  const [showReview, setShowReview] = useState(false);
 
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (username: string): string => {
@@ -273,7 +274,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   };
 
-  const handleFieldUpdate = (fieldId: string, value: string) => {
+  // Performance optimized form validation
+  const isFormComplete = useCallback(() => {
+    const requiredFields = fields.filter(f => f.required);
+    return requiredFields.every(f => f.value.trim().length > 0);
+  }, [fields]);
+
+  const handleFieldUpdate = useCallback((fieldId: string, value: string) => {
     console.log('handleFieldUpdate called:', fieldId, value);
     setFields(prev => prev.map(field => {
       if (field.id === fieldId) {
@@ -299,7 +306,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         setTimeout(() => checkExcelData(orderNumber, afoNumber), 100);
       }
     }
-  };
+  }, [fields]);
 
   const handleNext = () => {
     const currentField = fields[currentStep];
@@ -369,7 +376,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     handleFieldUpdate(currentField.id, currentField.value.slice(0, -1));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
+    // Show review first if all fields are complete
+    if (isFormComplete() && !showReview) {
+      setShowReview(true);
+      return;
+    }
+
     const requiredFields = fields.filter(f => f.required);
     const missingFields = requiredFields.filter(f => !f.value);
     
@@ -377,8 +390,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
-
-    // Personalnummer wird direkt verwendet ohne Mitarbeiter-Validierung
 
     setIsSubmitting(true);
 
@@ -415,12 +426,113 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [fields, isFormComplete, showReview, assignedTeamLeader, excelDepartment, additionalExcelData, audioFiles, onReportCreated, onClose]);
 
   const currentField = fields[currentStep];
   const completedFields = fields.filter(f => f.completed && f.id !== currentField.id);
   const isLastStep = currentStep === fields.length - 1;
   const showNumericKeypad = currentField && (currentField.type === 'number' || currentField.type === 'text');
+
+  // Review Screen
+  if (showReview) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="fixed top-4 left-4 z-10">
+          <Button 
+            onClick={() => setShowReview(false)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowRight className="h-4 w-4 rotate-180" />
+            Zurück zum Formular
+          </Button>
+        </div>
+
+        <div className="max-w-4xl mx-auto space-y-6 pt-16">
+          <Card className="bg-white shadow-xl">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl flex items-center justify-center gap-3">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                Fehlermeldung überprüfen
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* All form fields in review */}
+              <div className="grid grid-cols-2 gap-4">
+                {fields.filter(f => f.type !== 'textarea').map((field) => (
+                  <div key={field.id} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {field.icon}
+                      <span className="font-medium text-gray-700">{field.label}</span>
+                    </div>
+                    <p className="text-lg font-semibold">{field.value || 'Nicht angegeben'}</p>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Text areas full width */}
+              {fields.filter(f => f.type === 'textarea' && f.value).map((field) => (
+                <div key={field.id} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    {field.icon}
+                    <span className="font-medium text-gray-700">{field.label}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-gray-900">{field.value}</p>
+                </div>
+              ))}
+
+              {/* Excel data if available */}
+              {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">Excel-Daten</h4>
+                  <div className="space-y-1 text-sm">
+                    {excelDepartment && (
+                      <div><span className="text-blue-600">Abteilung:</span> {excelDepartment}</div>
+                    )}
+                    {assignedTeamLeader !== 'System' && (
+                      <div><span className="text-blue-600">Teamleiter:</span> {getTeamLeaderDisplayName(assignedTeamLeader)}</div>
+                    )}
+                    {Object.entries(additionalExcelData).map(([key, value]) => (
+                      <div key={key}><span className="text-blue-600">{key}:</span> {value}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-center gap-4 pt-6">
+                <Button 
+                  onClick={() => setShowReview(false)}
+                  variant="outline"
+                  size="lg"
+                  className="px-8 py-3"
+                >
+                  Bearbeiten
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Settings className="h-5 w-5 mr-2 animate-spin" />
+                      Wird gespeichert...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      Meldung erstellen
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -579,8 +691,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               {isLastStep ? (
                 <Button 
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700"
+                  disabled={isSubmitting || !isFormComplete()}
+                  className={`px-8 py-3 text-lg transition-colors ${
+                    isFormComplete() 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
                   size="lg"
                 >
                   {isSubmitting ? (
@@ -591,7 +707,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   ) : (
                     <>
                       <CheckCircle className="h-5 w-5 mr-2" />
-                      Meldung erstellen
+                      {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
                     </>
                   )}
                 </Button>
