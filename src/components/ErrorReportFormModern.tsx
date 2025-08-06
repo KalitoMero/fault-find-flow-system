@@ -17,7 +17,9 @@ import {
   FileText, 
   Settings,
   Sparkles,
-  Building2
+  Building2,
+  Edit,
+  Send
 } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
@@ -122,6 +124,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     loadDepartmentsData();
@@ -146,29 +149,40 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!orderNumber || !afoNumber || !defectiveQuantity || 
+        !problemDescription || 
+        !selectedDepartment || !selectedEmployee) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
+    const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
+    const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
+    
+    if (!teamLeader) {
+      toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
+      return;
+    }
+
+    const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
+    if (!selectedEmp) {
+      toast.error('Ausgewählter Mitarbeiter nicht gefunden');
+      return;
+    }
+
+    // Show review screen instead of directly creating
+    setShowReview(true);
+  };
+
+  const handleFinalSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      if (!orderNumber || !afoNumber || !defectiveQuantity || 
-          !problemDescription || 
-          !selectedDepartment || !selectedEmployee) {
-        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-        return;
-      }
-
       const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
       const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-      
-      if (!teamLeader) {
-        toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
-        return;
-      }
-
       const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
-      if (!selectedEmp) {
-        toast.error('Ausgewählter Mitarbeiter nicht gefunden');
-        return;
-      }
 
       const report = {
         id: generateErrorReportId(),
@@ -176,20 +190,21 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         afoNumber: afoNumber || undefined,
         defectiveQuantity: parseInt(defectiveQuantity),
         totalDefectiveQuantity: parseInt(defectiveQuantity),
-        creator: selectedEmp.name,
-        personalNumber: selectedEmp.id,
+        creator: selectedEmp!.name,
+        personalNumber: selectedEmp!.id,
         machine: machine || undefined,
         problemDescription,
         errorCause: problemDescription,
         correctiveAction,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        assignedTeamLeader: teamLeader.account?.username || teamLeader.name,
+        assignedTeamLeader: teamLeader!.account?.username || teamLeader!.name,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
       saveErrorReport(report);
       
+      setShowReview(false);
       setShowSuccess(true);
       setLastCreatedReport(report);
       
@@ -231,6 +246,116 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const filteredEmployees = selectedDepartment 
     ? employees.filter(emp => emp.departmentId === selectedDepartment)
     : [];
+
+  // Review Screen
+  if (showReview) {
+    const selectedDept = departments.find(dept => dept.id === selectedDepartment);
+    const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
+    const selectedMachine = machines.find(m => m.id === machine);
+
+    return (
+      <div className="animate-fade-in">
+        <Card className="glass-card border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 animate-scale-in">
+              <FileText className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl text-blue-700 flex items-center justify-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Fehlermeldung überprüfen
+            </CardTitle>
+            <CardDescription className="text-blue-600 text-lg">
+              Bitte überprüfen Sie alle Angaben vor dem endgültigen Erstellen der Fehlermeldung.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="bg-white/50 rounded-lg p-4 border border-blue-100">
+                  <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Grunddaten
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">Auftragsnummer:</span> {orderNumber}</div>
+                    <div><span className="font-medium">AFO-Nummer:</span> {afoNumber}</div>
+                    <div><span className="font-medium">Menge:</span> {defectiveQuantity}</div>
+                  </div>
+                </div>
+                
+                <div className="bg-white/50 rounded-lg p-4 border border-blue-100">
+                  <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Zuordnung
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">Abteilung:</span> {selectedDept?.name}</div>
+                    <div><span className="font-medium">Ersteller:</span> {selectedEmp?.name}</div>
+                    {selectedMachine && <div><span className="font-medium">Feststellort:</span> {selectedMachine.name}</div>}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-white/50 rounded-lg p-4 border border-blue-100">
+                  <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Beschreibungen
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <span className="font-medium">Problembeschreibung:</span>
+                      <p className="mt-1 text-gray-700 bg-white/70 p-2 rounded border border-blue-50">
+                        {problemDescription}
+                      </p>
+                    </div>
+                    {correctiveAction && (
+                      <div>
+                        <span className="font-medium">Korrekturmaßnahme:</span>
+                        <p className="mt-1 text-gray-700 bg-white/70 p-2 rounded border border-blue-50">
+                          {correctiveAction}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              <Button 
+                onClick={() => setShowReview(false)} 
+                variant="outline"
+                className="h-12 border-blue-200 hover:bg-blue-50"
+                size="lg"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Bearbeiten
+              </Button>
+              <Button 
+                onClick={handleFinalSubmit} 
+                className="gradient-button h-12"
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Settings className="h-4 w-4 mr-2 animate-spin" />
+                    Wird erstellt...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Abschicken
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showSuccess) {
     return (
@@ -456,7 +581,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               ) : (
                 <>
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  Fehlermeldung erstellen
+                  Zur Übersicht
                 </>
               )}
             </Button>
