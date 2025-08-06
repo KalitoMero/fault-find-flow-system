@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +24,7 @@ import {
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
-import SearchableCombobox from './SearchableCombobox';
+import SimpleCombobox from './SimpleCombobox';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
 
@@ -151,17 +151,17 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
 
   // Check if all required fields are complete
-  const isFormComplete = () => {
+  const isFormComplete = useCallback(() => {
     return !!(orderNumber && 
              afoNumber && 
              defectiveQuantity && 
              problemDescription && 
              selectedDepartment && 
              selectedEmployee);
-  };
+  }, [orderNumber, afoNumber, defectiveQuantity, problemDescription, selectedDepartment, selectedEmployee]);
 
   // Handle order number change with parsing
-  const handleOrderNumberChange = (value: string) => {
+  const handleOrderNumberChange = useCallback((value: string) => {
     // Parse if contains dot
     const dotIndex = value.indexOf('.');
     if (dotIndex !== -1) {
@@ -173,11 +173,9 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     } else {
       setOrderNumber(value);
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = useCallback(async () => {
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
 
@@ -193,7 +191,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     }
 
     setShowReview(true);
-  };
+  }, [employees, selectedDepartment, selectedEmployee]);
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
@@ -421,7 +419,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   return (
     <div className="animate-fade-in space-y-8">
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="space-y-8">
         {/* Grunddaten */}
         <Card className="form-section">
           <CardHeader>
@@ -499,12 +497,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                   <User className="h-4 w-4" />
                   Ersteller <span className="text-destructive">*</span>
                 </Label>
-                <SearchableCombobox
+                <SimpleCombobox
                   options={filteredEmployees.map(emp => ({ value: emp.id, label: emp.name }))}
                   value={selectedEmployee}
                   onValueChange={setSelectedEmployee}
                   placeholder="Mitarbeiter auswählen"
-                  searchPlaceholder="Mitarbeiter suchen..."
                   className="w-full h-12 modern-input"
                   disabled={!selectedDepartment}
                 />
@@ -516,12 +513,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 <MapPin className="h-4 w-4" />
                 Feststellort
               </Label>
-              <SearchableCombobox
+              <SimpleCombobox
                 options={machines.map(machine => ({ value: machine.id, label: machine.name }))}
                 value={machine}
                 onValueChange={setMachine}
                 placeholder="Feststellort auswählen"
-                searchPlaceholder="Feststellort suchen..."
                 className="w-full h-12 modern-input"
               />
             </div>
@@ -587,7 +583,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         <Card className="form-section">
           <CardContent className="pt-6">
             <Button 
-              type="submit" 
+              onClick={handleSubmit} 
               className={`w-full h-14 text-lg ${isFormComplete() ? 'gradient-button' : 'bg-muted text-muted-foreground'}`}
               disabled={isSubmitting || !isFormComplete()}
               size="lg"
@@ -611,7 +607,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             </Button>
           </CardContent>
         </Card>
-      </form>
+      </div>
     </div>
   );
 };
