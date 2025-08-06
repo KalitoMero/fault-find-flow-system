@@ -126,6 +126,12 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
 
+  // DEBUG: Test if showReview is working
+  if (showReview) {
+    console.log("Review aktiv!");
+    return <div>REVIEW AKTIV</div>;
+  }
+
   useEffect(() => {
     loadDepartmentsData();
   }, [refreshDepartments]);
@@ -189,11 +195,13 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Since button is only enabled when form is complete, validation is minimal
+    console.log("SUBMIT CLICKED");
+
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-    
+
+    console.log("Teamleiter:", teamLeader);
+
     if (!teamLeader) {
       toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
       return;
@@ -205,7 +213,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       return;
     }
 
-    // Show review screen
+    console.log("setShowReview TRUE");
     setShowReview(true);
   };
 
