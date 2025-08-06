@@ -154,17 +154,30 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       const orderPart = orderNum.substring(0, dotIndex);
       const afoPart = orderNum.substring(dotIndex + 1);
       
-      setOrderNumber(orderPart);
-      setAfoNumber(afoPart);
+      // Only set if AFO number is empty to avoid infinite loop
+      if (!afoNumber) {
+        setOrderNumber(orderPart);
+        setAfoNumber(afoPart);
+      }
     }
   };
 
-  // Auto-parse order number when it changes and contains a dot
-  useEffect(() => {
-    if (orderNumber.includes('.')) {
-      parseOrderNumber(orderNumber);
+  // Handle order number change with parsing
+  const handleOrderNumberChange = (value: string) => {
+    setOrderNumber(value);
+    
+    // Parse if contains dot and AFO is empty
+    const dotIndex = value.indexOf('.');
+    if (dotIndex !== -1 && !afoNumber) {
+      const orderPart = value.substring(0, dotIndex);
+      const afoPart = value.substring(dotIndex + 1);
+      
+      setTimeout(() => {
+        setOrderNumber(orderPart);
+        setAfoNumber(afoPart);
+      }, 0);
     }
-  }, [orderNumber]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,8 +449,8 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 id="orderNumber"
                 label="Auftragsnummer"
                 value={orderNumber}
-                onChange={setOrderNumber}
-                placeholder="z.B. AUF-2024-001"
+                onChange={handleOrderNumberChange}
+                placeholder="z.B. AUF-2024-001 oder 12345.678"
                 required
                 icon={<Hash className="h-4 w-4" />}
               />
