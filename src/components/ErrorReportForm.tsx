@@ -391,7 +391,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Wird gespeichert...' : 'Fehlermeldung erstellen'}
+            Zur Übersicht
           </Button>
         </form>
       </CardContent>
