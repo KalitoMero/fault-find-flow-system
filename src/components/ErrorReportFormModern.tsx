@@ -162,6 +162,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     }
   };
 
+  // Check if all required fields are complete
+  const isFormComplete = () => {
+    return !!(orderNumber && 
+             afoNumber && 
+             defectiveQuantity && 
+             problemDescription && 
+             selectedDepartment && 
+             selectedEmployee);
+  };
+
   // Handle order number change with parsing
   const handleOrderNumberChange = (value: string) => {
     // Parse if contains dot
@@ -180,76 +190,22 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== VALIDIERUNG GESTARTET ===');
-    console.log('orderNumber:', orderNumber);
-    console.log('afoNumber:', afoNumber);
-    console.log('defectiveQuantity:', defectiveQuantity);
-    console.log('problemDescription:', problemDescription);
-    console.log('selectedDepartment:', selectedDepartment);
-    console.log('selectedEmployee:', selectedEmployee);
-    
-    // Validation
-    if (!orderNumber) {
-      console.log('❌ Fehlende Auftragsnummer');
-      toast.error('Bitte geben Sie eine Auftragsnummer ein');
-      return;
-    }
-
-    if (!afoNumber) {
-      console.log('❌ Fehlende AFO-Nummer');
-      toast.error('Bitte geben Sie eine AFO-Nummer ein');
-      return;
-    }
-
-    if (!defectiveQuantity) {
-      console.log('❌ Fehlende Fehlermenge');
-      toast.error('Bitte geben Sie die Fehlermenge ein');
-      return;
-    }
-
-    if (!problemDescription) {
-      console.log('❌ Fehlende Problembeschreibung');
-      toast.error('Bitte beschreiben Sie das Problem');
-      return;
-    }
-
-    if (!selectedDepartment) {
-      console.log('❌ Fehlende Abteilung');
-      toast.error('Bitte wählen Sie eine Abteilung aus');
-      return;
-    }
-
-    if (!selectedEmployee) {
-      console.log('❌ Fehlender Mitarbeiter');
-      toast.error('Bitte wählen Sie einen Mitarbeiter aus');
-      return;
-    }
-
-    console.log('✅ Alle Grundvalidierungen bestanden');
-
+    // Since button is only enabled when form is complete, validation is minimal
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
-    console.log('departmentEmployees:', departmentEmployees);
-    
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-    console.log('teamLeader:', teamLeader);
     
     if (!teamLeader) {
-      console.log('❌ Kein Teamleiter gefunden');
       toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
       return;
     }
 
     const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
-    console.log('selectedEmp:', selectedEmp);
-    
     if (!selectedEmp) {
-      console.log('❌ Ausgewählter Mitarbeiter nicht gefunden');
       toast.error('Ausgewählter Mitarbeiter nicht gefunden');
       return;
     }
 
-    console.log('✅ Alle Validierungen bestanden - Zeige Review Screen');
-    // Show review screen instead of directly creating
+    // Show review screen
     setShowReview(true);
   };
 
@@ -646,14 +602,19 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
           <CardContent className="pt-6">
             <Button 
               type="submit" 
-              className="w-full h-14 text-lg gradient-button" 
-              disabled={isSubmitting}
+              className={`w-full h-14 text-lg ${isFormComplete() ? 'gradient-button' : 'bg-muted text-muted-foreground'}`}
+              disabled={isSubmitting || !isFormComplete()}
               size="lg"
             >
               {isSubmitting ? (
                 <>
                   <Settings className="h-5 w-5 mr-2 animate-spin" />
                   Wird gespeichert...
+                </>
+              ) : !isFormComplete() ? (
+                <>
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Felder ausfüllen
                 </>
               ) : (
                 <>
