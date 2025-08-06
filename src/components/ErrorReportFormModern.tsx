@@ -147,45 +147,50 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     setMachines(getMachines());
   };
 
+  // Parse AFO from order number if it contains a dot
+  const parseOrderNumber = (orderNum: string) => {
+    const dotIndex = orderNum.indexOf('.');
+    if (dotIndex !== -1) {
+      const orderPart = orderNum.substring(0, dotIndex);
+      const afoPart = orderNum.substring(dotIndex + 1);
+      
+      setOrderNumber(orderPart);
+      setAfoNumber(afoPart);
+    }
+  };
+
+  // Auto-parse order number when it changes and contains a dot
+  useEffect(() => {
+    if (orderNumber.includes('.')) {
+      parseOrderNumber(orderNumber);
+    }
+  }, [orderNumber]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('Form submitted with values:', {
-      orderNumber,
-      afoNumber,
-      defectiveQuantity,
-      problemDescription,
-      selectedDepartment,
-      selectedEmployee
-    });
     
     // Validation
     if (!orderNumber || !afoNumber || !defectiveQuantity || 
         !problemDescription || 
         !selectedDepartment || !selectedEmployee) {
-      console.log('Validation failed - missing required fields');
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
 
-    console.log('Validation passed, checking team leader...');
     const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
     const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
     
     if (!teamLeader) {
-      console.log('No team leader found');
       toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
       return;
     }
 
     const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
     if (!selectedEmp) {
-      console.log('Selected employee not found');
       toast.error('Ausgewählter Mitarbeiter nicht gefunden');
       return;
     }
 
-    console.log('All checks passed, showing review screen...');
     // Show review screen instead of directly creating
     setShowReview(true);
   };
