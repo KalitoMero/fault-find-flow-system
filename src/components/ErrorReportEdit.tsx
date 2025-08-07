@@ -286,10 +286,6 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
                     <p className="font-medium">{report.afoNumber}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Ressource:</span>
-                    <p className="font-medium">{machineName}</p>
-                  </div>
-                  <div>
                     <span className="text-sm text-gray-600">Abteilung:</span>
                     <p className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</p>
                   </div>
@@ -313,23 +309,31 @@ const ErrorReportEdit = ({ report, onBack, onSave }: ErrorReportEditProps) => {
                     <span className="text-sm text-gray-600">Ersteller:</span>
                     <p className="font-medium">{report.creator}</p>
                   </div>
+                  {report.additionalExcelData?.Artikelnummer && (
+                    <div>
+                      <span className="text-sm text-gray-600">Artikelnummer:</span>
+                      <p className="font-medium">{report.additionalExcelData.Artikelnummer}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Zusätzliche Excel-Informationen */}
-            {report.additionalExcelData && Object.keys(report.additionalExcelData).length > 0 && (
+            {report.additionalExcelData && Object.keys(report.additionalExcelData).filter(key => key !== 'Artikelnummer').length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Zusätzliche Informationen</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(report.additionalExcelData).map(([key, value]) => (
-                      <div key={key}>
-                        <span className="text-sm text-gray-600">{key}:</span>
-                        <p className="font-medium">{value}</p>
-                      </div>
-                    ))}
+                    {Object.entries(report.additionalExcelData)
+                      .filter(([key]) => key !== 'Artikelnummer')
+                      .map(([key, value]) => (
+                        <div key={key}>
+                          <span className="text-sm text-gray-600">{key}:</span>
+                          <p className="font-medium">{value}</p>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </>
