@@ -436,7 +436,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Review Screen
   if (showReview) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="min-h-screen bg-light-blue p-4">
         <div className="fixed top-4 left-4 z-10">
           <Button 
             onClick={() => setShowReview(false)}
@@ -535,7 +535,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-light-blue p-4">
       {/* Back to Home Button - Fixed top left */}
       <div className="fixed top-4 left-4 z-10">
         <Button 
