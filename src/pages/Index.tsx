@@ -126,18 +126,12 @@ const Index = () => {
   const handleViewRelatedReport = (report: ErrorReport) => {
     console.log('Index: handleViewRelatedReport called with report:', report.id);
     console.log('Index: Current selectedReport:', selectedReport?.id);
-    console.log('Index: Current viewHistory length:', viewHistory.length);
     
-    if (selectedReport) {
-      setViewHistory(prev => {
-        const newHistory = [...prev, selectedReport];
-        console.log('Index: Adding to history, new length:', newHistory.length);
-        return newHistory;
-      });
-    }
-    
+    // Simply navigate to the related report without adding to history
+    // Related reports are not hierarchical drilldowns, they're equivalent reports
     console.log('Index: Setting new selectedReport:', report.id);
     setSelectedReport(report);
+    setEditingReport(null); // Clear any editing state
   };
 
   const handleLoginClick = () => {
@@ -148,20 +142,14 @@ const Index = () => {
     console.log('Index: handleBackToOverview called');
     console.log('Index: Current viewHistory length:', viewHistory.length);
     
-    if (viewHistory.length > 0) {
-      const previousReport = viewHistory[viewHistory.length - 1];
-      console.log('Index: Going back to previous report:', previousReport.id);
-      setViewHistory(prev => prev.slice(0, -1));
-      setSelectedReport(previousReport);
-    } else {
-      console.log('Index: Going back to overview');
-      setShowLogin(false);
-      setSelectedReport(null);
-      setEditingReport(null);
-      setSelectedTab(null);
-      setViewHistory([]);
-      loadData();
-    }
+    // Always go back to overview since we're not using history for related reports
+    console.log('Index: Going back to overview');
+    setShowLogin(false);
+    setSelectedReport(null);
+    setEditingReport(null);
+    setSelectedTab(null);
+    setViewHistory([]);
+    loadData();
   };
 
   const handleLogout = () => {
