@@ -43,6 +43,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
 
+  // Auto-focus the first input field
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const firstInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (username: string): string => {
     const employee = employees.find(emp => emp.account?.username === username);
