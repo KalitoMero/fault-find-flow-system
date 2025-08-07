@@ -124,13 +124,18 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   };
 
   const handleShowRelatedReports = () => {
+    console.log('Opening related reports dialog');
     setShowRelatedDialog(true);
   };
 
   const handleViewRelatedReport = (relatedReport: ErrorReport) => {
+    console.log('Viewing related report:', relatedReport.id);
     setShowRelatedDialog(false);
     if (onViewReport) {
+      console.log('Calling onViewReport with report:', relatedReport.id);
       onViewReport(relatedReport);
+    } else {
+      console.log('onViewReport callback is not provided');
     }
   };
 
