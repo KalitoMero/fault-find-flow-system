@@ -262,13 +262,6 @@ export const searchErrorReportsByOrderNumber = (searchTerm: string): ErrorReport
   );
 };
 
-export const searchErrorReportsByAFO = (searchTerm: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  return reports.filter(report => 
-    report.afoNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-};
-
 export const searchErrorReportsByArticleNumber = (searchTerm: string): ErrorReport[] => {
   const reports = getErrorReports();
   return reports.filter(report => 

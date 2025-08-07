@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, Package, Clock, User } from 'lucide-react';
 import { 
   getErrorReportByOrderNumber, 
   ErrorReport, 
   searchErrorReportsByOrderNumber,
-  searchErrorReportsByAFO,
   searchErrorReportsByArticleNumber,
   searchErrorReportsByArticleDescription
 } from '@/lib/storage';
@@ -27,7 +25,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   onBack
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<'orderNumber' | 'afoNumber' | 'articleNumber' | 'articleDescription'>('orderNumber');
+  const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber' | 'articleDescription'>('orderNumber');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ErrorReport[]>([]);
 
@@ -46,9 +44,6 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       switch (searchType) {
         case 'orderNumber':
           reports = searchErrorReportsByOrderNumber(searchTerm.trim());
-          break;
-        case 'afoNumber':
-          reports = searchErrorReportsByAFO(searchTerm.trim());
           break;
         case 'articleNumber':
           reports = searchErrorReportsByArticleNumber(searchTerm.trim());
@@ -103,8 +98,6 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
     switch (searchType) {
       case 'orderNumber':
         return 'Betriebsauftragsnummer';
-      case 'afoNumber':
-        return 'AFO-Nummer';
       case 'articleNumber':
         return 'Artikelnummer';
       case 'articleDescription':
@@ -118,8 +111,6 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
     switch (searchType) {
       case 'orderNumber':
         return 'z.B. A123456';
-      case 'afoNumber':
-        return 'z.B. AFO12345';
       case 'articleNumber':
         return 'z.B. ART123';
       case 'articleDescription':
@@ -142,28 +133,44 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 <Search className="h-5 w-5" />
                 <span>Meldung Einsehen</span>
               </CardTitle>
-              <CardDescription>
-                Wählen Sie das Suchkriterium und geben Sie den Suchbegriff ein
-              </CardDescription>
-            </div>
+            <CardDescription>
+              Wählen Sie das Suchkriterium und geben Sie den Suchbegriff ein
+            </CardDescription>
           </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="searchType">Suchkriterium</Label>
-            <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Suchkriterium auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="orderNumber">Betriebsauftragsnummer</SelectItem>
-                <SelectItem value="afoNumber">AFO-Nummer</SelectItem>
-                <SelectItem value="articleNumber">Artikelnummer</SelectItem>
-                <SelectItem value="articleDescription">Artikelbezeichnung</SelectItem>
-              </SelectContent>
-            </Select>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Suchkriterium Buttons */}
+        <div className="space-y-2">
+          <Label>Suchkriterium</Label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={searchType === 'orderNumber' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSearchType('orderNumber')}
+              className="flex-1 min-w-0"
+            >
+              Betriebsauftragsnummer
+            </Button>
+            <Button
+              variant={searchType === 'articleNumber' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSearchType('articleNumber')}
+              className="flex-1 min-w-0"
+            >
+              Artikelnummer
+            </Button>
+            <Button
+              variant={searchType === 'articleDescription' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSearchType('articleDescription')}
+              className="flex-1 min-w-0"
+            >
+              Artikelbezeichnung
+            </Button>
           </div>
+        </div>
 
           <div className="space-y-2">
             <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
