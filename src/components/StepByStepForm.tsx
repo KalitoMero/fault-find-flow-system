@@ -259,11 +259,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
          // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile, inklusive Artikelnummer
          const additionalExcelData: Record<string, any> = {};
          
-         // Füge Artikelnummer als primäres Feld hinzu wenn verfügbar
-         if (articleColumnName && matchingRow[articleColumnName]) {
-           additionalExcelData.Artikelnummer = matchingRow[articleColumnName];
-         }
-         
+          // Füge Artikelnummer als primäres Feld hinzu wenn verfügbar
+          if (articleColumnName && matchingRow[articleColumnName]) {
+            additionalExcelData.Artikelnummer = matchingRow[articleColumnName];
+          }
+          
+          // Füge Artikelbezeichnung als primäres Feld hinzu wenn verfügbar
+          if (excelData.settings.articleDescriptionColumnName && matchingRow[excelData.settings.articleDescriptionColumnName]) {
+            additionalExcelData.Artikelbezeichnung = matchingRow[excelData.settings.articleDescriptionColumnName];
+          }
+          
          excelData.settings.additionalColumns.forEach(col => {
            const colIndex = parseInt(col.column) - 1;
            const colName = headers[colIndex];
@@ -589,12 +594,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
                         </div>
                       )}
-                      {additionalExcelData.Artikelnummer && (
+                      {additionalExcelData.Artikelbezeichnung && (
                         <div>
-                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
                         </div>
                       )}
-                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer').map(([key, value]) => (
+                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
                         <div key={key}>
                           <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
                         </div>

@@ -99,6 +99,7 @@ const ExcelUploadSettings: React.FC = () => {
   const [orderNumberColumn, setOrderNumberColumn] = useState('');
   const [afoNumberColumn, setAfoNumberColumn] = useState('');
   const [articleNumberColumn, setArticleNumberColumn] = useState('');
+  const [articleDescriptionColumn, setArticleDescriptionColumn] = useState('');
   const [departmentColumn, setDepartmentColumn] = useState('');
   const [additionalColumns, setAdditionalColumns] = useState<ExcelColumn[]>([]);
   const [newColumnName, setNewColumnName] = useState('');
@@ -116,6 +117,7 @@ const ExcelUploadSettings: React.FC = () => {
       setOrderNumberColumn(settings.orderNumberColumn);
       setAfoNumberColumn(settings.afoNumberColumn);
       setArticleNumberColumn(settings.articleNumberColumn || '');
+      setArticleDescriptionColumn(settings.articleDescriptionColumn || '');
       setDepartmentColumn(settings.departmentColumn || '');
       setAdditionalColumns(settings.additionalColumns);
       setFileName(settings.fileName || '');
@@ -451,6 +453,7 @@ const ExcelUploadSettings: React.FC = () => {
     const orderColName = columns[orderColumnIndex];
     const afoColName = columns[afoColumnIndex];
     const articleColName = articleNumberColumn ? columns[parseInt(articleNumberColumn) - 1] : undefined;
+    const articleDescColName = articleDescriptionColumn ? columns[parseInt(articleDescriptionColumn) - 1] : undefined;
     const deptColName = departmentColumn ? columns[parseInt(departmentColumn) - 1] : undefined;
 
     console.log('=== SAVING SETTINGS ===');
@@ -458,6 +461,7 @@ const ExcelUploadSettings: React.FC = () => {
     console.log(`- Order Number: Column ${orderNumberColumn} = "${orderColName}"`);
     console.log(`- AFO Number: Column ${afoNumberColumn} = "${afoColName}"`);
     console.log(`- Article Number: Column ${articleNumberColumn} = "${articleColName}"`);
+    console.log(`- Article Description: Column ${articleDescriptionColumn} = "${articleDescColName}"`);
     console.log(`- Department: Column ${departmentColumn} = "${deptColName}"`);
     
     // Test data access
@@ -471,6 +475,7 @@ const ExcelUploadSettings: React.FC = () => {
       orderNumberColumn,
       afoNumberColumn,
       articleNumberColumn: articleNumberColumn || undefined,
+      articleDescriptionColumn: articleDescriptionColumn || undefined,
       departmentColumn: departmentColumn || undefined,
       additionalColumns,
       fileName,
@@ -479,6 +484,7 @@ const ExcelUploadSettings: React.FC = () => {
       orderColumnName: orderColName,
       afoColumnName: afoColName,
       articleColumnName: articleColName,
+      articleDescriptionColumnName: articleDescColName,
       departmentColumnName: deptColName
     };
 
@@ -496,6 +502,7 @@ const ExcelUploadSettings: React.FC = () => {
     setOrderNumberColumn('');
     setAfoNumberColumn('');
     setArticleNumberColumn('');
+    setArticleDescriptionColumn('');
     setDepartmentColumn('');
     setAdditionalColumns([]);
     setFileName('');
@@ -715,6 +722,26 @@ const ExcelUploadSettings: React.FC = () => {
                   {articleNumberColumn && (
                     <div className="mt-1 text-xs text-gray-600">
                       → Spalte "{columns[parseInt(articleNumberColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="article-description-column">Artikelbezeichnung (Optional)</Label>
+                <div className="mt-1">
+                  <Input
+                    id="article-description-column"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    value={articleDescriptionColumn}
+                    onChange={(e) => setArticleDescriptionColumn(e.target.value)}
+                    placeholder={`1-${columns.length}`}
+                  />
+                  {articleDescriptionColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(articleDescriptionColumn) - 1] || 'ungültig'}"
                     </div>
                   )}
                 </div>
