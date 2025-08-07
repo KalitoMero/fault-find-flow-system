@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
@@ -468,6 +468,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <DialogTitle>
                     Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData?.Artikelnummer}
                   </DialogTitle>
+                  <DialogDescription>
+                    Klicken Sie auf eine Fehlermeldung, um sie zu öffnen.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
                   {(() => {

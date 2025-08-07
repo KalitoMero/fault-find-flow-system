@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, User, Calendar, Save, Search } from 'lucide-react';
 import { ErrorReport, getErrorReports, updateErrorReportStatus } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
@@ -496,6 +496,9 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                   <DialogTitle>
                     Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData?.Artikelnummer}
                   </DialogTitle>
+                  <DialogDescription>
+                    Klicken Sie auf eine Fehlermeldung, um sie zu öffnen.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
                   {(() => {
