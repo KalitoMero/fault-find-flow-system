@@ -118,7 +118,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     
     const allReports = getErrorReports();
     const relatedReports = allReports.filter(r => 
-      r.id !== report.id && 
+      String(r.id) !== String(report.id) && 
       r.additionalExcelData?.Artikelnummer === report.additionalExcelData.Artikelnummer
     );
     
@@ -129,6 +129,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   };
 
   const handleShowRelatedReports = () => {
+    const related = getRelatedReports();
+    if (related.length === 0) {
+      toast.success('Es gibt keine anderen Fehlermeldungen mit dieser Artikelnummer.');
+      return;
+    }
     console.log('Opening related reports dialog');
     setShowRelatedDialog(true);
   };
@@ -137,7 +142,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     console.log('Viewing related report:', relatedReport.id);
     console.log('Current report ID:', report.id);
     
-    if (relatedReport.id === report.id) {
+    if (String(relatedReport.id) === String(report.id)) {
       console.log('Same report clicked, ignoring');
       toast.success('Diese Fehlermeldung wird bereits angezeigt');
       return;
