@@ -578,7 +578,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 {/* Excel Status Info */}
                 {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex justify-between items-center text-sm">
+                    <div className="flex justify-between items-center text-sm flex-wrap gap-2">
                       {excelDepartment && (
                         <div>
                           <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
@@ -589,7 +589,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
                         </div>
                       )}
-                      {Object.entries(additionalExcelData).map(([key, value]) => (
+                      {additionalExcelData.Artikelnummer && (
+                        <div>
+                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                        </div>
+                      )}
+                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer').map(([key, value]) => (
                         <div key={key}>
                           <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
                         </div>
