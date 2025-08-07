@@ -594,6 +594,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
                         </div>
                       )}
+                      {additionalExcelData.Artikelnummer && (
+                        <div>
+                          <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                        </div>
+                      )}
                       {additionalExcelData.Artikelbezeichnung && (
                         <div>
                           <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
