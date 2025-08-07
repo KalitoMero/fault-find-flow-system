@@ -98,6 +98,7 @@ const ExcelUploadSettings: React.FC = () => {
   const [columns, setColumns] = useState<string[]>([]);
   const [orderNumberColumn, setOrderNumberColumn] = useState('');
   const [afoNumberColumn, setAfoNumberColumn] = useState('');
+  const [articleNumberColumn, setArticleNumberColumn] = useState('');
   const [departmentColumn, setDepartmentColumn] = useState('');
   const [additionalColumns, setAdditionalColumns] = useState<ExcelColumn[]>([]);
   const [newColumnName, setNewColumnName] = useState('');
@@ -114,6 +115,7 @@ const ExcelUploadSettings: React.FC = () => {
     if (settings) {
       setOrderNumberColumn(settings.orderNumberColumn);
       setAfoNumberColumn(settings.afoNumberColumn);
+      setArticleNumberColumn(settings.articleNumberColumn || '');
       setDepartmentColumn(settings.departmentColumn || '');
       setAdditionalColumns(settings.additionalColumns);
       setFileName(settings.fileName || '');
@@ -448,12 +450,14 @@ const ExcelUploadSettings: React.FC = () => {
     // Map column numbers to actual column names for storage
     const orderColName = columns[orderColumnIndex];
     const afoColName = columns[afoColumnIndex];
+    const articleColName = articleNumberColumn ? columns[parseInt(articleNumberColumn) - 1] : undefined;
     const deptColName = departmentColumn ? columns[parseInt(departmentColumn) - 1] : undefined;
 
     console.log('=== SAVING SETTINGS ===');
     console.log('Column mappings:');
     console.log(`- Order Number: Column ${orderNumberColumn} = "${orderColName}"`);
     console.log(`- AFO Number: Column ${afoNumberColumn} = "${afoColName}"`);
+    console.log(`- Article Number: Column ${articleNumberColumn} = "${articleColName}"`);
     console.log(`- Department: Column ${departmentColumn} = "${deptColName}"`);
     
     // Test data access
@@ -461,10 +465,12 @@ const ExcelUploadSettings: React.FC = () => {
     console.log('Sample data access:');
     console.log(`- Order value: "${sampleRow[orderColName]}"`);
     console.log(`- AFO value: "${sampleRow[afoColName]}"`);
+    console.log(`- Article value: "${articleColName ? sampleRow[articleColName] : 'Not configured'}"`);
 
     const settings = {
       orderNumberColumn,
       afoNumberColumn,
+      articleNumberColumn: articleNumberColumn || undefined,
       departmentColumn: departmentColumn || undefined,
       additionalColumns,
       fileName,
@@ -472,6 +478,7 @@ const ExcelUploadSettings: React.FC = () => {
       // Store actual column names for easier lookup
       orderColumnName: orderColName,
       afoColumnName: afoColName,
+      articleColumnName: articleColName,
       departmentColumnName: deptColName
     };
 
@@ -488,6 +495,7 @@ const ExcelUploadSettings: React.FC = () => {
     setColumns([]);
     setOrderNumberColumn('');
     setAfoNumberColumn('');
+    setArticleNumberColumn('');
     setDepartmentColumn('');
     setAdditionalColumns([]);
     setFileName('');
@@ -687,6 +695,26 @@ const ExcelUploadSettings: React.FC = () => {
                   {afoNumberColumn && (
                     <div className="mt-1 text-xs text-gray-600">
                       → Spalte "{columns[parseInt(afoNumberColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="article-column">Artikelnummer (Optional)</Label>
+                <div className="mt-1">
+                  <Input
+                    id="article-column"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    value={articleNumberColumn}
+                    onChange={(e) => setArticleNumberColumn(e.target.value)}
+                    placeholder={`1-${columns.length}`}
+                  />
+                  {articleNumberColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(articleNumberColumn) - 1] || 'ungültig'}"
                     </div>
                   )}
                 </div>

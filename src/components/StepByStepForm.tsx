@@ -196,13 +196,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       const orderColumnIndex = parseInt(excelData.settings.orderNumberColumn) - 1;
       const afoColumnIndex = parseInt(excelData.settings.afoNumberColumn) - 1;
+      const articleColumnIndex = excelData.settings.articleNumberColumn ? parseInt(excelData.settings.articleNumberColumn) - 1 : null;
       const departmentColumnIndex = excelData.settings.departmentColumn ? parseInt(excelData.settings.departmentColumn) - 1 : null;
       
       const orderColumnName = headers[orderColumnIndex];
       const afoColumnName = headers[afoColumnIndex];
+      const articleColumnName = articleColumnIndex !== null ? headers[articleColumnIndex] : null;
       const departmentColumnName = departmentColumnIndex !== null ? headers[departmentColumnIndex] : null;
       
-      console.log('Column mappings:', { orderColumnName, afoColumnName, departmentColumnName });
+      console.log('Column mappings:', { orderColumnName, afoColumnName, articleColumnName, departmentColumnName });
       console.log('Looking for order:', orderNumber, 'and AFO:', afoNumber);
       
       // Suche nach einer Zeile wo BEIDE Nummern übereinstimmen
@@ -239,29 +241,35 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         } else {
           console.log('No department column or value found');
           setExcelDepartment('');
-          setAssignedTeamLeader('System');
-        }
-        
-        // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile
-        const additionalExcelData: Record<string, any> = {};
-        excelData.settings.additionalColumns.forEach(col => {
-          const colIndex = parseInt(col.column) - 1;
-          const colName = headers[colIndex];
-          const value = matchingRow[colName];
-          
-          console.log('Processing additional column:', {
-            columnName: col.name,
-            columnIndex: col.column,
-            colIndex,
-            colName,
-            value,
-            availableKeys: Object.keys(matchingRow)
-          });
-          
-          if (value !== undefined && value !== null && value !== '') {
-            additionalExcelData[col.name] = value;
-          }
-        });
+           setAssignedTeamLeader('System');
+         }
+         
+         // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile, inklusive Artikelnummer
+         const additionalExcelData: Record<string, any> = {};
+         
+         // Füge Artikelnummer als primäres Feld hinzu wenn verfügbar
+         if (articleColumnName && matchingRow[articleColumnName]) {
+           additionalExcelData.Artikelnummer = matchingRow[articleColumnName];
+         }
+         
+         excelData.settings.additionalColumns.forEach(col => {
+           const colIndex = parseInt(col.column) - 1;
+           const colName = headers[colIndex];
+           const value = matchingRow[colName];
+           
+           console.log('Processing additional column:', {
+             columnName: col.name,
+             columnIndex: col.column,
+             colIndex,
+             colName,
+             value,
+             availableKeys: Object.keys(matchingRow)
+           });
+           
+           if (value !== undefined && value !== null && value !== '') {
+             additionalExcelData[col.name] = value;
+           }
+         });
         
         // Speichere die zusätzlichen Excel-Daten im State
         setAdditionalExcelData(additionalExcelData);

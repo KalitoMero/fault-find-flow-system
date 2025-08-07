@@ -6,6 +6,7 @@ interface ExcelColumn {
 interface ExcelSettings {
   orderNumberColumn: string;
   afoNumberColumn: string;
+  articleNumberColumn?: string;
   departmentColumn?: string;
   additionalColumns: ExcelColumn[];
   fileName?: string;
@@ -13,6 +14,7 @@ interface ExcelSettings {
   // New fields for easier data lookup
   orderColumnName?: string;
   afoColumnName?: string;
+  articleColumnName?: string;
   departmentColumnName?: string;
 }
 

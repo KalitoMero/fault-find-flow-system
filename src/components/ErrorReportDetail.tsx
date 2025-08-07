@@ -281,6 +281,12 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                     <span className="text-sm text-gray-600">Ressource:</span>
                     <p className="font-medium">{resourceValue || 'Nicht angegeben'}</p>
                   </div>
+                  {report.additionalExcelData?.Artikelnummer && (
+                    <div>
+                      <span className="text-sm text-gray-600">Artikelnummer:</span>
+                      <p className="font-medium">{report.additionalExcelData.Artikelnummer}</p>
+                    </div>
+                  )}
                   <div>
                     <span className="text-sm text-gray-600">Abteilung:</span>
                     <p className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</p>
