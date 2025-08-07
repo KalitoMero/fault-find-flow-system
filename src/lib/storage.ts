@@ -262,6 +262,27 @@ export const searchErrorReportsByOrderNumber = (searchTerm: string): ErrorReport
   );
 };
 
+export const searchErrorReportsByAFO = (searchTerm: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  return reports.filter(report => 
+    report.afoNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+};
+
+export const searchErrorReportsByArticleNumber = (searchTerm: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  return reports.filter(report => 
+    report.additionalExcelData?.Artikelnummer?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+};
+
+export const searchErrorReportsByArticleDescription = (searchTerm: string): ErrorReport[] => {
+  const reports = getErrorReports();
+  return reports.filter(report => 
+    report.additionalExcelData?.Artikelbezeichnung?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+};
+
 // Admin Dashboard - Teamleiter Statistiken
 export const getTeamLeaderStatistics = () => {
   const reports = getErrorReports();

@@ -4,8 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, ArrowLeft } from 'lucide-react';
-import { getErrorReportByOrderNumber, ErrorReport } from '@/lib/storage';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Search, ArrowLeft, Package, Clock, User } from 'lucide-react';
+import { 
+  getErrorReportByOrderNumber, 
+  ErrorReport, 
+  searchErrorReportsByOrderNumber,
+  searchErrorReportsByAFO,
+  searchErrorReportsByArticleNumber,
+  searchErrorReportsByArticleDescription
+} from '@/lib/storage';
 import { toast } from "sonner";
 
 interface ReportAccessFormProps {
@@ -17,29 +26,49 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   onReportFound,
   onBack
 }) => {
-  const [orderNumber, setOrderNumber] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'orderNumber' | 'afoNumber' | 'articleNumber' | 'articleDescription'>('orderNumber');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<ErrorReport[]>([]);
 
   const handleSearch = () => {
-    if (!orderNumber.trim()) {
-      toast.error('Bitte geben Sie eine Auftragsnummer ein');
+    if (!searchTerm.trim()) {
+      toast.error('Bitte geben Sie einen Suchbegriff ein');
       return;
     }
 
     setIsSearching(true);
+    setSearchResults([]);
 
     try {
-      const report = getErrorReportByOrderNumber(orderNumber.trim());
+      let reports: ErrorReport[] = [];
       
-      if (report) {
-        if (report.approvalStatus === 'approved') {
-          onReportFound(report);
-          toast.success('Fehlermeldung gefunden!');
-        } else {
-          toast.error('Diese Meldung ist noch nicht freigegeben und kann nicht eingesehen werden');
-        }
+      switch (searchType) {
+        case 'orderNumber':
+          reports = searchErrorReportsByOrderNumber(searchTerm.trim());
+          break;
+        case 'afoNumber':
+          reports = searchErrorReportsByAFO(searchTerm.trim());
+          break;
+        case 'articleNumber':
+          reports = searchErrorReportsByArticleNumber(searchTerm.trim());
+          break;
+        case 'articleDescription':
+          reports = searchErrorReportsByArticleDescription(searchTerm.trim());
+          break;
+      }
+
+      // Filter nur freigegebene Meldungen
+      const approvedReports = reports.filter(report => report.approvalStatus === 'approved');
+      
+      if (approvedReports.length === 0) {
+        toast.error('Keine freigegebenen Meldungen gefunden');
+      } else if (approvedReports.length === 1) {
+        onReportFound(approvedReports[0]);
+        toast.success('Fehlermeldung gefunden!');
       } else {
-        toast.error('Keine Meldung mit dieser Auftragsnummer gefunden');
+        setSearchResults(approvedReports);
+        toast.success(`${approvedReports.length} Meldungen gefunden`);
       }
     } catch (error) {
       console.error('Fehler beim Suchen der Meldung:', error);
@@ -49,55 +78,204 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
     }
   };
 
+  const handleReportSelect = (report: ErrorReport) => {
+    onReportFound(report);
+    setSearchResults([]);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
+  const getSearchLabel = () => {
+    switch (searchType) {
+      case 'orderNumber':
+        return 'Betriebsauftragsnummer';
+      case 'afoNumber':
+        return 'AFO-Nummer';
+      case 'articleNumber':
+        return 'Artikelnummer';
+      case 'articleDescription':
+        return 'Artikelbezeichnung';
+      default:
+        return 'Suchbegriff';
+    }
+  };
+
+  const getSearchPlaceholder = () => {
+    switch (searchType) {
+      case 'orderNumber':
+        return 'z.B. A123456';
+      case 'afoNumber':
+        return 'z.B. AFO12345';
+      case 'articleNumber':
+        return 'z.B. ART123';
+      case 'articleDescription':
+        return 'z.B. Schrauben M8';
+      default:
+        return 'Suchbegriff eingeben';
+    }
+  };
+
   return (
-    <Card className="max-w-md mx-auto mt-8">
-      <CardHeader>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
+    <div className="max-w-4xl mx-auto mt-8 space-y-6">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-5 w-5" />
+                <span>Meldung Einsehen</span>
+              </CardTitle>
+              <CardDescription>
+                Wählen Sie das Suchkriterium und geben Sie den Suchbegriff ein
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="searchType">Suchkriterium</Label>
+            <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Suchkriterium auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="orderNumber">Betriebsauftragsnummer</SelectItem>
+                <SelectItem value="afoNumber">AFO-Nummer</SelectItem>
+                <SelectItem value="articleNumber">Artikelnummer</SelectItem>
+                <SelectItem value="articleDescription">Artikelbezeichnung</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
+            <Input
+              id="searchTerm"
+              type="text"
+              placeholder={getSearchPlaceholder()}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="text-center text-lg font-mono"
+            />
+          </div>
+          
+          <Button 
+            onClick={handleSearch} 
+            disabled={isSearching || !searchTerm.trim()}
+            className="w-full"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            {isSearching ? 'Suche...' : 'Meldung Suchen'}
           </Button>
-          <div>
-            <CardTitle className="flex items-center space-x-2">
-              <Search className="h-5 w-5" />
-              <span>Meldung Einsehen</span>
-            </CardTitle>
-            <CardDescription>
-              Geben Sie die Auftragsnummer ein
-            </CardDescription>
+        </CardContent>
+      </Card>
+
+      {/* Suchergebnisse */}
+      {searchResults.length > 0 && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-6 w-6 text-blue-600" />
+                <span>Suchergebnisse</span>
+                <Badge variant="secondary">{searchResults.length}</Badge>
+              </CardTitle>
+              <CardDescription>
+                Klicken Sie auf eine Meldung um sie zu öffnen
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <div className="grid gap-4">
+            {searchResults.map((report) => (
+              <Card 
+                key={report.id} 
+                className="border-l-4 border-l-blue-400 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleReportSelect(report)}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Badge variant="outline" className="text-lg px-3 py-1">
+                        #{report.id}
+                      </Badge>
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          Auftrag: {report.orderNumber}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          AFO: {report.afoNumber} | Maschine: {report.machine}
+                        </p>
+                        {report.additionalExcelData?.Artikelnummer && (
+                          <p className="text-sm text-gray-600">
+                            Artikel: {report.additionalExcelData.Artikelnummer}
+                            {report.additionalExcelData?.Artikelbezeichnung && ` - ${report.additionalExcelData.Artikelbezeichnung}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant="default" className="flex items-center space-x-1 bg-green-100 text-green-800">
+                      <Clock className="h-3 w-3" />
+                      <span>Freigegeben</span>
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {/* Ersteller-Info */}
+                  <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                    <User className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="font-medium">{report.creator}</p>
+                      <p className="text-sm text-gray-600">
+                        Personal-Nr: {report.personalNumber} | {formatDate(report.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mengendaten */}
+                  <div className="flex items-center space-x-4 p-3 bg-red-50 rounded-lg">
+                    <Package className="h-5 w-5 text-red-600" />
+                    <div>
+                      <p className="font-medium text-red-800">
+                        Beanstandete Menge: {report.defectiveQuantity} von {report.totalDefectiveQuantity}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Problem Preview */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Problembeschreibung:</h4>
+                    <p className="text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-l-blue-400 line-clamp-2">
+                      {report.problemDescription}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="orderNumber">Auftragsnummer</Label>
-          <Input
-            id="orderNumber"
-            type="text"
-            placeholder="z.B. A123456"
-            value={orderNumber}
-            onChange={(e) => setOrderNumber(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="text-center text-lg font-mono"
-          />
-        </div>
-        
-        <Button 
-          onClick={handleSearch} 
-          disabled={isSearching || !orderNumber.trim()}
-          className="w-full"
-        >
-          <Search className="h-4 w-4 mr-2" />
-          {isSearching ? 'Suche...' : 'Meldung Suchen'}
-        </Button>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
