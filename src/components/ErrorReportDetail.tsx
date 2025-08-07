@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
@@ -16,14 +17,16 @@ interface ErrorReportDetailProps {
   onBack: () => void;
   onStatusChange: () => void;
   onEdit?: (report: ErrorReport) => void;
+  onViewReport?: (report: ErrorReport) => void;
+  backButtonText?: string;
 }
 
-const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorReportDetailProps) => {
+const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewReport, backButtonText = "Zurück zur Übersicht" }: ErrorReportDetailProps) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showRelatedReports, setShowRelatedReports] = useState(false);
+  const [showRelatedDialog, setShowRelatedDialog] = useState(false);
   const { isAuthenticated, user } = useAuth();
 
   const handleApprove = async () => {
@@ -121,7 +124,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
   };
 
   const handleShowRelatedReports = () => {
-    setShowRelatedReports(!showRelatedReports);
+    setShowRelatedDialog(true);
+  };
+
+  const handleViewRelatedReport = (relatedReport: ErrorReport) => {
+    setShowRelatedDialog(false);
+    if (onViewReport) {
+      onViewReport(relatedReport);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -166,7 +176,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück zur Übersicht
+          {backButtonText}
         </Button>
 
         <Card>
@@ -378,10 +388,21 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                       <Button 
                         variant="destructive"
                         onClick={() => setShowRejectionForm(true)}
+                        disabled={isSubmitting}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
                         Ablehnen
                       </Button>
+                      {report.additionalExcelData?.Artikelnummer && (
+                        <Button
+                          variant="outline"
+                          onClick={handleShowRelatedReports}
+                          disabled={isSubmitting}
+                        >
+                          <Search className="h-4 w-4 mr-2" />
+                          Weitere Fehlermeldungen
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -421,71 +442,63 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
               </>
             )}
 
-            {/* Button für weitere Fehlermeldungen mit gleicher Artikelnummer */}
-            {report.additionalExcelData?.Artikelnummer && (
-              <>
-                <Separator />
-                <div>
-                  <Button
-                    variant="outline"
-                    onClick={handleShowRelatedReports}
-                    className="w-full"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Weitere Fehlermeldungen mit der gleichen Artikelnummer anzeigen
-                  </Button>
-                  
-                  {showRelatedReports && (
-                    <div className="mt-4">
-                      {(() => {
-                        const relatedReports = getRelatedReports();
-                        return relatedReports.length > 0 ? (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-900">
-                              Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData.Artikelnummer}:
-                            </h4>
-                            {relatedReports.map((relatedReport) => (
-                              <div key={relatedReport.id} className="p-3 border rounded-lg bg-gray-50">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-medium">Fehlermeldung #{relatedReport.id}</div>
-                                    <div className="text-sm text-gray-600">
-                                      Erstellt am {formatDate(relatedReport.createdAt)} von {relatedReport.creator}
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                      AFO: {relatedReport.afoNumber} | Auftrag: {relatedReport.orderNumber}
-                                    </div>
-                                    <div className="text-sm text-gray-700 mt-1">
-                                      {relatedReport.problemDescription.substring(0, 100)}
-                                      {relatedReport.problemDescription.length > 100 && '...'}
-                                    </div>
-                                  </div>
-                                  <div className="ml-4">
-                                    {relatedReport.approvalStatus === 'approved' && (
-                                      <Badge className="bg-green-100 text-green-800">Freigegeben</Badge>
-                                    )}
-                                    {relatedReport.approvalStatus === 'rejected' && (
-                                      <Badge variant="destructive">Abgelehnt</Badge>
-                                    )}
-                                    {relatedReport.approvalStatus === 'pending' && (
-                                      <Badge variant="secondary">Zur Prüfung</Badge>
-                                    )}
-                                  </div>
+            {/* Dialog für weitere Fehlermeldungen */}
+            <Dialog open={showRelatedDialog} onOpenChange={setShowRelatedDialog}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData?.Artikelnummer}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="mt-4">
+                  {(() => {
+                    const relatedReports = getRelatedReports();
+                    return relatedReports.length > 0 ? (
+                      <div className="space-y-3">
+                        {relatedReports.map((relatedReport) => (
+                          <div 
+                            key={relatedReport.id} 
+                            className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                            onClick={() => handleViewRelatedReport(relatedReport)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="font-medium text-lg">Fehlermeldung #{relatedReport.id}</div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  Erstellt am {formatDate(relatedReport.createdAt)} von {relatedReport.creator}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  AFO: {relatedReport.afoNumber} | Auftrag: {relatedReport.orderNumber}
+                                </div>
+                                <div className="text-sm text-gray-700 mt-2">
+                                  <strong>Problem:</strong> {relatedReport.problemDescription.substring(0, 150)}
+                                  {relatedReport.problemDescription.length > 150 && '...'}
                                 </div>
                               </div>
-                            ))}
+                              <div className="ml-4">
+                                {relatedReport.approvalStatus === 'approved' && (
+                                  <Badge className="bg-green-100 text-green-800">Freigegeben</Badge>
+                                )}
+                                {relatedReport.approvalStatus === 'rejected' && (
+                                  <Badge variant="destructive">Abgelehnt</Badge>
+                                )}
+                                {relatedReport.approvalStatus === 'pending' && (
+                                  <Badge variant="secondary">Zur Prüfung</Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="text-gray-600 text-center py-4">
-                            Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-600 text-center py-8">
+                        Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
+                      </div>
+                    );
+                  })()}
                 </div>
-              </>
-            )}
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
