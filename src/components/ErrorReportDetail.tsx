@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showRelatedReports, setShowRelatedReports] = useState(false);
   const { isAuthenticated, user } = useAuth();
 
   const handleApprove = async () => {
@@ -107,6 +108,20 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
 
   const handlePrint = () => {
     printErrorReport(report);
+  };
+
+  const getRelatedReports = () => {
+    if (!report.additionalExcelData?.Artikelnummer) return [];
+    
+    const allReports = getErrorReports();
+    return allReports.filter(r => 
+      r.id !== report.id && 
+      r.additionalExcelData?.Artikelnummer === report.additionalExcelData.Artikelnummer
+    );
+  };
+
+  const handleShowRelatedReports = () => {
+    setShowRelatedReports(!showRelatedReports);
   };
 
   const formatDate = (dateString: string) => {
@@ -400,6 +415,72 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit }: ErrorRepo
                           Abbrechen
                         </Button>
                       </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Button für weitere Fehlermeldungen mit gleicher Artikelnummer */}
+            {report.additionalExcelData?.Artikelnummer && (
+              <>
+                <Separator />
+                <div>
+                  <Button
+                    variant="outline"
+                    onClick={handleShowRelatedReports}
+                    className="w-full"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Weitere Fehlermeldungen mit der gleichen Artikelnummer anzeigen
+                  </Button>
+                  
+                  {showRelatedReports && (
+                    <div className="mt-4">
+                      {(() => {
+                        const relatedReports = getRelatedReports();
+                        return relatedReports.length > 0 ? (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-900">
+                              Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData.Artikelnummer}:
+                            </h4>
+                            {relatedReports.map((relatedReport) => (
+                              <div key={relatedReport.id} className="p-3 border rounded-lg bg-gray-50">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="font-medium">Fehlermeldung #{relatedReport.id}</div>
+                                    <div className="text-sm text-gray-600">
+                                      Erstellt am {formatDate(relatedReport.createdAt)} von {relatedReport.creator}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      AFO: {relatedReport.afoNumber} | Auftrag: {relatedReport.orderNumber}
+                                    </div>
+                                    <div className="text-sm text-gray-700 mt-1">
+                                      {relatedReport.problemDescription.substring(0, 100)}
+                                      {relatedReport.problemDescription.length > 100 && '...'}
+                                    </div>
+                                  </div>
+                                  <div className="ml-4">
+                                    {relatedReport.approvalStatus === 'approved' && (
+                                      <Badge className="bg-green-100 text-green-800">Freigegeben</Badge>
+                                    )}
+                                    {relatedReport.approvalStatus === 'rejected' && (
+                                      <Badge variant="destructive">Abgelehnt</Badge>
+                                    )}
+                                    {relatedReport.approvalStatus === 'pending' && (
+                                      <Badge variant="secondary">Zur Prüfung</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-gray-600 text-center py-4">
+                            Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
