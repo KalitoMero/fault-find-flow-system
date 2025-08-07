@@ -391,6 +391,23 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               </div>
             </div>
 
+            {/* Button für verwandte Fehlermeldungen - für alle Benutzer bei allen Meldungen */}
+            {report.additionalExcelData?.Artikelnummer && (
+              <>
+                <Separator />
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleShowRelatedReports}
+                    className="min-w-[200px]"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Weitere Fehlermeldungen mit gleicher Artikelnummer
+                  </Button>
+                </div>
+              </>
+            )}
+
             {/* Freigabe-Aktionen für Teamleiter */}
             {isAuthenticated && report.approvalStatus === 'pending' && (
               <>

@@ -142,14 +142,22 @@ const Index = () => {
     console.log('Index: handleBackToOverview called');
     console.log('Index: Current viewHistory length:', viewHistory.length);
     
-    // Always go back to overview since we're not using history for related reports
-    console.log('Index: Going back to overview');
-    setShowLogin(false);
-    setSelectedReport(null);
-    setEditingReport(null);
-    setSelectedTab(null);
-    setViewHistory([]);
-    loadData();
+    if (viewHistory.length > 0) {
+      // Go back to previous report
+      const previousReport = viewHistory[viewHistory.length - 1];
+      console.log('Index: Going back to previous report:', previousReport.id);
+      setViewHistory(prev => prev.slice(0, -1));
+      setSelectedReport(previousReport);
+    } else {
+      // Go back to overview
+      console.log('Index: Going back to overview');
+      setShowLogin(false);
+      setSelectedReport(null);
+      setEditingReport(null);
+      setSelectedTab(null);
+      setViewHistory([]);
+      loadData();
+    }
   };
 
   const handleLogout = () => {
@@ -180,6 +188,11 @@ const Index = () => {
     if (!latestReport) {
       toast.error("Fehlermeldung nicht gefunden");
       return;
+    }
+
+    // Add current report to history for navigation back (only if navigating from another report)
+    if (selectedReport) {
+      setViewHistory(prev => [...prev, selectedReport]);
     }
 
     if (isAuthenticated) {
