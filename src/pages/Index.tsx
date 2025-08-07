@@ -34,6 +34,7 @@ const Index = () => {
   const [showSettingsPasswordDialog, setShowSettingsPasswordDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
+  const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -122,15 +123,30 @@ const Index = () => {
     toast.success("Freigabestatus aktualisiert!");
   };
 
+  const handleViewRelatedReport = (report: ErrorReport) => {
+    if (selectedReport) {
+      setViewHistory(prev => [...prev, selectedReport]);
+    }
+    setSelectedReport(report);
+  };
+
   const handleLoginClick = () => {
     setShowLogin(true);
   };
 
   const handleBackToOverview = () => {
-    setShowLogin(false);
-    setSelectedReport(null);
-    setEditingReport(null);
-    setSelectedTab(null);
+    if (viewHistory.length > 0) {
+      const previousReport = viewHistory[viewHistory.length - 1];
+      setViewHistory(prev => prev.slice(0, -1));
+      setSelectedReport(previousReport);
+    } else {
+      setShowLogin(false);
+      setSelectedReport(null);
+      setEditingReport(null);
+      setSelectedTab(null);
+      setViewHistory([]);
+      loadData();
+    }
   };
 
   const handleLogout = () => {
@@ -260,6 +276,7 @@ const Index = () => {
         report={editingReport}
         onBack={handleBackToOverview}
         onSave={handleEditSave}
+        onViewReport={handleViewRelatedReport}
       />
     );
   }
@@ -272,6 +289,8 @@ const Index = () => {
         onBack={handleBackToOverview}
         onStatusChange={handleApprovalChange}
         onEdit={handleEditClick}
+        onViewReport={handleViewRelatedReport}
+        backButtonText={viewHistory.length > 0 ? "Zurück zur Fehlermeldung" : "Zurück zur Übersicht"}
       />
     );
   }

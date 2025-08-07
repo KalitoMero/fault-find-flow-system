@@ -426,9 +426,10 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                           variant="outline"
                           onClick={handleShowRelatedReports}
                           disabled={isSubmitting}
+                          className="min-w-[200px]"
                         >
                           <Search className="h-4 w-4 mr-2" />
-                          Weitere Fehlermeldungen
+                          Weitere Fehlermeldungen mit gleicher Artikelnummer
                         </Button>
                       )}
                     </div>
