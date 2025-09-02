@@ -14,6 +14,7 @@ import {
   searchErrorReportsByArticleDescription
 } from '@/lib/storage';
 import { toast } from "sonner";
+import ErrorReportDetail from './ErrorReportDetail';
 
 interface ReportAccessFormProps {
   onReportFound: (report: ErrorReport) => void;
@@ -28,6 +29,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber' | 'articleDescription'>('orderNumber');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ErrorReport[]>([]);
+  const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
@@ -74,9 +76,24 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   };
 
   const handleReportSelect = (report: ErrorReport) => {
-    onReportFound(report);
-    setSearchResults([]);
+    setSelectedReport(report);
   };
+
+  const handleBackFromDetail = () => {
+    setSelectedReport(null);
+  };
+
+  // Wenn ein Report ausgewählt ist, zeige die Detail-Ansicht
+  if (selectedReport) {
+    return (
+      <ErrorReportDetail
+        report={selectedReport}
+        onBack={handleBackFromDetail}
+        onStatusChange={() => {}}
+        backButtonText="Zurück zur Liste"
+      />
+    );
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('de-DE', {
