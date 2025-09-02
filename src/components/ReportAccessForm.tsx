@@ -147,73 +147,37 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             </CardHeader>
           </Card>
 
-          <div className="grid gap-4">
+          <div className="space-y-4">
             {searchResults.map((report) => (
-              <Card 
+              <div 
                 key={report.id} 
-                className="border-l-4 border-l-blue-400 cursor-pointer hover:shadow-md transition-shadow"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleReportSelect(report)}
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Badge variant="outline" className="text-lg px-3 py-1">
-                        #{report.id}
-                      </Badge>
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          Auftrag: {report.orderNumber}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          AFO: {report.afoNumber} | Maschine: {report.machine}
-                        </p>
-                        {report.additionalExcelData?.Artikelnummer && (
-                          <p className="text-sm text-gray-600">
-                            Artikel: {report.additionalExcelData.Artikelnummer}
-                            {report.additionalExcelData?.Artikelbezeichnung && ` - ${report.additionalExcelData.Artikelbezeichnung}`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant="default" className="flex items-center space-x-1 bg-green-100 text-green-800">
-                      <Clock className="h-3 w-3" />
-                      <span>Freigegeben</span>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3">
+                    <Badge variant="outline">#{report.id}</Badge>
+                    <h3 className="font-medium text-gray-900">Auftrag: {report.orderNumber}</h3>
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                      Freigegeben
                     </Badge>
                   </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Ersteller-Info */}
-                  <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                    <User className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="font-medium">{report.creator}</p>
-                      <p className="text-sm text-gray-600">
-                        Personal-Nr: {report.personalNumber} | {formatDate(report.createdAt)}
+                  <div className="mt-1 space-y-1">
+                    <p className="text-sm text-gray-500">
+                      AFO: {report.afoNumber} | Maschine: {report.machine} | Ersteller: {report.creator}
+                    </p>
+                    {report.additionalExcelData?.Artikelnummer && (
+                      <p className="text-sm text-gray-500">
+                        Artikel: {report.additionalExcelData.Artikelnummer}
+                        {report.additionalExcelData?.Artikelbezeichnung && ` - ${report.additionalExcelData.Artikelbezeichnung}`}
                       </p>
-                    </div>
-                  </div>
-
-                  {/* Mengendaten */}
-                  <div className="flex items-center space-x-4 p-3 bg-red-50 rounded-lg">
-                    <Package className="h-5 w-5 text-red-600" />
-                    <div>
-                      <p className="font-medium text-red-800">
-                        Beanstandete Menge: {report.defectiveQuantity} von {report.totalDefectiveQuantity}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Problem Preview */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Problembeschreibung:</h4>
-                    <p className="text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-l-blue-400">
-                      {report.problemDescription.slice(0, 200)}
-                      {report.problemDescription.length > 200 && '...'}
+                    )}
+                    <p className="text-sm text-gray-500">
+                      Menge: {report.defectiveQuantity}/{report.totalDefectiveQuantity} | {formatDate(report.createdAt)}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </div>
