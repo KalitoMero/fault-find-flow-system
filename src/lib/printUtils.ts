@@ -262,16 +262,6 @@ export const printErrorReport = (report: ErrorReport) => {
             <div class="field-label">Fehlermenge:</div>
             <div class="field-value">${report.defectiveQuantity}</div>
           </div>
-          ${report.totalDefectiveQuantity ? `
-            <div class="field">
-              <div class="field-label">Gesamtmenge:</div>
-              <div class="field-value">${report.totalDefectiveQuantity}</div>
-            </div>
-          ` : ''}
-          <div class="field">
-            <div class="field-label">Ersteller:</div>
-            <div class="field-value">${report.creator}</div>
-          </div>
           ${report.personalNumber ? `
             <div class="field">
               <div class="field-label">Personal-Nr:</div>
