@@ -122,93 +122,28 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-6">
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Search className="h-5 w-5" />
-                <span>Meldung Einsehen</span>
-              </CardTitle>
-            <CardDescription>
-              Wählen Sie das Suchkriterium und geben Sie den Suchbegriff ein
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Suchkriterium Buttons */}
-        <div className="space-y-2">
-          <Label>Suchkriterium</Label>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={searchType === 'orderNumber' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSearchType('orderNumber')}
-              className="flex-1 min-w-0"
-            >
-              Auftragsnummer
-            </Button>
-            <Button
-              variant={searchType === 'articleNumber' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSearchType('articleNumber')}
-              className="flex-1 min-w-0"
-            >
-              Artikelnummer
-            </Button>
-            <Button
-              variant={searchType === 'articleDescription' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSearchType('articleDescription')}
-              className="flex-1 min-w-0"
-            >
-              Artikelbezeichnung
-            </Button>
-          </div>
-        </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
-            <Input
-              id="searchTerm"
-              type="text"
-              placeholder={getSearchPlaceholder()}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="text-center text-lg font-mono"
-            />
-          </div>
-          
-          <Button 
-            onClick={handleSearch} 
-            disabled={isSearching || !searchTerm.trim()}
-            className="w-full"
-          >
-            <Search className="h-4 w-4 mr-2" />
-            {isSearching ? 'Suche...' : 'Meldung Suchen'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Suchergebnisse */}
-      {searchResults.length > 0 && (
+      {/* Suchergebnisse anzeigen wenn vorhanden */}
+      {searchResults.length > 0 ? (
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Search className="h-6 w-6 text-blue-600" />
-                <span>Suchergebnisse</span>
-                <Badge variant="secondary">{searchResults.length}</Badge>
-              </CardTitle>
-              <CardDescription>
-                Klicken Sie auf eine Meldung um sie zu öffnen
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSearchResults([])}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Search className="h-6 w-6 text-blue-600" />
+                      <span>Suchergebnisse</span>
+                      <Badge variant="secondary">{searchResults.length}</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Klicken Sie auf eine Meldung um sie zu öffnen
+                    </CardDescription>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
           </Card>
 
@@ -272,8 +207,9 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                   {/* Problem Preview */}
                   <div className="space-y-2">
                     <h4 className="font-medium">Problembeschreibung:</h4>
-                    <p className="text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-l-blue-400 line-clamp-2">
-                      {report.problemDescription}
+                    <p className="text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-l-blue-400">
+                      {report.problemDescription.slice(0, 200)}
+                      {report.problemDescription.length > 200 && '...'}
                     </p>
                   </div>
                 </CardContent>
@@ -281,6 +217,81 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             ))}
           </div>
         </div>
+      ) : (
+        /* Suchformular anzeigen wenn keine Ergebnisse */
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" onClick={onBack}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="flex items-center space-x-2">
+                  <Search className="h-5 w-5" />
+                  <span>Meldung Einsehen</span>
+                </CardTitle>
+              <CardDescription>
+                Wählen Sie das Suchkriterium und geben Sie den Suchbegriff ein
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Suchkriterium Buttons */}
+          <div className="space-y-2">
+            <Label>Suchkriterium</Label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={searchType === 'orderNumber' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSearchType('orderNumber')}
+                className="flex-1 min-w-0"
+              >
+                Auftragsnummer
+              </Button>
+              <Button
+                variant={searchType === 'articleNumber' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSearchType('articleNumber')}
+                className="flex-1 min-w-0"
+              >
+                Artikelnummer
+              </Button>
+              <Button
+                variant={searchType === 'articleDescription' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSearchType('articleDescription')}
+                className="flex-1 min-w-0"
+              >
+                Artikelbezeichnung
+              </Button>
+            </div>
+          </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
+              <Input
+                id="searchTerm"
+                type="text"
+                placeholder={getSearchPlaceholder()}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="text-center text-lg font-mono"
+              />
+            </div>
+            
+            <Button 
+              onClick={handleSearch} 
+              disabled={isSearching || !searchTerm.trim()}
+              className="w-full"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              {isSearching ? 'Suche...' : 'Meldung Suchen'}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
