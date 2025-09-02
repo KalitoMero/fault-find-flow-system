@@ -151,28 +151,28 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             {searchResults.map((report) => (
               <div 
                 key={report.id} 
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer bg-card"
                 onClick={() => handleReportSelect(report)}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <Badge variant="outline">#{report.id}</Badge>
-                    <h3 className="font-medium text-gray-900">Auftrag: {report.orderNumber}</h3>
-                    <Badge variant="default" className="bg-green-100 text-green-800">
+                    <h3 className="font-medium text-card-foreground">Auftrag: {report.orderNumber}</h3>
+                    <Badge variant="secondary" className="status-approved">
                       Freigegeben
                     </Badge>
                   </div>
                   <div className="mt-1 space-y-1">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       AFO: {report.afoNumber} | Maschine: {report.machine} | Ersteller: {report.creator}
                     </p>
                     {report.additionalExcelData?.Artikelnummer && (
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         Artikel: {report.additionalExcelData.Artikelnummer}
                         {report.additionalExcelData?.Artikelbezeichnung && ` - ${report.additionalExcelData.Artikelbezeichnung}`}
                       </p>
                     )}
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Menge: {report.defectiveQuantity}/{report.totalDefectiveQuantity} | {formatDate(report.createdAt)}
                     </p>
                   </div>
