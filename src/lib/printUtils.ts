@@ -235,7 +235,7 @@ export const printErrorReport = (report: ErrorReport) => {
 
       <div class="section">
         <div class="section-title">Auftragsdaten</div>
-        <div class="grid">
+        <div class="order-data-grid">
           <div class="field">
             <div class="field-label">Auftragsnummer:</div>
             <div class="field-value">${report.orderNumber}</div>
@@ -245,15 +245,68 @@ export const printErrorReport = (report: ErrorReport) => {
             <div class="field-value">${report.afoNumber || '-'}</div>
           </div>
           <div class="field">
-            <div class="field-label">Beanstandete Menge:</div>
-            <div class="field-value">${report.defectiveQuantity}</div>
+            <div class="field-label">Abteilung:</div>
+            <div class="field-value">${report.excelDepartment || 'Nicht angegeben'}</div>
           </div>
           <div class="field">
-            <div class="field-label">Zusätzliche Information:</div>
-            <div class="field-value">${report.additionalInfo || '-'}</div>
+            <div class="field-label">Feststellort:</div>
+            <div class="field-value">${machineName}</div>
           </div>
         </div>
       </div>
+
+      <div class="section">
+        <div class="section-title">Mengenangaben und Personal</div>
+        <div class="order-data-grid">
+          <div class="field">
+            <div class="field-label">Fehlermenge:</div>
+            <div class="field-value">${report.defectiveQuantity}</div>
+          </div>
+          ${report.totalDefectiveQuantity ? `
+            <div class="field">
+              <div class="field-label">Gesamtmenge:</div>
+              <div class="field-value">${report.totalDefectiveQuantity}</div>
+            </div>
+          ` : ''}
+          <div class="field">
+            <div class="field-label">Ersteller:</div>
+            <div class="field-value">${report.creator}</div>
+          </div>
+          ${report.personalNumber ? `
+            <div class="field">
+              <div class="field-label">Personal-Nr:</div>
+              <div class="field-value">${report.personalNumber}</div>
+            </div>
+          ` : ''}
+        </div>
+        ${report.assignedTeamLeader ? `
+          <div class="field">
+            <div class="field-label">Zugewiesener Teamleiter:</div>
+            <div class="field-value">${report.assignedTeamLeader}</div>
+          </div>
+        ` : ''}
+        ${report.additionalInfo ? `
+          <div class="field">
+            <div class="field-label">Zusätzliche Information:</div>
+            <div class="field-value">${report.additionalInfo}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      ${report.additionalExcelData && Object.keys(report.additionalExcelData).length > 0 ? `
+        <div class="section">
+          <div class="section-title">Artikel- und Zusatzinformationen</div>
+          <div class="order-data-grid">
+            ${Object.entries(report.additionalExcelData)
+              .map(([key, value]) => `
+                <div class="field">
+                  <div class="field-label">${key}:</div>
+                  <div class="field-value">${value}</div>
+                </div>
+              `).join('')}
+          </div>
+        </div>
+      ` : ''}
 
       <div class="section problem-section">
         <div class="section-title">Problembeschreibung</div>
