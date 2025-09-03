@@ -433,7 +433,7 @@ const Index = () => {
                           placeholder={searchType === 'orderNumber' ? 'Nach Auftragsnummer suchen...' : 'Nach Artikelnummer suchen...'}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="max-w-sm"
+                          className="flex-1 max-w-md"
                         />
                       </div>
                       <Select value={statusFilter} onValueChange={setStatusFilter}>
