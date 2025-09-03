@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Users, AlertTriangle, Clock, Search } from 'lucide-react';
+import { Users, AlertTriangle, Clock } from 'lucide-react';
 import { getTeamLeaderStatistics } from '@/lib/storage';
 
 interface AdminDashboardProps {
@@ -12,13 +10,6 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const teamLeaderStats = getTeamLeaderStatistics();
-  const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber'>('orderNumber');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleSearch = () => {
-    // TODO: Implement search functionality based on searchType and searchTerm
-    console.log(`Searching by ${searchType}:`, searchTerm);
-  };
 
   return (
     <div className="space-y-6">
@@ -33,36 +24,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant={searchType === 'orderNumber' ? 'default' : 'outline'}
-                onClick={() => setSearchType('orderNumber')}
-                className="flex-1"
-              >
-                Nach Auftragsnummer
-              </Button>
-              <Button
-                variant={searchType === 'articleNumber' ? 'default' : 'outline'}
-                onClick={() => setSearchType('articleNumber')}
-                className="flex-1"
-              >
-                Nach Artikelnummer
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder={searchType === 'orderNumber' ? 'Auftragsnummer eingeben...' : 'Artikelnummer eingeben...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button onClick={handleSearch} disabled={!searchTerm.trim()}>
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
           {teamLeaderStats.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />

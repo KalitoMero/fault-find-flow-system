@@ -37,6 +37,7 @@ const Index = () => {
   const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber'>('orderNumber');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
@@ -81,8 +82,18 @@ const Index = () => {
   // Filter and sort reports based on search term, status, and sort preferences
   const filteredReports = errorReports
     .filter(report => {
-      const matchesSearch = searchTerm === '' || 
-        report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      let matchesSearch = searchTerm === '';
+      
+      if (searchTerm !== '') {
+        if (searchType === 'orderNumber') {
+          matchesSearch = report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        } else if (searchType === 'articleNumber') {
+          // Search in Excel data for article number
+          const additionalData = report.additionalExcelData || {};
+          const articleNumber = additionalData['Artikelnummer'] || '';
+          matchesSearch = articleNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+      }
       
       const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
       
@@ -399,11 +410,27 @@ const Index = () => {
                 </CardDescription>
                 {user.role === 'teamleader' && (
                   <div className="flex flex-col space-y-4 mt-4">
+                    <div className="flex gap-2">
+                      <Button
+                        variant={searchType === 'orderNumber' ? 'default' : 'outline'}
+                        onClick={() => setSearchType('orderNumber')}
+                        className="flex-1"
+                      >
+                        Nach Auftragsnummer
+                      </Button>
+                      <Button
+                        variant={searchType === 'articleNumber' ? 'default' : 'outline'}
+                        onClick={() => setSearchType('articleNumber')}
+                        className="flex-1"
+                      >
+                        Nach Artikelnummer
+                      </Button>
+                    </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
                         <Search className="h-4 w-4 text-gray-500" />
                         <Input
-                          placeholder="Nach Auftragsnummer suchen..."
+                          placeholder={searchType === 'orderNumber' ? 'Nach Auftragsnummer suchen...' : 'Nach Artikelnummer suchen...'}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="max-w-sm"
