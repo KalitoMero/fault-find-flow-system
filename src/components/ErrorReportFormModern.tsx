@@ -24,6 +24,7 @@ import {
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
+import AudioRecorderN8n from './AudioRecorderN8n';
 import SimpleCombobox from './SimpleCombobox';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
@@ -125,6 +126,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
+  const [useN8nWebhook, setUseN8nWebhook] = useState(false);
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+
+  useEffect(() => {
+    // Load N8N settings from localStorage
+    const n8nEnabled = localStorage.getItem('n8n_webhook_enabled') === 'true';
+    const n8nUrl = localStorage.getItem('n8n_webhook_url') || '';
+    setUseN8nWebhook(n8nEnabled);
+    setN8nWebhookUrl(n8nUrl);
+  }, []);
 
 
   useEffect(() => {
@@ -545,13 +556,25 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     rows={4}
                   />
                 </div>
-                <AudioRecorderSimple 
-                  onTranscription={(transcription, audioBlob) => {
-                    setProblemDescription(transcription);
-                    setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
-                  }}
-                  label="Problembeschreibung aufnehmen"
-                />
+                {useN8nWebhook && n8nWebhookUrl ? (
+                  <AudioRecorderN8n 
+                    onTranscription={(transcription, audioBlob) => {
+                      setProblemDescription(transcription);
+                      setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+                    }}
+                    label="Problembeschreibung aufnehmen"
+                    webhookUrl={n8nWebhookUrl}
+                    useN8n={useN8nWebhook}
+                  />
+                ) : (
+                  <AudioRecorderSimple 
+                    onTranscription={(transcription, audioBlob) => {
+                      setProblemDescription(transcription);
+                      setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+                    }}
+                    label="Problembeschreibung aufnehmen"
+                  />
+                )}
               </div>
             </div>
 
@@ -567,13 +590,25 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     rows={4}
                   />
                 </div>
-                <AudioRecorderSimple 
-                  onTranscription={(transcription, audioBlob) => {
-                    setCorrectiveAction(transcription);
-                    setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
-                  }}
-                  label="Korrekturmaßnahme aufnehmen"
-                />
+                {useN8nWebhook && n8nWebhookUrl ? (
+                  <AudioRecorderN8n 
+                    onTranscription={(transcription, audioBlob) => {
+                      setCorrectiveAction(transcription);
+                      setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+                    }}
+                    label="Korrekturmaßnahme aufnehmen"
+                    webhookUrl={n8nWebhookUrl}
+                    useN8n={useN8nWebhook}
+                  />
+                ) : (
+                  <AudioRecorderSimple 
+                    onTranscription={(transcription, audioBlob) => {
+                      setCorrectiveAction(transcription);
+                      setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+                    }}
+                    label="Korrekturmaßnahme aufnehmen"
+                  />
+                )}
               </div>
             </div>
           </CardContent>

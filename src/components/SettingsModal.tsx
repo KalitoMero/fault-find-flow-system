@@ -34,6 +34,7 @@ import AdminManagement from './AdminManagement';
 import AdminAuthDialog from './AdminAuthDialog';
 import ExcelUploadSettings from './ExcelUploadSettings';
 import ExportSection from './ExportSection';
+import N8nWebhookSettings from './N8nWebhookSettings';
 import { getErrorReports } from '@/lib/storage';
 import { toast } from "sonner";
 
@@ -57,6 +58,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [currentLogo, setCurrentLogo] = useState<string | null>(null);
+  const [n8nWebhookEnabled, setN8nWebhookEnabled] = useState(false);
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -240,6 +243,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setShowAdminPanel(true);
   };
 
+  const handleN8nSettingsChange = (enabled: boolean, url: string) => {
+    setN8nWebhookEnabled(enabled);
+    setN8nWebhookUrl(url);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -251,7 +259,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -271,6 +279,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="excel" className="flex items-center space-x-2">
               <FileSpreadsheet className="h-4 w-4" />
               <span>Excel-Import</span>
+            </TabsTrigger>
+            <TabsTrigger value="n8n" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span>N8N Integration</span>
             </TabsTrigger>
             <TabsTrigger 
               value="admin" 
@@ -563,6 +575,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           <TabsContent value="excel">
             <ExcelUploadSettings />
+          </TabsContent>
+
+          <TabsContent value="n8n">
+            <N8nWebhookSettings onSettingsChange={handleN8nSettingsChange} />
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">
