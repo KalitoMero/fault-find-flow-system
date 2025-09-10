@@ -133,6 +133,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     // Load N8N settings from localStorage
     const n8nEnabled = localStorage.getItem('n8n_webhook_enabled') === 'true';
     const n8nUrl = localStorage.getItem('n8n_webhook_url') || '';
+    console.log('Loading N8N settings:', { n8nEnabled, n8nUrl });
     setUseN8nWebhook(n8nEnabled);
     setN8nWebhookUrl(n8nUrl);
   }, []);

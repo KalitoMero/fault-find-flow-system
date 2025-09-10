@@ -104,6 +104,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
   };
 
   const saveAndProcess = async () => {
+    console.log('N8N AudioRecorder saveAndProcess called with:', { webhookUrl, useN8n, hasRecording: hasRecording });
     if (!hasRecording || audioChunksRef.current.length === 0) {
       toast.error("Keine Aufnahme zum Verarbeiten vorhanden");
       return;
