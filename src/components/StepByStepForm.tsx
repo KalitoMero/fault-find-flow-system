@@ -9,6 +9,7 @@ import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
+import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
 import { toast } from "sonner";
 
@@ -42,6 +43,10 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
+  
+  // N8N Settings State
+  const [n8nEnabled, setN8nEnabled] = useState(false);
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
   // Auto-focus the first input field
   useEffect(() => {
@@ -124,9 +129,56 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   ]);
 
+  // Load N8N settings on component mount
+  const loadN8nSettings = useCallback(() => {
+    try {
+      const enabled = localStorage.getItem('n8n_enabled') === 'true';
+      const url = localStorage.getItem('n8n_webhook_url') || '';
+      
+      console.log('🔧 StepByStepForm - Loading N8N settings:', { enabled, url: url ? '[URL SET]' : '[NO URL]' });
+      
+      setN8nEnabled(enabled);
+      setN8nWebhookUrl(url);
+      
+      if (enabled && url) {
+        toast.success('N8N Integration aktiviert', { duration: 2000 });
+        console.log('✅ StepByStepForm - N8N integration activated');
+      } else if (enabled && !url) {
+        toast.error('N8N aktiviert aber URL fehlt', { duration: 3000 });
+        console.log('⚠️ StepByStepForm - N8N enabled but URL missing');
+      } else {
+        console.log('ℹ️ StepByStepForm - N8N integration disabled');
+      }
+    } catch (error) {
+      console.error('❌ StepByStepForm - Error loading N8N settings:', error);
+    }
+  }, []);
+
   useEffect(() => {
     setEmployees(getEmployees());
-  }, []);
+    loadN8nSettings();
+    
+    // Listen for N8N settings changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'n8n_enabled' || e.key === 'n8n_webhook_url') {
+        console.log('📡 StepByStepForm - Storage change detected:', e.key, e.newValue);
+        loadN8nSettings();
+      }
+    };
+    
+    const handleN8nSettingsUpdate = () => {
+      console.log('📡 StepByStepForm - N8N settings update event received');
+      loadN8nSettings();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
+    };
+  }, [loadN8nSettings]);
 
   // useEffect für Excel-Überprüfung wenn AFO-Nummer sich ändert
   useEffect(() => {
@@ -683,13 +735,29 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <AudioRecorderSimple 
-                        onTranscription={(transcription, audioBlob) => {
-                          handleFieldUpdate(currentField.id, transcription);
-                          setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
-                        }}
-                        label={`${currentField.label} aufnehmen`}
-                      />
+                      n8nEnabled && n8nWebhookUrl ? (
+                        <AudioRecorderN8n 
+                          onTranscription={(transcription, audioBlob) => {
+                            console.log('🎙️ StepByStepForm - N8N transcription received:', transcription.length, 'chars');
+                            handleFieldUpdate(currentField.id, transcription);
+                            if (audioBlob) {
+                              setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
+                            }
+                          }}
+                          label={`${currentField.label} mit N8N aufnehmen`}
+                          webhookUrl={n8nWebhookUrl}
+                          useN8n={true}
+                        />
+                      ) : (
+                        <AudioRecorderSimple 
+                          onTranscription={(transcription, audioBlob) => {
+                            console.log('🎙️ StepByStepForm - Simple transcription received:', transcription.length, 'chars');
+                            handleFieldUpdate(currentField.id, transcription);
+                            setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
+                          }}
+                          label={`${currentField.label} aufnehmen`}
+                        />
+                      )
                     )}
                   </div>
                 </div>
