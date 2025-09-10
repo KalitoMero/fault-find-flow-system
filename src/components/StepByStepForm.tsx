@@ -869,6 +869,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       
                       return shouldUseN8n ? (
                         <AudioRecorderN8n 
+                          key={currentField.id}
                           onTranscription={(transcription, audioBlob) => {
                             console.log(`🎙️ [${timestamp}] StepByStepForm - N8N transcription received:`, transcription.length, 'chars');
                             handleFieldUpdate(currentField.id, transcription);
@@ -882,6 +883,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         />
                       ) : (
                         <AudioRecorderSimple 
+                          key={currentField.id}
                           onTranscription={(transcription, audioBlob) => {
                             console.log(`🎙️ [${timestamp}] StepByStepForm - Simple transcription received:`, transcription.length, 'chars');
                             handleFieldUpdate(currentField.id, transcription);
