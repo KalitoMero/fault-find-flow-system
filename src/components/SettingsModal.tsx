@@ -246,6 +246,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const handleN8nSettingsChange = (enabled: boolean, url: string) => {
     setN8nWebhookEnabled(enabled);
     setN8nWebhookUrl(url);
+    console.log('🔧 SettingsModal: N8N settings changed:', { enabled, url });
   };
 
   return (

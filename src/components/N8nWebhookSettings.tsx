@@ -30,6 +30,10 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     setWebhookUrl(value);
     localStorage.setItem('n8n_webhook_url', value);
     onSettingsChange(isEnabled, value);
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('n8nSettingsUpdated'));
+    console.log('🔧 N8N URL updated:', value);
   };
 
   const handleEnabledChange = (enabled: boolean) => {
@@ -37,8 +41,14 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     localStorage.setItem('n8n_webhook_enabled', enabled.toString());
     onSettingsChange(enabled, webhookUrl);
     
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('n8nSettingsUpdated'));
+    console.log('🔧 N8N enabled state changed:', enabled);
+    
     if (enabled && !webhookUrl.trim()) {
       toast.warning('Bitte geben Sie eine N8N Webhook URL ein');
+    } else if (enabled && webhookUrl.trim()) {
+      toast.success('N8N Integration aktiviert');
     }
   };
 

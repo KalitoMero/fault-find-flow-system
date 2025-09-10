@@ -104,8 +104,17 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
   };
 
   const saveAndProcess = async () => {
-    console.log('N8N AudioRecorder saveAndProcess called with:', { webhookUrl, useN8n, hasRecording: hasRecording });
+    console.log('🎵 AudioRecorderN8n: Starting save and process...');
+    console.log('🔧 N8N Integration Status:', { 
+      webhookUrl: webhookUrl.trim(), 
+      hasUrl: !!webhookUrl.trim(),
+      useN8n,
+      hasRecording: hasRecording,
+      audioChunksLength: audioChunksRef.current.length
+    });
+
     if (!hasRecording || audioChunksRef.current.length === 0) {
+      console.log('❌ No recording to process');
       toast.error("Keine Aufnahme zum Verarbeiten vorhanden");
       return;
     }
@@ -116,10 +125,13 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       let transcription = '';
       
       if (useN8n && webhookUrl.trim()) {
+        console.log('🚀 AudioRecorderN8n: Sending to N8N webhook...', webhookUrl);
         // Send to N8N webhook
         transcription = await sendAudioToN8n(audioBlob, webhookUrl);
+        console.log('✅ AudioRecorderN8n: N8N transcription received:', transcription.substring(0, 100) + '...');
       } else {
         // Fallback: inform user that N8N is not configured
+        console.log('⚠️ AudioRecorderN8n: N8N not configured properly', { useN8n, hasUrl: !!webhookUrl.trim() });
         toast.warning('N8N Webhook ist nicht konfiguriert. Bitte aktivieren Sie N8N in den Einstellungen.');
         return;
       }
@@ -131,13 +143,14 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
         onTranscription(transcription, base64Audio);
         setIsSaved(true);
         
+        console.log('✅ AudioRecorderN8n: Processing completed successfully');
         toast.success('Aufnahme erfolgreich verarbeitet!');
       };
       
       reader.readAsDataURL(audioBlob);
       
     } catch (error) {
-      console.error('Fehler bei der Verarbeitung:', error);
+      console.error('❌ AudioRecorderN8n: Processing error:', error);
       toast.error("Fehler bei der Verarbeitung. Bitte versuchen Sie es erneut.");
     }
   };

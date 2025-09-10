@@ -129,21 +129,59 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [useN8nWebhook, setUseN8nWebhook] = useState(false);
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
-  useEffect(() => {
-    // Load N8N settings from localStorage
+  // Load N8N webhook settings and listen for changes
+  const loadN8nSettings = useCallback(() => {
     const n8nEnabled = localStorage.getItem('n8n_webhook_enabled') === 'true';
     const n8nUrl = localStorage.getItem('n8n_webhook_url') || '';
-    console.log('Loading N8N settings:', { n8nEnabled, n8nUrl });
-    setUseN8nWebhook(n8nEnabled);
+    
+    console.log('🔧 Loading N8N settings:', { 
+      n8nEnabled, 
+      n8nUrl, 
+      hasUrl: !!n8nUrl.trim(),
+      timestamp: new Date().toISOString()
+    });
+    
+    setUseN8nWebhook(n8nEnabled && n8nUrl.trim() !== '');
     setN8nWebhookUrl(n8nUrl);
     
     // Add visible debugging to UI
-    if (n8nEnabled) {
-      toast.info(`N8N aktiviert: ${n8nUrl ? 'URL konfiguriert' : 'URL fehlt'}`);
+    if (n8nEnabled && n8nUrl.trim()) {
+      toast.success(`✅ N8N Integration aktiv: ${n8nUrl.substring(0, 50)}...`);
+      console.log('✅ Using AudioRecorderN8n');
+    } else if (n8nEnabled && !n8nUrl.trim()) {
+      toast.warning('⚠️ N8N aktiviert aber URL fehlt - verwende AudioRecorderSimple');
+      console.log('⚠️ N8N enabled but no URL - using AudioRecorderSimple');
     } else {
-      toast.info('N8N deaktiviert - AudioRecorderSimple wird verwendet');
+      toast.info('ℹ️ N8N deaktiviert - verwende AudioRecorderSimple');
+      console.log('ℹ️ N8N disabled - using AudioRecorderSimple');
     }
   }, []);
+
+  useEffect(() => {
+    loadN8nSettings();
+
+    // Listen for storage changes (when settings are updated in other components)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'n8n_webhook_enabled' || e.key === 'n8n_webhook_url') {
+        console.log('🔄 Storage change detected for N8N settings, reloading...');
+        setTimeout(loadN8nSettings, 100); // Small delay to ensure both values are updated
+      }
+    };
+
+    // Listen for custom events (for same-tab updates)
+    const handleN8nSettingsUpdate = () => {
+      console.log('🔄 Custom N8N settings update event received');
+      loadN8nSettings();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('n8nSettingsUpdated', handleN8nSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('n8nSettingsUpdated', handleN8nSettingsUpdate);
+    };
+  }, [loadN8nSettings]);
 
 
   useEffect(() => {
