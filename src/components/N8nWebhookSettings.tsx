@@ -19,11 +19,12 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
   // Load settings from localStorage on component mount
   useEffect(() => {
     const savedUrl = localStorage.getItem('n8n_webhook_url') || '';
-    const savedEnabled = localStorage.getItem('n8n_webhook_enabled') === 'true';
+    const savedEnabled = localStorage.getItem('n8n_enabled') === 'true';
     
     setWebhookUrl(savedUrl);
     setIsEnabled(savedEnabled);
     onSettingsChange(savedEnabled, savedUrl);
+    console.log('🔧 N8N Settings loaded:', { enabled: savedEnabled, url: savedUrl });
   }, [onSettingsChange]);
 
   const handleUrlChange = (value: string) => {
@@ -32,17 +33,17 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     onSettingsChange(isEnabled, value);
     
     // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('n8nSettingsUpdated'));
+    window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
     console.log('🔧 N8N URL updated:', value);
   };
 
   const handleEnabledChange = (enabled: boolean) => {
     setIsEnabled(enabled);
-    localStorage.setItem('n8n_webhook_enabled', enabled.toString());
+    localStorage.setItem('n8n_enabled', enabled.toString());
     onSettingsChange(enabled, webhookUrl);
     
     // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('n8nSettingsUpdated'));
+    window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
     console.log('🔧 N8N enabled state changed:', enabled);
     
     if (enabled && !webhookUrl.trim()) {
