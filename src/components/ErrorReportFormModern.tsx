@@ -136,6 +136,13 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     console.log('Loading N8N settings:', { n8nEnabled, n8nUrl });
     setUseN8nWebhook(n8nEnabled);
     setN8nWebhookUrl(n8nUrl);
+    
+    // Add visible debugging to UI
+    if (n8nEnabled) {
+      toast.info(`N8N aktiviert: ${n8nUrl ? 'URL konfiguriert' : 'URL fehlt'}`);
+    } else {
+      toast.info('N8N deaktiviert - AudioRecorderSimple wird verwendet');
+    }
   }, []);
 
 
