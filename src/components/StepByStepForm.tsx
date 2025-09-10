@@ -854,8 +854,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (() => {
-                      // Enhanced decision logic with debug override
-                      const shouldUseN8n = debugOverrideN8n !== null ? debugOverrideN8n : (n8nEnabled && n8nWebhookUrl);
+                      // Enhanced decision logic with debug override - N8N always forced
+                      const shouldUseN8n = true; // Always use N8N
                       const timestamp = new Date().toLocaleTimeString();
                       
                       console.log(`🎙️ [${timestamp}] StepByStepForm - Audio recorder decision:`, {
