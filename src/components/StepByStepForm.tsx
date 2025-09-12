@@ -603,10 +603,10 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         <Button 
           onClick={onClose}
           variant="outline"
-          className="flex items-center gap-2"
+          size="icon"
+          className="rounded-full shadow-lg"
         >
-          <Home className="h-4 w-4" />
-          Zurück zur Startseite
+          <Home className="h-5 w-5" />
         </Button>
       </div>
 
@@ -650,8 +650,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 </div>
               )}
               
-              {/* Number fields in a row - 4 columns */}
-              <div className="grid grid-cols-4 gap-3">
+              {/* Number fields in a row - 2 columns for wider fields */}
+              <div className="grid grid-cols-2 gap-4">
                 {fields.filter(f => f.type !== 'textarea').map((field, index) => {
                   const isCurrentField = index === currentStep;
                   const isCompleted = field.completed;
@@ -662,12 +662,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       key={field.id}
                       onClick={() => isCompleted ? handleFieldClick(index) : undefined}
                       className={`
-                        flex items-center gap-2 rounded-lg transition-all duration-300 ${
+                        flex items-center gap-3 rounded-lg transition-all duration-300 ${
                           isCurrentField 
-                            ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg scale-105 cursor-default' 
+                            ? 'p-5 bg-blue-100 border-2 border-blue-400 shadow-lg scale-105 cursor-default' 
                             : isCompleted
-                            ? 'p-2 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
-                            : 'p-2 bg-gray-50 border border-gray-200'
+                            ? 'p-3 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
+                            : 'p-3 bg-gray-50 border border-gray-200'
                         }
                       `}
                     >
