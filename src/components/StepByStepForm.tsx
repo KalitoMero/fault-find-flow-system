@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, MapPin } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
@@ -613,185 +613,195 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
       <div className="max-w-4xl mx-auto space-y-4">
 
-        {/* All Fields Display */}
-        <div className="space-y-6">
-          {fields.map((field, index) => {
-            const isCurrentField = index === currentStep;
-            const isCompleted = field.completed;
-            const fieldValue = field.value;
-            
-            return (
-              <Card 
-                key={field.id}
-                className={`transition-all duration-300 cursor-pointer ${
-                  isCurrentField 
-                    ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary border-2 shadow-xl scale-105 transform'
-                    : isCompleted
-                      ? 'bg-green-50 border-green-200 hover:bg-green-100'
-                      : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
-                onClick={() => !isCurrentField && isCompleted && handleFieldClick(index)}
-              >
-                <CardHeader className="pb-4">
-                  <CardTitle className={`flex items-center justify-center gap-3 transition-all duration-300 ${
-                    isCurrentField 
-                      ? 'text-2xl text-primary'
-                      : isCompleted
-                        ? 'text-lg text-green-700'
-                        : 'text-lg text-gray-600'
-                  }`}>
-                    <div className={`transition-all duration-300 ${
-                      isCurrentField ? 'scale-125' : 'scale-100'
-                    }`}>
-                      {field.icon}
-                    </div>
-                    {field.label}
-                    {field.required && <span className="text-red-500">*</span>}
-                    {isCompleted && !isCurrentField && (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className={`transition-all duration-300 ${
-                  isCurrentField ? 'pb-8' : 'pb-4'
-                }`}>
-                  {isCurrentField ? (
-                    // Active field - full input interface
-                    <div className="space-y-6">
-                      {field.type === 'textarea' ? (
-                        <div className="space-y-4">
-                          <div className="flex gap-2 items-start">
-                            <Textarea
-                              value={fieldValue}
-                              onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.ctrlKey && fieldValue.trim()) {
-                                  e.preventDefault();
-                                  handleNext();
-                                }
-                              }}
-                              placeholder={field.placeholder}
-                              rows={4}
-                              className="text-center text-lg flex-1 border-primary/50 focus:border-primary"
-                            />
-                            {(field.id === 'problemDescription' || field.id === 'correctiveAction') && (
-                              <AudioRecorderN8n 
-                                key={field.id}
-                                onTranscription={(transcription, audioBlob) => {
-                                  handleFieldUpdate(field.id, transcription);
-                                  if (audioBlob) {
-                                    setAudioFiles(prev => ({...prev, [field.id]: audioBlob}));
-                                  }
-                                }}
-                                label={`${field.label} aufnehmen`}
-                                webhookUrl={n8nWebhookUrl}
-                                useN8n={true}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <Input
-                            type="text"
-                            value={fieldValue}
-                            onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && fieldValue.trim()) {
-                                e.preventDefault();
-                                handleNext();
-                              }
-                            }}
-                            placeholder={field.placeholder}
-                            className="text-center text-xl h-14 border-primary/50 focus:border-primary"
-                            pattern={field.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
-                            inputMode={field.id === 'orderNumber' ? 'decimal' : 'numeric'}
-                          />
-                          
-                          {/* Touch Keypad for active numeric fields */}
-                          <TouchKeypad
-                            onInput={handleKeypadInput}
-                            onBackspace={handleKeypadBackspace}
-                            allowDecimal={field.id === 'orderNumber'}
-                            className="mt-4"
-                          />
+        {/* Completed Fields */}
+        {completedFields.length > 0 && (
+          <Card className="bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                {/* Excel Status Info */}
+                {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex justify-between items-center text-sm flex-wrap gap-2">
+                      {excelDepartment && (
+                        <div>
+                          <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
                         </div>
                       )}
-                      
-                      {/* Navigation buttons for active field */}
-                      <div className="flex justify-center gap-4 pt-4">
-                        {index === fields.length - 1 ? (
-                          <Button 
-                            onClick={handleSubmit}
-                            disabled={isSubmitting || !isFormComplete()}
-                            className={`px-8 py-3 text-lg transition-colors ${
-                              isFormComplete() 
-                                ? 'bg-green-600 hover:bg-green-700' 
-                                : 'bg-gray-400 cursor-not-allowed'
-                            }`}
-                            size="lg"
-                          >
-                            {isSubmitting ? (
-                              <>
-                                <Settings className="h-5 w-5 mr-2 animate-spin" />
-                                Wird gespeichert...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-5 w-5 mr-2" />
-                                {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
-                              </>
-                            )}
-                          </Button>
-                        ) : (
-                          <Button 
-                            onClick={handleNext}
-                            className="px-8 py-3 text-lg gradient-button"
-                            size="lg"
-                          >
-                            Weiter
-                            <ArrowRight className="h-5 w-5 ml-2" />
-                          </Button>
-                        )}
+                      {assignedTeamLeader !== 'System' && (
+                        <div>
+                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
+                        </div>
+                      )}
+                      {additionalExcelData.Artikelnummer && (
+                        <div>
+                          <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                        </div>
+                      )}
+                      {additionalExcelData.Artikelbezeichnung && (
+                        <div>
+                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
+                        </div>
+                      )}
+                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
+                        <div key={key}>
+                          <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Number fields in a row - 4 columns with AFO smaller */}
+                <div className="grid grid-cols-4 gap-3">
+                  {completedFields.filter(f => f.type !== 'textarea').map((field, index) => (
+                    <div
+                      key={field.id}
+                      onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
+                      className={`flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${
+                        field.id === 'afoNumber' ? 'col-span-1' : 'col-span-1'
+                      }`}
+                    >
+                      {field.icon}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-green-800">{field.label}</p>
+                        <p className="text-sm text-green-600 truncate">{field.value}</p>
+                      </div>
+                      <Edit3 className="h-3 w-3 text-green-600" />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Text areas full width */}
+                {completedFields.filter(f => f.type === 'textarea').map((field, index) => (
+                  <div
+                    key={field.id}
+                    onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
+                    className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+                  >
+                    {field.icon}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-green-800">{field.label}</p>
+                      <div className="text-sm text-green-600">
+                        <p className="whitespace-pre-wrap break-words">{field.value}</p>
                       </div>
                     </div>
+                    <Edit3 className="h-4 w-4 text-green-600" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Field */}
+        <Card className="bg-white shadow-xl min-h-[600px] flex flex-col justify-center">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl flex items-center justify-center gap-3">
+              {currentField.icon}
+              {currentField.label}
+              {currentField.required && <span className="text-red-500">*</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 flex-1 flex flex-col justify-center">
+            <div className="flex flex-col items-center space-y-4">
+              {currentField.type === 'textarea' ? (
+                <div className="w-full max-w-md space-y-4">
+                  <div className="flex gap-2 items-start">
+                    <Textarea
+                      value={currentField.value}
+                      onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
+                          e.preventDefault();
+                          handleNext();
+                        }
+                      }}
+                      placeholder={currentField.placeholder}
+                      rows={4}
+                      className="text-center text-lg flex-1"
+                    />
+                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
+                      <AudioRecorderN8n 
+                        key={currentField.id}
+                        onTranscription={(transcription, audioBlob) => {
+                          handleFieldUpdate(currentField.id, transcription);
+                          if (audioBlob) {
+                            setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
+                          }
+                        }}
+                        label={`${currentField.label} aufnehmen`}
+                        webhookUrl={n8nWebhookUrl}
+                        useN8n={true}
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-4">
+                  <Input
+                    type="text"
+                    value={currentField.value}
+                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && currentField.value.trim()) {
+                        e.preventDefault();
+                        handleNext();
+                      }
+                    }}
+                    placeholder={currentField.placeholder}
+                    className="text-center text-xl max-w-md h-14"
+                    pattern={currentField.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
+                    inputMode={currentField.id === 'orderNumber' ? 'decimal' : 'numeric'}
+                  />
+                  
+                  {/* Touch Keypad - Always visible for non-textarea fields */}
+                  <TouchKeypad
+                    onInput={handleKeypadInput}
+                    onBackspace={handleKeypadBackspace}
+                    allowDecimal={currentField.id === 'orderNumber'}
+                    className="mt-4"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-center gap-4 pt-6">
+              {isLastStep ? (
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !isFormComplete()}
+                  className={`px-8 py-3 text-lg transition-colors ${
+                    isFormComplete() 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Settings className="h-5 w-5 mr-2 animate-spin" />
+                      Wird gespeichert...
+                    </>
                   ) : (
-                    // Completed or inactive field - show preview
-                    <div className="text-center">
-                      {fieldValue ? (
-                        <div className={`p-3 rounded-lg ${
-                          isCompleted 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          <p className={`${field.type === 'textarea' ? 'whitespace-pre-wrap' : ''} ${
-                            field.type === 'textarea' ? 'text-sm' : 'text-lg font-medium'
-                          }`}>
-                            {field.type === 'textarea' && fieldValue.length > 100 
-                              ? `${fieldValue.substring(0, 100)}...`
-                              : fieldValue
-                            }
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-gray-50 text-gray-500 rounded-lg">
-                          <p className="text-sm italic">{field.placeholder}</p>
-                        </div>
-                      )}
-                      {isCompleted && !isCurrentField && (
-                        <p className="text-xs text-green-600 mt-2 flex items-center justify-center gap-1">
-                          <Edit3 className="h-3 w-3" />
-                          Klicken zum Bearbeiten
-                        </p>
-                      )}
-                    </div>
+                    <>
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
+                    </>
                   )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleNext}
+                  className="px-8 py-3 text-lg"
+                  size="lg"
+                >
+                  Weiter
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
