@@ -613,85 +613,136 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
       <div className="max-w-4xl mx-auto space-y-4">
 
-        {/* Completed Fields */}
-        {completedFields.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Excel Status Info */}
-                {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                      {excelDepartment && (
-                        <div>
-                          <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
-                        </div>
-                      )}
-                      {assignedTeamLeader !== 'System' && (
-                        <div>
-                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
-                        </div>
-                      )}
-                      {additionalExcelData.Artikelnummer && (
-                        <div>
-                          <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
-                        </div>
-                      )}
-                      {additionalExcelData.Artikelbezeichnung && (
-                        <div>
-                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
-                        </div>
-                      )}
-                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
-                        </div>
-                      ))}
-                    </div>
+        {/* All Fields Overview */}
+        <Card className="bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              {/* Excel Status Info */}
+              {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-center text-sm flex-wrap gap-2">
+                    {excelDepartment && (
+                      <div>
+                        <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
+                      </div>
+                    )}
+                    {assignedTeamLeader !== 'System' && (
+                      <div>
+                        <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
+                      </div>
+                    )}
+                    {additionalExcelData.Artikelnummer && (
+                      <div>
+                        <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                      </div>
+                    )}
+                    {additionalExcelData.Artikelbezeichnung && (
+                      <div>
+                        <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
+                      </div>
+                    )}
+                    {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
+                      <div key={key}>
+                        <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-                
-                {/* Number fields in a row - 4 columns with AFO smaller */}
-                <div className="grid grid-cols-4 gap-3">
-                  {completedFields.filter(f => f.type !== 'textarea').map((field, index) => (
+                </div>
+              )}
+              
+              {/* Number fields in a row - 4 columns */}
+              <div className="grid grid-cols-4 gap-3">
+                {fields.filter(f => f.type !== 'textarea').map((field, index) => {
+                  const isCurrentField = index === currentStep;
+                  const isCompleted = field.completed;
+                  const isEmpty = !field.value;
+                  
+                  return (
                     <div
                       key={field.id}
-                      onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
-                      className={`flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${
-                        field.id === 'afoNumber' ? 'col-span-1' : 'col-span-1'
-                      }`}
+                      onClick={() => isCompleted ? handleFieldClick(index) : undefined}
+                      className={`
+                        flex items-center gap-2 rounded-lg transition-all duration-300 ${
+                          isCurrentField 
+                            ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg scale-105 cursor-default' 
+                            : isCompleted
+                            ? 'p-2 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
+                            : 'p-2 bg-gray-50 border border-gray-200'
+                        }
+                      `}
                     >
-                      {field.icon}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-green-800">{field.label}</p>
-                        <p className="text-sm text-green-600 truncate">{field.value}</p>
+                      <div className={`${isCurrentField ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                        {field.icon}
                       </div>
-                      <Edit3 className="h-3 w-3 text-green-600" />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium ${
+                          isCurrentField ? 'text-blue-800' : isCompleted ? 'text-green-800' : 'text-gray-500'
+                        }`}>
+                          {field.label}
+                        </p>
+                        <p className={`text-sm truncate ${
+                          isCurrentField ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                        }`}>
+                          {field.value || (isEmpty ? 'Nicht ausgefüllt' : field.value)}
+                        </p>
+                      </div>
+                      {isCompleted && !isCurrentField && (
+                        <Edit3 className="h-3 w-3 text-green-600" />
+                      )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
+              
+              {/* Text areas full width */}
+              {fields.filter(f => f.type === 'textarea').map((field, index) => {
+                const fieldIndex = fields.findIndex(f => f.id === field.id);
+                const isCurrentField = fieldIndex === currentStep;
+                const isCompleted = field.completed;
+                const isEmpty = !field.value;
                 
-                {/* Text areas full width */}
-                {completedFields.filter(f => f.type === 'textarea').map((field, index) => (
+                return (
                   <div
                     key={field.id}
-                    onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
-                    className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+                    onClick={() => isCompleted ? handleFieldClick(fieldIndex) : undefined}
+                    className={`
+                      flex items-start gap-3 rounded-lg transition-all duration-300 ${
+                        isCurrentField 
+                          ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg scale-[1.02] cursor-default' 
+                          : isCompleted
+                          ? 'p-3 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
+                          : 'p-3 bg-gray-50 border border-gray-200'
+                      }
+                    `}
                   >
-                    {field.icon}
+                    <div className={`${isCurrentField ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                      {field.icon}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-green-800">{field.label}</p>
-                      <div className="text-sm text-green-600">
-                        <p className="whitespace-pre-wrap break-words">{field.value}</p>
+                      <p className={`text-sm font-medium ${
+                        isCurrentField ? 'text-blue-800' : isCompleted ? 'text-green-800' : 'text-gray-500'
+                      }`}>
+                        {field.label}
+                      </p>
+                      <div className={`text-sm ${
+                        isCurrentField ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                      }`}>
+                        {field.value ? (
+                          <p className="whitespace-pre-wrap break-words">{field.value}</p>
+                        ) : (
+                          <p>Nicht ausgefüllt</p>
+                        )}
                       </div>
                     </div>
-                    <Edit3 className="h-4 w-4 text-green-600" />
+                    {isCompleted && !isCurrentField && (
+                      <Edit3 className="h-4 w-4 text-green-600" />
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Current Field */}
         <Card className="bg-white shadow-xl min-h-[600px] flex flex-col justify-center">
