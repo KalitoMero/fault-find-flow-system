@@ -611,7 +611,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       </div>
 
 
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-6xl mx-auto space-y-4">
 
         {/* All Fields Overview */}
         <Card className="bg-white/80 backdrop-blur-sm">
