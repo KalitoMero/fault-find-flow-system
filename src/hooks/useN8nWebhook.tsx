@@ -4,6 +4,7 @@ import { toast } from "sonner";
 interface N8nWebhookResponse {
   transcription?: string;
   text?: string;
+  output?: string;
   error?: string;
 }
 
@@ -44,7 +45,7 @@ export const useN8nWebhook = () => {
       }
 
       // Handle different possible response formats from n8n
-      const transcription = result.transcription || result.text || '';
+      const transcription = result.transcription || result.text || result.output || '';
       
       if (!transcription.trim()) {
         throw new Error('Keine Transkription von N8N erhalten');
