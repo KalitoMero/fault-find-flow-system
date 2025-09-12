@@ -610,198 +610,203 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         </Button>
       </div>
 
-
-      <div className="max-w-4xl mx-auto space-y-4">
-
-        {/* Completed Fields */}
-        {completedFields.length > 0 && (
+      <div className="max-w-4xl mx-auto space-y-4 pt-16">
+        {/* Excel Status Info */}
+        {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Excel Status Info */}
-                {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                      {excelDepartment && (
-                        <div>
-                          <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
-                        </div>
-                      )}
-                      {assignedTeamLeader !== 'System' && (
-                        <div>
-                          <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
-                        </div>
-                      )}
-                      {additionalExcelData.Artikelnummer && (
-                        <div>
-                          <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
-                        </div>
-                      )}
-                      {additionalExcelData.Artikelbezeichnung && (
-                        <div>
-                          <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
-                        </div>
-                      )}
-                      {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
-                        </div>
-                      ))}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex justify-between items-center text-sm flex-wrap gap-2">
+                  {excelDepartment && (
+                    <div>
+                      <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
                     </div>
-                  </div>
-                )}
-                
-                {/* Number fields in a row - 4 columns with AFO smaller */}
-                <div className="grid grid-cols-4 gap-3">
-                  {completedFields.filter(f => f.type !== 'textarea').map((field, index) => (
-                    <div
-                      key={field.id}
-                      onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
-                      className={`flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${
-                        field.id === 'afoNumber' ? 'col-span-1' : 'col-span-1'
-                      }`}
-                    >
-                      {field.icon}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-green-800">{field.label}</p>
-                        <p className="text-sm text-green-600 truncate">{field.value}</p>
-                      </div>
-                      <Edit3 className="h-3 w-3 text-green-600" />
+                  )}
+                  {assignedTeamLeader !== 'System' && (
+                    <div>
+                      <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
+                    </div>
+                  )}
+                  {additionalExcelData.Artikelnummer && (
+                    <div>
+                      <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
+                    </div>
+                  )}
+                  {additionalExcelData.Artikelbezeichnung && (
+                    <div>
+                      <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
+                    </div>
+                  )}
+                  {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
+                    <div key={key}>
+                      <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
                     </div>
                   ))}
                 </div>
-                
-                {/* Text areas full width */}
-                {completedFields.filter(f => f.type === 'textarea').map((field, index) => (
-                  <div
-                    key={field.id}
-                    onClick={() => handleFieldClick(fields.findIndex(f => f.id === field.id))}
-                    className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
-                  >
-                    {field.icon}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-green-800">{field.label}</p>
-                      <div className="text-sm text-green-600">
-                        <p className="whitespace-pre-wrap break-words">{field.value}</p>
-                      </div>
-                    </div>
-                    <Edit3 className="h-4 w-4 text-green-600" />
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Current Field */}
-        <Card className="bg-white shadow-xl min-h-[600px] flex flex-col justify-center">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl flex items-center justify-center gap-3">
-              {currentField.icon}
-              {currentField.label}
-              {currentField.required && <span className="text-red-500">*</span>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col items-center space-y-4">
-              {currentField.type === 'textarea' ? (
-                <div className="w-full max-w-md space-y-4">
-                  <div className="flex gap-2 items-start">
-                    <Textarea
-                      value={currentField.value}
-                      onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
-                          e.preventDefault();
-                          handleNext();
-                        }
-                      }}
-                      placeholder={currentField.placeholder}
-                      rows={4}
-                      className="text-center text-lg flex-1"
-                    />
-                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <AudioRecorderN8n 
-                        key={currentField.id}
-                        onTranscription={(transcription, audioBlob) => {
-                          handleFieldUpdate(currentField.id, transcription);
-                          if (audioBlob) {
-                            setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
-                          }
-                        }}
-                        label={`${currentField.label} aufnehmen`}
-                        webhookUrl={n8nWebhookUrl}
-                        useN8n={true}
-                      />
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center space-y-4">
-                  <Input
-                    type="text"
-                    value={currentField.value}
-                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && currentField.value.trim()) {
-                        e.preventDefault();
-                        handleNext();
-                      }
-                    }}
-                    placeholder={currentField.placeholder}
-                    className="text-center text-xl max-w-md h-14"
-                    pattern={currentField.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
-                    inputMode={currentField.id === 'orderNumber' ? 'decimal' : 'numeric'}
-                  />
-                  
-                  {/* Touch Keypad - Always visible for non-textarea fields */}
-                  <TouchKeypad
-                    onInput={handleKeypadInput}
-                    onBackspace={handleKeypadBackspace}
-                    allowDecimal={currentField.id === 'orderNumber'}
-                    className="mt-4"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-4 pt-6">
-              {isLastStep ? (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !isFormComplete()}
-                  className={`px-8 py-3 text-lg transition-colors ${
-                    isFormComplete() 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                  size="lg"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Settings className="h-5 w-5 mr-2 animate-spin" />
-                      Wird gespeichert...
-                    </>
+        {/* All Fields - Always Visible */}
+        <div className="space-y-4">
+          {fields.map((field, index) => {
+            const isCurrentField = index === currentStep;
+            const isCompleted = field.completed;
+            
+            return (
+              <Card 
+                key={field.id}
+                className={`transition-all duration-300 ${
+                  isCurrentField 
+                    ? 'bg-white shadow-xl scale-105 border-2 border-blue-500' 
+                    : isCompleted 
+                      ? 'bg-green-50/80 backdrop-blur-sm border border-green-200 hover:bg-green-100/80 cursor-pointer' 
+                      : 'bg-white/60 backdrop-blur-sm border border-gray-200'
+                } ${isCurrentField ? 'min-h-[400px]' : 'min-h-[80px]'}`}
+                onClick={() => isCompleted && !isCurrentField ? handleFieldClick(index) : undefined}
+              >
+                <CardHeader className={`${isCurrentField ? 'text-center pb-6' : 'pb-2'}`}>
+                  <CardTitle className={`${isCurrentField ? 'text-2xl' : 'text-lg'} flex items-center ${isCurrentField ? 'justify-center' : 'justify-start'} gap-3`}>
+                    {field.icon}
+                    {field.label}
+                    {field.required && <span className="text-red-500">*</span>}
+                    {isCompleted && !isCurrentField && <Edit3 className="h-4 w-4 text-green-600 ml-auto" />}
+                  </CardTitle>
+                </CardHeader>
+                
+                <CardContent className={`${isCurrentField ? 'space-y-6 flex-1 flex flex-col justify-center' : ''}`}>
+                  {isCurrentField ? (
+                    // Current field - large input
+                    <div className="flex flex-col items-center space-y-4">
+                      {field.type === 'textarea' ? (
+                        <div className="w-full max-w-md space-y-4">
+                          <div className="flex gap-2 items-start">
+                            <Textarea
+                              value={field.value}
+                              onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.ctrlKey && field.value.trim()) {
+                                  e.preventDefault();
+                                  handleNext();
+                                }
+                              }}
+                              placeholder={field.placeholder}
+                              rows={4}
+                              className="text-center text-lg flex-1"
+                            />
+                            {(field.id === 'problemDescription' || field.id === 'correctiveAction') && (
+                              <AudioRecorderN8n 
+                                key={field.id}
+                                onTranscription={(transcription, audioBlob) => {
+                                  handleFieldUpdate(field.id, transcription);
+                                  if (audioBlob) {
+                                    setAudioFiles(prev => ({...prev, [field.id]: audioBlob}));
+                                  }
+                                }}
+                                label={`${field.label} aufnehmen`}
+                                webhookUrl={n8nWebhookUrl}
+                                useN8n={true}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-4">
+                          <Input
+                            type="text"
+                            value={field.value}
+                            onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && field.value.trim()) {
+                                e.preventDefault();
+                                handleNext();
+                              }
+                            }}
+                            placeholder={field.placeholder}
+                            className="text-center text-xl max-w-md h-14"
+                            pattern={field.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
+                            inputMode={field.id === 'orderNumber' ? 'decimal' : 'numeric'}
+                          />
+                          
+                          {/* Touch Keypad - Always visible for non-textarea fields */}
+                          <TouchKeypad
+                            onInput={handleKeypadInput}
+                            onBackspace={handleKeypadBackspace}
+                            allowDecimal={field.id === 'orderNumber'}
+                            className="mt-4"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Navigation buttons for current field */}
+                      <div className="flex justify-center gap-4 pt-6">
+                        {index === fields.length - 1 ? (
+                          <Button 
+                            onClick={handleSubmit}
+                            disabled={isSubmitting || !isFormComplete()}
+                            className={`px-8 py-3 text-lg transition-colors ${
+                              isFormComplete() 
+                                ? 'bg-green-600 hover:bg-green-700' 
+                                : 'bg-gray-400 cursor-not-allowed'
+                            }`}
+                            size="lg"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Settings className="h-5 w-5 mr-2 animate-spin" />
+                                Wird gespeichert...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-5 w-5 mr-2" />
+                                {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={handleNext}
+                            className="px-8 py-3 text-lg"
+                            size="lg"
+                          >
+                            Weiter
+                            <ArrowRight className="h-5 w-5 ml-2" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
-                    </>
+                    // Non-current field - small preview
+                    <div className="px-4 pb-4">
+                      {field.type === 'textarea' ? (
+                        field.value ? (
+                          <p className="text-sm text-gray-600 truncate">
+                            {field.value}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">
+                            {field.placeholder}
+                          </p>
+                        )
+                      ) : (
+                        field.value ? (
+                          <p className="text-lg font-medium text-gray-700">
+                            {field.value}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">
+                            {field.placeholder}
+                          </p>
+                        )
+                      )}
+                    </div>
                   )}
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleNext}
-                  className="px-8 py-3 text-lg"
-                  size="lg"
-                >
-                  Weiter
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
