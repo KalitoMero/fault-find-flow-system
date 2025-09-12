@@ -141,30 +141,9 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   // Load N8N webhook settings and listen for changes
   const loadN8nSettings = useCallback(() => {
-    const n8nEnabled = localStorage.getItem('n8n_webhook_enabled') === 'true';
     const n8nUrl = localStorage.getItem('n8n_webhook_url') || '';
-    
-    console.log('🔧 Loading N8N settings:', { 
-      n8nEnabled, 
-      n8nUrl, 
-      hasUrl: !!n8nUrl.trim(),
-      timestamp: new Date().toISOString()
-    });
-    
-    setUseN8nWebhook(n8nEnabled && n8nUrl.trim() !== '');
+    setUseN8nWebhook(true); // Always use N8N
     setN8nWebhookUrl(n8nUrl);
-    
-    // Add visible debugging to UI
-    if (n8nEnabled && n8nUrl.trim()) {
-      toast.success(`✅ N8N Integration aktiv: ${n8nUrl.substring(0, 50)}...`);
-      console.log('✅ Using AudioRecorderN8n');
-    } else if (n8nEnabled && !n8nUrl.trim()) {
-      toast.warning('⚠️ N8N aktiviert aber URL fehlt - verwende AudioRecorderSimple');
-      console.log('⚠️ N8N enabled but no URL - using AudioRecorderSimple');
-    } else {
-      toast.info('ℹ️ N8N deaktiviert - verwende AudioRecorderSimple');
-      console.log('ℹ️ N8N disabled - using AudioRecorderSimple');
-    }
   }, []);
 
   useEffect(() => {
@@ -172,9 +151,8 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
     // Listen for storage changes (when settings are updated in other components)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'n8n_webhook_enabled' || e.key === 'n8n_webhook_url') {
-        console.log('🔄 Storage change detected for N8N settings, reloading...');
-        setTimeout(loadN8nSettings, 100); // Small delay to ensure both values are updated
+      if (e.key === 'n8n_webhook_url') {
+        setTimeout(loadN8nSettings, 100);
       }
     };
 
@@ -698,25 +676,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     rows={4}
                   />
                 </div>
-                {useN8nWebhook && n8nWebhookUrl ? (
-                  <AudioRecorderN8n 
-                    onTranscription={(transcription, audioBlob) => {
-                      setProblemDescription(transcription);
-                      setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
-                    }}
-                    label="Problembeschreibung aufnehmen"
-                    webhookUrl={n8nWebhookUrl}
-                    useN8n={useN8nWebhook}
-                  />
-                ) : (
-                  <AudioRecorderSimple 
-                    onTranscription={(transcription, audioBlob) => {
-                      setProblemDescription(transcription);
-                      setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
-                    }}
-                    label="Problembeschreibung aufnehmen"
-                  />
-                )}
+                <AudioRecorderN8n 
+                  onTranscription={(transcription, audioBlob) => {
+                    setProblemDescription(transcription);
+                    setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+                  }}
+                  label="Problembeschreibung aufnehmen"
+                  webhookUrl={n8nWebhookUrl}
+                  useN8n={true}
+                />
               </div>
             </div>
 
@@ -732,25 +700,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     rows={4}
                   />
                 </div>
-                {useN8nWebhook && n8nWebhookUrl ? (
-                  <AudioRecorderN8n 
-                    onTranscription={(transcription, audioBlob) => {
-                      setCorrectiveAction(transcription);
-                      setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
-                    }}
-                    label="Korrekturmaßnahme aufnehmen"
-                    webhookUrl={n8nWebhookUrl}
-                    useN8n={useN8nWebhook}
-                  />
-                ) : (
-                  <AudioRecorderSimple 
-                    onTranscription={(transcription, audioBlob) => {
-                      setCorrectiveAction(transcription);
-                      setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
-                    }}
-                    label="Korrekturmaßnahme aufnehmen"
-                  />
-                )}
+                <AudioRecorderN8n 
+                  onTranscription={(transcription, audioBlob) => {
+                    setCorrectiveAction(transcription);
+                    setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+                  }}
+                  label="Korrekturmaßnahme aufnehmen"
+                  webhookUrl={n8nWebhookUrl}
+                  useN8n={true}
+                />
               </div>
             </div>
           </CardContent>

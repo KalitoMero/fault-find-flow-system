@@ -44,13 +44,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
   
-  // N8N Settings State
-  const [n8nEnabled, setN8nEnabled] = useState(false);
+  // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
-  
-  // Debug State
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [debugOverrideN8n, setDebugOverrideN8n] = useState<boolean | null>(null);
 
   // Auto-focus the first input field
   useEffect(() => {
@@ -136,28 +131,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Load N8N settings on component mount
   const loadN8nSettings = useCallback(() => {
     try {
-      const enabled = localStorage.getItem('n8n_enabled') === 'true';
       const url = localStorage.getItem('n8n_webhook_url') || '';
-      
-      // Enhanced debug logging
-      const timestamp = new Date().toLocaleTimeString();
-      console.log(`🔧 [${timestamp}] StepByStepForm - Loading N8N settings:`, { 
-        enabled, 
-        url: url ? `[URL: ${url.substring(0, 20)}...]` : '[NO URL]',
-        localStorage_enabled: localStorage.getItem('n8n_enabled'),
-        localStorage_url: localStorage.getItem('n8n_webhook_url')
-      });
-      
-      setN8nEnabled(enabled);
       setN8nWebhookUrl(url);
-      
-      if (enabled && url) {
-        console.log(`✅ [${timestamp}] StepByStepForm - N8N integration ACTIVATED`);
-      } else if (enabled && !url) {
-        console.log(`⚠️ [${timestamp}] StepByStepForm - N8N enabled but URL missing`);
-      } else {
-        console.log(`ℹ️ [${timestamp}] StepByStepForm - N8N integration DISABLED`);
-      }
+      console.log(`✅ N8N integration ACTIVATED (always on)`);
     } catch (error) {
       console.error('❌ StepByStepForm - Error loading N8N settings:', error);
     }
@@ -634,115 +610,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         </Button>
       </div>
 
-      {/* Debug Panel Toggle - Fixed top right */}
-      <div className="fixed top-4 right-4 z-10">
-        <Button 
-          onClick={() => setShowDebugPanel(!showDebugPanel)}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <Settings className="h-4 w-4" />
-          Debug N8N
-        </Button>
-      </div>
-
-      {/* Debug Panel */}
-      {showDebugPanel && (
-        <div className="fixed top-16 right-4 z-20 bg-white border rounded-lg shadow-lg p-4 max-w-md">
-          <div className="space-y-3">
-            <h3 className="font-bold text-sm">N8N Debug Panel</h3>
-            
-            {/* Current Status */}
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span>N8N Enabled:</span>
-                <span className={n8nEnabled ? 'text-green-600' : 'text-red-600'}>
-                  {n8nEnabled ? '✅ Ja' : '❌ Nein'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Webhook URL:</span>
-                <span className={n8nWebhookUrl ? 'text-green-600' : 'text-red-600'}>
-                  {n8nWebhookUrl ? '✅ Set' : '❌ Empty'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Audio Recorder:</span>
-                <span className="font-mono">
-                  {(debugOverrideN8n !== null ? debugOverrideN8n : (n8nEnabled && n8nWebhookUrl)) ? 'N8N' : 'Simple'}
-                </span>
-              </div>
-            </div>
-
-            {/* localStorage Values */}
-            <div className="border-t pt-2">
-              <div className="text-xs font-semibold mb-1">localStorage:</div>
-              <div className="text-xs space-y-1">
-                <div>n8n_enabled: <code>{localStorage.getItem('n8n_enabled') || 'null'}</code></div>
-                <div>n8n_webhook_url: <code>{localStorage.getItem('n8n_webhook_url')?.substring(0, 30) || 'null'}</code></div>
-              </div>
-            </div>
-
-            {/* Manual Override */}
-            <div className="border-t pt-2">
-              <div className="text-xs font-semibold mb-2">Manual Override:</div>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant={debugOverrideN8n === true ? "default" : "outline"}
-                  onClick={() => setDebugOverrideN8n(true)}
-                  className="text-xs px-2 py-1"
-                >
-                  Force N8N
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant={debugOverrideN8n === false ? "default" : "outline"}
-                  onClick={() => setDebugOverrideN8n(false)}
-                  className="text-xs px-2 py-1"
-                >
-                  Force Simple
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant={debugOverrideN8n === null ? "default" : "outline"}
-                  onClick={() => setDebugOverrideN8n(null)}
-                  className="text-xs px-2 py-1"
-                >
-                  Auto
-                </Button>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="border-t pt-2">
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={loadN8nSettings}
-                  className="text-xs px-2 py-1"
-                >
-                  Reload Settings
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => {
-                    console.log('🔧 Manual localStorage dump:', {
-                      n8n_enabled: localStorage.getItem('n8n_enabled'),
-                      n8n_webhook_url: localStorage.getItem('n8n_webhook_url'),
-                      all_keys: Object.keys(localStorage).filter(k => k.includes('n8n'))
-                    });
-                  }}
-                  className="text-xs px-2 py-1"
-                >
-                  Log Storage
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-4xl mx-auto space-y-4">
 
@@ -853,46 +720,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       rows={4}
                       className="text-center text-lg flex-1"
                     />
-                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (() => {
-                      // Enhanced decision logic with debug override - N8N always forced
-                      const shouldUseN8n = true; // Always use N8N
-                      const timestamp = new Date().toLocaleTimeString();
-                      
-                      console.log(`🎙️ [${timestamp}] StepByStepForm - Audio recorder decision:`, {
-                        field: currentField.id,
-                        n8nEnabled,
-                        n8nWebhookUrl: n8nWebhookUrl ? '[SET]' : '[EMPTY]',
-                        debugOverrideN8n,
-                        shouldUseN8n,
-                        recorder: shouldUseN8n ? 'AudioRecorderN8n' : 'AudioRecorderSimple'
-                      });
-                      
-                      return shouldUseN8n ? (
-                        <AudioRecorderN8n 
-                          key={currentField.id}
-                          onTranscription={(transcription, audioBlob) => {
-                            console.log(`🎙️ [${timestamp}] StepByStepForm - N8N transcription received:`, transcription.length, 'chars');
-                            handleFieldUpdate(currentField.id, transcription);
-                            if (audioBlob) {
-                              setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
-                            }
-                          }}
-                          label={`${currentField.label} mit N8N aufnehmen`}
-                          webhookUrl={n8nWebhookUrl}
-                          useN8n={true}
-                        />
-                      ) : (
-                        <AudioRecorderSimple 
-                          key={currentField.id}
-                          onTranscription={(transcription, audioBlob) => {
-                            console.log(`🎙️ [${timestamp}] StepByStepForm - Simple transcription received:`, transcription.length, 'chars');
-                            handleFieldUpdate(currentField.id, transcription);
+                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
+                      <AudioRecorderN8n 
+                        key={currentField.id}
+                        onTranscription={(transcription, audioBlob) => {
+                          handleFieldUpdate(currentField.id, transcription);
+                          if (audioBlob) {
                             setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
-                          }}
-                          label={`${currentField.label} aufnehmen`}
-                        />
-                      );
-                    })()}
+                          }
+                        }}
+                        label={`${currentField.label} aufnehmen`}
+                        webhookUrl={n8nWebhookUrl}
+                        useN8n={true}
+                      />
+                    )}
                   </div>
                 </div>
               ) : (
