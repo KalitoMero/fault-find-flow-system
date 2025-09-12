@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, MapPin } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
@@ -610,90 +610,70 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         </Button>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-4 pt-16">
-        {/* Excel Status Info */}
-        {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                  {excelDepartment && (
-                    <div>
-                      <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
-                    </div>
-                  )}
-                  {assignedTeamLeader !== 'System' && (
-                    <div>
-                      <span className="text-blue-600">Teamleiter:</span> <span className="font-medium">{getTeamLeaderDisplayName(assignedTeamLeader)}</span>
-                    </div>
-                  )}
-                  {additionalExcelData.Artikelnummer && (
-                    <div>
-                      <span className="text-blue-600">Artikelnummer:</span> <span className="font-medium">{additionalExcelData.Artikelnummer}</span>
-                    </div>
-                  )}
-                  {additionalExcelData.Artikelbezeichnung && (
-                    <div>
-                      <span className="text-blue-600">Artikelbezeichnung:</span> <span className="font-medium">{additionalExcelData.Artikelbezeichnung}</span>
-                    </div>
-                  )}
-                  {Object.entries(additionalExcelData).filter(([key]) => key !== 'Artikelnummer' && key !== 'Artikelbezeichnung').map(([key, value]) => (
-                    <div key={key}>
-                      <span className="text-blue-600">{key}:</span> <span className="font-medium">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* All Fields - Always Visible */}
-        <div className="space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
+
+        {/* All Fields Display */}
+        <div className="space-y-6">
           {fields.map((field, index) => {
             const isCurrentField = index === currentStep;
             const isCompleted = field.completed;
+            const fieldValue = field.value;
             
             return (
               <Card 
                 key={field.id}
-                className={`transition-all duration-300 ${
+                className={`transition-all duration-300 cursor-pointer ${
                   isCurrentField 
-                    ? 'bg-white shadow-xl scale-105 border-2 border-blue-500' 
-                    : isCompleted 
-                      ? 'bg-green-50/80 backdrop-blur-sm border border-green-200 hover:bg-green-100/80 cursor-pointer' 
-                      : 'bg-white/60 backdrop-blur-sm border border-gray-200'
-                } ${isCurrentField ? 'min-h-[400px]' : 'min-h-[80px]'}`}
-                onClick={() => isCompleted && !isCurrentField ? handleFieldClick(index) : undefined}
+                    ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary border-2 shadow-xl scale-105 transform'
+                    : isCompleted
+                      ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                }`}
+                onClick={() => !isCurrentField && isCompleted && handleFieldClick(index)}
               >
-                <CardHeader className={`${isCurrentField ? 'text-center pb-6' : 'pb-2'}`}>
-                  <CardTitle className={`${isCurrentField ? 'text-2xl' : 'text-lg'} flex items-center ${isCurrentField ? 'justify-center' : 'justify-start'} gap-3`}>
-                    {field.icon}
+                <CardHeader className="pb-4">
+                  <CardTitle className={`flex items-center justify-center gap-3 transition-all duration-300 ${
+                    isCurrentField 
+                      ? 'text-2xl text-primary'
+                      : isCompleted
+                        ? 'text-lg text-green-700'
+                        : 'text-lg text-gray-600'
+                  }`}>
+                    <div className={`transition-all duration-300 ${
+                      isCurrentField ? 'scale-125' : 'scale-100'
+                    }`}>
+                      {field.icon}
+                    </div>
                     {field.label}
                     {field.required && <span className="text-red-500">*</span>}
-                    {isCompleted && !isCurrentField && <Edit3 className="h-4 w-4 text-green-600 ml-auto" />}
+                    {isCompleted && !isCurrentField && (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    )}
                   </CardTitle>
                 </CardHeader>
                 
-                <CardContent className={`${isCurrentField ? 'space-y-6 flex-1 flex flex-col justify-center' : ''}`}>
+                <CardContent className={`transition-all duration-300 ${
+                  isCurrentField ? 'pb-8' : 'pb-4'
+                }`}>
                   {isCurrentField ? (
-                    // Current field - large input
-                    <div className="flex flex-col items-center space-y-4">
+                    // Active field - full input interface
+                    <div className="space-y-6">
                       {field.type === 'textarea' ? (
-                        <div className="w-full max-w-md space-y-4">
+                        <div className="space-y-4">
                           <div className="flex gap-2 items-start">
                             <Textarea
-                              value={field.value}
+                              value={fieldValue}
                               onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.ctrlKey && field.value.trim()) {
+                                if (e.key === 'Enter' && e.ctrlKey && fieldValue.trim()) {
                                   e.preventDefault();
                                   handleNext();
                                 }
                               }}
                               placeholder={field.placeholder}
                               rows={4}
-                              className="text-center text-lg flex-1"
+                              className="text-center text-lg flex-1 border-primary/50 focus:border-primary"
                             />
                             {(field.id === 'problemDescription' || field.id === 'correctiveAction') && (
                               <AudioRecorderN8n 
@@ -712,24 +692,24 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center space-y-4">
+                        <div className="space-y-4">
                           <Input
                             type="text"
-                            value={field.value}
+                            value={fieldValue}
                             onChange={(e) => handleFieldUpdate(field.id, e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && field.value.trim()) {
+                              if (e.key === 'Enter' && fieldValue.trim()) {
                                 e.preventDefault();
                                 handleNext();
                               }
                             }}
                             placeholder={field.placeholder}
-                            className="text-center text-xl max-w-md h-14"
+                            className="text-center text-xl h-14 border-primary/50 focus:border-primary"
                             pattern={field.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
                             inputMode={field.id === 'orderNumber' ? 'decimal' : 'numeric'}
                           />
                           
-                          {/* Touch Keypad - Always visible for non-textarea fields */}
+                          {/* Touch Keypad for active numeric fields */}
                           <TouchKeypad
                             onInput={handleKeypadInput}
                             onBackspace={handleKeypadBackspace}
@@ -739,8 +719,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         </div>
                       )}
                       
-                      {/* Navigation buttons for current field */}
-                      <div className="flex justify-center gap-4 pt-6">
+                      {/* Navigation buttons for active field */}
+                      <div className="flex justify-center gap-4 pt-4">
                         {index === fields.length - 1 ? (
                           <Button 
                             onClick={handleSubmit}
@@ -767,7 +747,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         ) : (
                           <Button 
                             onClick={handleNext}
-                            className="px-8 py-3 text-lg"
+                            className="px-8 py-3 text-lg gradient-button"
                             size="lg"
                           >
                             Weiter
@@ -777,28 +757,33 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       </div>
                     </div>
                   ) : (
-                    // Non-current field - small preview
-                    <div className="px-4 pb-4">
-                      {field.type === 'textarea' ? (
-                        field.value ? (
-                          <p className="text-sm text-gray-600 truncate">
-                            {field.value}
+                    // Completed or inactive field - show preview
+                    <div className="text-center">
+                      {fieldValue ? (
+                        <div className={`p-3 rounded-lg ${
+                          isCompleted 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          <p className={`${field.type === 'textarea' ? 'whitespace-pre-wrap' : ''} ${
+                            field.type === 'textarea' ? 'text-sm' : 'text-lg font-medium'
+                          }`}>
+                            {field.type === 'textarea' && fieldValue.length > 100 
+                              ? `${fieldValue.substring(0, 100)}...`
+                              : fieldValue
+                            }
                           </p>
-                        ) : (
-                          <p className="text-sm text-gray-400 italic">
-                            {field.placeholder}
-                          </p>
-                        )
+                        </div>
                       ) : (
-                        field.value ? (
-                          <p className="text-lg font-medium text-gray-700">
-                            {field.value}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-gray-400 italic">
-                            {field.placeholder}
-                          </p>
-                        )
+                        <div className="p-3 bg-gray-50 text-gray-500 rounded-lg">
+                          <p className="text-sm italic">{field.placeholder}</p>
+                        </div>
+                      )}
+                      {isCompleted && !isCurrentField && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center justify-center gap-1">
+                          <Edit3 className="h-3 w-3" />
+                          Klicken zum Bearbeiten
+                        </p>
                       )}
                     </div>
                   )}
