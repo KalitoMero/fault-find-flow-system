@@ -19,7 +19,8 @@ import {
   Sparkles,
   Building2,
   Edit,
-  Send
+  Send,
+  Check
 } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
@@ -128,6 +129,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [showReview, setShowReview] = useState(false);
   const [useN8nWebhook, setUseN8nWebhook] = useState(false);
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  
+  // Step tracking
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  const steps = [
+    { id: 1, title: 'Grunddaten', icon: Package, description: 'Auftrag & Menge' },
+    { id: 2, title: 'Zuordnung', icon: Users, description: 'Abteilung & Ersteller' },
+    { id: 3, title: 'Beschreibung', icon: FileText, description: 'Problem & Lösung' }
+  ];
 
   // Load N8N webhook settings and listen for changes
   const loadN8nSettings = useCallback(() => {
@@ -216,6 +226,23 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
              selectedDepartment && 
              selectedEmployee);
   }, [orderNumber, afoNumber, defectiveQuantity, problemDescription, selectedDepartment, selectedEmployee]);
+
+  // Determine current step based on filled fields
+  useEffect(() => {
+    if (orderNumber && afoNumber && defectiveQuantity) {
+      if (selectedDepartment && selectedEmployee) {
+        if (problemDescription) {
+          setCurrentStep(3);
+        } else {
+          setCurrentStep(3);
+        }
+      } else {
+        setCurrentStep(2);
+      }
+    } else {
+      setCurrentStep(1);
+    }
+  }, [orderNumber, afoNumber, defectiveQuantity, selectedDepartment, selectedEmployee, problemDescription]);
 
   // Handle order number change with parsing
   const handleOrderNumberChange = useCallback((value: string) => {
@@ -475,12 +502,69 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
 
   return (
     <div className="animate-fade-in space-y-8">
+      {/* Step Indicator */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+              
+              return (
+                <React.Fragment key={step.id}>
+                  <div className={`flex flex-col items-center transition-all duration-300 ${
+                    isActive ? 'transform scale-110' : ''
+                  }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-primary text-white shadow-lg scale-110' 
+                        : isCompleted 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-white border-2 border-gray-300 text-gray-400'
+                    }`}>
+                      {isCompleted ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <Icon className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <div className={`font-medium transition-colors duration-300 ${
+                        isActive ? 'text-primary text-lg' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {step.title}
+                      </div>
+                      <div className={`text-xs transition-colors duration-300 ${
+                        isActive ? 'text-primary/70' : 'text-gray-400'
+                      }`}>
+                        {step.description}
+                      </div>
+                    </div>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${
+                      currentStep > step.id ? 'bg-green-500' : 'bg-gray-300'
+                    }`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-8">
         {/* Grunddaten */}
-        <Card className="form-section">
+        <Card className={`transition-all duration-300 ${
+          currentStep === 1 
+            ? 'form-section-active ring-2 ring-primary/20 shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-primary/10' 
+            : 'form-section'
+        }`}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <CardTitle className={`flex items-center gap-2 text-xl transition-colors duration-300 ${
+              currentStep === 1 ? 'text-primary' : ''
+            }`}>
               <Package className="h-5 w-5 text-primary" />
               Grunddaten
             </CardTitle>
@@ -521,9 +605,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         </Card>
 
         {/* Zuordnung */}
-        <Card className="form-section">
+        <Card className={`transition-all duration-300 ${
+          currentStep === 2 
+            ? 'form-section-active ring-2 ring-primary/20 shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-primary/10' 
+            : 'form-section'
+        }`}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <CardTitle className={`flex items-center gap-2 text-xl transition-colors duration-300 ${
+              currentStep === 2 ? 'text-primary' : ''
+            }`}>
               <Users className="h-5 w-5 text-primary" />
               Zuordnung
             </CardTitle>
@@ -582,9 +672,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         </Card>
 
         {/* Beschreibung */}
-        <Card className="form-section">
+        <Card className={`transition-all duration-300 ${
+          currentStep === 3 
+            ? 'form-section-active ring-2 ring-primary/20 shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-primary/10' 
+            : 'form-section'
+        }`}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <CardTitle className={`flex items-center gap-2 text-xl transition-colors duration-300 ${
+              currentStep === 3 ? 'text-primary' : ''
+            }`}>
               <FileText className="h-5 w-5 text-primary" />
               Beschreibung
             </CardTitle>
