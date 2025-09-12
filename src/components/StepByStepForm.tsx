@@ -694,52 +694,54 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 })}
               </div>
               
-              {/* Text areas full width */}
-              {fields.filter(f => f.type === 'textarea').map((field, index) => {
-                const fieldIndex = fields.findIndex(f => f.id === field.id);
-                const isCurrentField = fieldIndex === currentStep;
-                const isCompleted = field.completed;
-                const isEmpty = !field.value;
-                
-                return (
-                  <div
-                    key={field.id}
-                    onClick={() => isCompleted ? handleFieldClick(fieldIndex) : undefined}
-                    className={`
-                      flex items-start gap-3 rounded-lg transition-all duration-300 ${
-                        isCurrentField 
-                          ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg scale-[1.02] cursor-default' 
-                          : isCompleted
-                          ? 'p-3 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
-                          : 'p-3 bg-gray-50 border border-gray-200'
-                      }
-                    `}
-                  >
-                    <div className={`${isCurrentField ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
-                      {field.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${
-                        isCurrentField ? 'text-blue-800' : isCompleted ? 'text-green-800' : 'text-gray-500'
-                      }`}>
-                        {field.label}
-                      </p>
-                      <div className={`text-sm ${
-                        isCurrentField ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400'
-                      }`}>
-                        {field.value ? (
-                          <p className="whitespace-pre-wrap break-words">{field.value}</p>
-                        ) : (
-                          <p>Nicht ausgefüllt</p>
-                        )}
+              {/* Text areas in two columns */}
+              <div className="grid grid-cols-2 gap-3">
+                {fields.filter(f => f.type === 'textarea').map((field, index) => {
+                  const fieldIndex = fields.findIndex(f => f.id === field.id);
+                  const isCurrentField = fieldIndex === currentStep;
+                  const isCompleted = field.completed;
+                  const isEmpty = !field.value;
+                  
+                  return (
+                    <div
+                      key={field.id}
+                      onClick={() => isCompleted ? handleFieldClick(fieldIndex) : undefined}
+                      className={`
+                        flex items-start gap-3 rounded-lg transition-all duration-300 ${
+                          isCurrentField 
+                            ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg scale-[1.02] cursor-default' 
+                            : isCompleted
+                            ? 'p-3 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
+                            : 'p-3 bg-gray-50 border border-gray-200'
+                        }
+                      `}
+                    >
+                      <div className={`${isCurrentField ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                        {field.icon}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${
+                          isCurrentField ? 'text-blue-800' : isCompleted ? 'text-green-800' : 'text-gray-500'
+                        }`}>
+                          {field.label}
+                        </p>
+                        <div className={`text-sm ${
+                          isCurrentField ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                        }`}>
+                          {field.value ? (
+                            <p className="truncate">{field.value}</p>
+                          ) : (
+                            <p>Nicht ausgefüllt</p>
+                          )}
+                        </div>
+                      </div>
+                      {isCompleted && !isCurrentField && (
+                        <Edit3 className="h-4 w-4 text-green-600" />
+                      )}
                     </div>
-                    {isCompleted && !isCurrentField && (
-                      <Edit3 className="h-4 w-4 text-green-600" />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
