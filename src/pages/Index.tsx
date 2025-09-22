@@ -410,6 +410,29 @@ const Index = () => {
                 </CardDescription>
                 {user.role === 'teamleader' && (
                   <div className="flex flex-col space-y-4 mt-4">
+                    {/* Sortierungsoptionen */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">Sortieren nach:</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleSort('date')}
+                        className={sortBy === 'date' ? 'bg-gray-100' : ''}
+                      >
+                        <ArrowUpDown className="h-4 w-4 mr-1" />
+                        Datum {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleSort('orderNumber')}
+                        className={sortBy === 'orderNumber' ? 'bg-gray-100' : ''}
+                      >
+                        <ArrowUpDown className="h-4 w-4 mr-1" />
+                        Auftragsnummer {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </Button>
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button
                         variant={searchType === 'orderNumber' ? 'default' : 'outline'}
@@ -447,29 +470,6 @@ const Index = () => {
                           <SelectItem value="rejected">Abgelehnt</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    
-                    {/* Sortierungsoptionen */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">Sortieren nach:</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleSort('date')}
-                        className={sortBy === 'date' ? 'bg-gray-100' : ''}
-                      >
-                        <ArrowUpDown className="h-4 w-4 mr-1" />
-                        Datum {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleSort('orderNumber')}
-                        className={sortBy === 'orderNumber' ? 'bg-gray-100' : ''}
-                      >
-                        <ArrowUpDown className="h-4 w-4 mr-1" />
-                        Auftragsnummer {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </Button>
                     </div>
                   </div>
                 )}
