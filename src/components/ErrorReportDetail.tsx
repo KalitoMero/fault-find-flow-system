@@ -325,7 +325,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">Fehlermenge:</span>
-                  <span className="font-medium">{report.defectiveQuantity}</span>
+                  <span className="font-medium">{report.defectiveQuantity} ({report.quantityType || 'Ausschussmenge'})</span>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">

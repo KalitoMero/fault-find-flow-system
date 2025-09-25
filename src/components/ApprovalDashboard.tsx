@@ -139,7 +139,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                 <Package className="h-5 w-5 text-red-600" />
                 <div>
                   <p className="font-medium text-red-800">
-                    Beanstandete Menge: {report.defectiveQuantity} von {report.totalDefectiveQuantity}
+                    {report.quantityType || 'Beanstandete Menge'}: {report.defectiveQuantity} von {report.totalDefectiveQuantity}
                   </p>
                 </div>
               </div>
@@ -185,11 +185,11 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                              <p className="text-gray-700 text-sm">{selectedReport.afoNumber}</p>
                            </div>
                            <div className="flex-1">
-                             <label className="font-medium text-sm">Beanstandete Menge:</label>
+                             <label className="font-medium text-sm">{selectedReport.quantityType || 'Beanstandete Menge'}:</label>
                              <p className="text-gray-700 text-sm">{selectedReport.defectiveQuantity}</p>
                            </div>
                            <div className="flex-1">
-                             <label className="font-medium text-sm">Gesamt beanstandet:</label>
+                             <label className="font-medium text-sm">Gesamt {selectedReport.quantityType?.toLowerCase() || 'beanstandet'}:</label>
                              <p className="text-gray-700 text-sm">{selectedReport.totalDefectiveQuantity}</p>
                            </div>
                            <div className="flex-1">

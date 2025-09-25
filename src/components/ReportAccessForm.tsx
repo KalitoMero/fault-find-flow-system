@@ -203,7 +203,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground">
-                      Menge: {report.defectiveQuantity}/{report.totalDefectiveQuantity} | {formatDate(report.createdAt)}
+                      {report.quantityType || 'Menge'}: {report.defectiveQuantity}/{report.totalDefectiveQuantity} | {formatDate(report.createdAt)}
                     </p>
                   </div>
                 </div>
