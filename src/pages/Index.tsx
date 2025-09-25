@@ -471,7 +471,7 @@ const Index = () => {
                           Alle
                         </Button>
                         <Button
-                          variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                          variant={statusFilter === 'pending' ? 'destructive' : 'outline'}
                           onClick={() => setStatusFilter('pending')}
                           size="sm"
                           className="w-20"
@@ -482,7 +482,7 @@ const Index = () => {
                           variant={statusFilter === 'approved' ? 'default' : 'outline'}
                           onClick={() => setStatusFilter('approved')}
                           size="sm"
-                          className="w-24"
+                          className={`w-24 ${statusFilter === 'approved' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                         >
                           Freigegeben
                         </Button>
