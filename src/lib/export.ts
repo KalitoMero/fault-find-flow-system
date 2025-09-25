@@ -137,8 +137,7 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean, reports: Erro
   if (fields.quantities) {
     headers.push(
       'Mengentyp',
-      'Beanstandete Menge',
-      'Gesamt beanstandete Menge'
+      'Menge'
     );
   }
 
@@ -315,8 +314,7 @@ const buildDataRows = (
     if (fields.quantities) {
       row.push(
         report.quantityType || 'Ausschussmenge',
-        report.defectiveQuantity,
-        report.totalDefectiveQuantity
+        report.defectiveQuantity
       );
     }
 
@@ -360,7 +358,7 @@ const buildDataRows = (
       additionalHeaders.splice(0, 4); // Remove basic info headers (4 instead of 5)
     }
     if (fields.quantities) {
-      additionalHeaders.splice(0, 3); // Remove quantity headers
+      additionalHeaders.splice(0, 2); // Remove quantity headers (2 instead of 3)
     }
     if (fields.descriptions) {
       additionalHeaders.splice(0, 2); // Remove description headers
@@ -562,8 +560,7 @@ const buildCSVContent = (
     if (fields.quantities) {
       row.push(
         escapeCsvValue(report.quantityType || 'Ausschussmenge'),
-        escapeCsvValue(report.defectiveQuantity),
-        escapeCsvValue(report.totalDefectiveQuantity)
+        escapeCsvValue(report.defectiveQuantity)
       );
     }
 
@@ -607,7 +604,7 @@ const buildCSVContent = (
       additionalHeaders.splice(0, 4); // Remove basic info headers (4 instead of 5)
     }
     if (fields.quantities) {
-      additionalHeaders.splice(0, 3); // Remove quantity headers
+      additionalHeaders.splice(0, 2); // Remove quantity headers (2 instead of 3)
     }
     if (fields.descriptions) {
       additionalHeaders.splice(0, 2); // Remove description headers
