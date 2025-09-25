@@ -23,12 +23,13 @@ interface FormField {
   id: string;
   label: string;
   value: string;
-  type: 'text' | 'number' | 'textarea' | 'select';
+  type: 'text' | 'number' | 'textarea' | 'select' | 'quantity';
   required: boolean;
   completed: boolean;
   icon: React.ReactNode;
   placeholder: string;
   options?: { value: string; label: string }[];
+  quantityType?: string; // For storing the selected quantity type
 }
 
 const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClose }) => {
@@ -99,28 +100,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       placeholder: 'Personalnummer'
     },
     {
-      id: 'quantityType',
-      label: 'Mengentyp',
+      id: 'defectiveQuantity',
+      label: 'Ausschussmenge',
       value: '',
-      type: 'select',
+      type: 'quantity',
       required: true,
       completed: false,
       icon: <Package className="h-4 w-4" />,
-      placeholder: 'Wählen Sie eine Option',
+      placeholder: 'Anzahl eingeben',
       options: [
         { value: 'Ausschussmenge', label: 'Ausschussmenge' },
         { value: 'Bearbeitungsmenge', label: 'Bearbeitungsmenge' }
-      ]
-    },
-    {
-      id: 'defectiveQuantity',
-      label: 'Anzahl',
-      value: '',
-      type: 'text',
-      required: true,
-      completed: false,
-      icon: <Hash className="h-4 w-4" />,
-      placeholder: 'Anzahl eingeben'
+      ],
+      quantityType: 'Ausschussmenge'
     },
     {
       id: 'problemDescription',
@@ -358,6 +350,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     return requiredFields.every(f => f.value.trim().length > 0);
   }, [fields]);
 
+  const handleQuantityTypeUpdate = useCallback((fieldId: string, quantityType: string) => {
+    setFields(prev => prev.map(field => {
+      if (field.id === fieldId) {
+        return { ...field, quantityType };
+      }
+      return field;
+    }));
+  }, []);
+
   const handleFieldUpdate = useCallback((fieldId: string, value: string) => {
     console.log('handleFieldUpdate called:', fieldId, value);
     setFields(prev => prev.map(field => {
@@ -478,7 +479,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
-        quantityType: fields.find(f => f.id === 'quantityType')?.value || 'Ausschussmenge', // Store the type selection
+        quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
         creator: fields.find(f => f.id === 'personalNumber')?.value || '',
         personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,
@@ -823,6 +824,51 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              ) : currentField.type === 'quantity' ? (
+                <div className="flex flex-col items-center space-y-4">
+                  {/* Dropdown for quantity type */}
+                  <Select 
+                    value={currentField.quantityType || 'Ausschussmenge'} 
+                    onValueChange={(value) => handleQuantityTypeUpdate(currentField.id, value)}
+                  >
+                    <SelectTrigger className="text-center text-lg max-w-md h-12 bg-gray-100">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                      {currentField.options?.map((option) => (
+                        <SelectItem key={option.value} value={option.value} className="hover:bg-gray-100">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Input field for quantity */}
+                  <Input
+                    type="text"
+                    value={currentField.value}
+                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && currentField.value.trim()) {
+                        e.preventDefault();
+                        handleNext();
+                      }
+                    }}
+                    placeholder={currentField.placeholder}
+                    className="text-center text-xl max-w-md h-14"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                  />
+                  
+                  {/* Touch Keypad for quantity input */}
+                  <div className="w-full max-w-xs">
+                    <TouchKeypad
+                      onInput={handleKeypadInput}
+                      onBackspace={handleKeypadBackspace}
+                      allowDecimal={false}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4">
