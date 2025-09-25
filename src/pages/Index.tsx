@@ -433,45 +433,59 @@ const Index = () => {
                       </Button>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        variant={searchType === 'orderNumber' ? 'default' : 'outline'}
-                        onClick={() => setSearchType('orderNumber')}
-                        size="sm"
-                        className="w-16"
-                      >
-                        PBA
-                      </Button>
-                      <Button
-                        variant={searchType === 'articleNumber' ? 'default' : 'outline'}
-                        onClick={() => setSearchType('articleNumber')}
-                        size="sm"
-                        className="w-16"
-                      >
-                        SA
-                      </Button>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2 flex-1">
-                        <Search className="h-4 w-4 text-gray-500" />
-                        <Input
-                          placeholder={searchType === 'orderNumber' ? 'Nach PBA suchen...' : 'Nach SA suchen...'}
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="flex-1"
-                        />
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <Button
+                          variant={searchType === 'orderNumber' ? 'default' : 'outline'}
+                          onClick={() => setSearchType('orderNumber')}
+                          size="sm"
+                          className="w-16"
+                        >
+                          PBA
+                        </Button>
+                        <Button
+                          variant={searchType === 'articleNumber' ? 'default' : 'outline'}
+                          onClick={() => setSearchType('articleNumber')}
+                          size="sm"
+                          className="w-16"
+                        >
+                          SA
+                        </Button>
                       </div>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Status filtern" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Alle Status</SelectItem>
-                          <SelectItem value="pending">Zur Prüfung</SelectItem>
-                          <SelectItem value="approved">Freigegeben</SelectItem>
-                          <SelectItem value="rejected">Abgelehnt</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={statusFilter === 'all' ? 'default' : 'outline'}
+                          onClick={() => setStatusFilter('all')}
+                          size="sm"
+                          className="w-16"
+                        >
+                          Alle
+                        </Button>
+                        <Button
+                          variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                          onClick={() => setStatusFilter('pending')}
+                          size="sm"
+                          className="w-20"
+                        >
+                          Prüfung
+                        </Button>
+                        <Button
+                          variant={statusFilter === 'approved' ? 'default' : 'outline'}
+                          onClick={() => setStatusFilter('approved')}
+                          size="sm"
+                          className="w-24"
+                        >
+                          Freigegeben
+                        </Button>
+                        <Button
+                          variant={statusFilter === 'rejected' ? 'default' : 'outline'}
+                          onClick={() => setStatusFilter('rejected')}
+                          size="sm"
+                          className="w-20"
+                        >
+                          Abgelehnt
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
