@@ -344,7 +344,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                   <span className="font-medium">{report.creator}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="defectiveQuantity" className="text-sm text-gray-600">Fehlermenge:</Label>
+                  <Label htmlFor="defectiveQuantity" className="text-sm text-gray-600">{report.quantityType || 'Fehlermenge'}:</Label>
                   <Input
                     id="defectiveQuantity"
                     type="number"
