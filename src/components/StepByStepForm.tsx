@@ -770,7 +770,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         }
                       }}
                       placeholder={currentField.placeholder}
-                      rows={4}
+                      rows={8}
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
