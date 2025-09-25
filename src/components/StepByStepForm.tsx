@@ -584,7 +584,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   ) : (
                     <>
                       <CheckCircle className="h-5 w-5 mr-2" />
-                      Meldung erstellen
+                      Fertigstellen
                     </>
                   )}
                 </Button>
