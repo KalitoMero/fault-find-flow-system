@@ -77,6 +77,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
               
               if (useN8n && webhookUrl.trim()) {
                 console.log('🚀 Sending to N8N automatically...');
+                // Der sendAudioToN8n Hook setzt bereits isProcessing auf true/false
                 const transcription = await sendAudioToN8n(audioBlob, webhookUrl);
                 
                 // Save as base64
