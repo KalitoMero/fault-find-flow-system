@@ -438,7 +438,7 @@ const Index = () => {
                         variant={searchType === 'orderNumber' ? 'default' : 'outline'}
                         onClick={() => setSearchType('orderNumber')}
                         size="sm"
-                        className="flex-1"
+                        className="w-16"
                       >
                         PBA
                       </Button>
@@ -446,7 +446,7 @@ const Index = () => {
                         variant={searchType === 'articleNumber' ? 'default' : 'outline'}
                         onClick={() => setSearchType('articleNumber')}
                         size="sm"
-                        className="flex-1"
+                        className="w-16"
                       >
                         SA
                       </Button>
