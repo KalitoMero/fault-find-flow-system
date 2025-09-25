@@ -99,8 +99,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       placeholder: 'Personalnummer'
     },
     {
-      id: 'defectiveQuantity',
-      label: 'Ausschussmenge',
+      id: 'quantityType',
+      label: 'Mengentyp',
       value: '',
       type: 'select',
       required: true,
@@ -111,6 +111,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         { value: 'Ausschussmenge', label: 'Ausschussmenge' },
         { value: 'Bearbeitungsmenge', label: 'Bearbeitungsmenge' }
       ]
+    },
+    {
+      id: 'defectiveQuantity',
+      label: 'Anzahl',
+      value: '',
+      type: 'text',
+      required: true,
+      completed: false,
+      icon: <Hash className="h-4 w-4" />,
+      placeholder: 'Anzahl eingeben'
     },
     {
       id: 'problemDescription',
@@ -466,8 +476,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         id: generateErrorReportId(),
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
-        defectiveQuantity: 1, // Fixed value as this is now a category selection
-        totalDefectiveQuantity: 1, // Fixed value as this is now a category selection
+        defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
+        totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
+        quantityType: fields.find(f => f.id === 'quantityType')?.value || 'Ausschussmenge', // Store the type selection
         creator: fields.find(f => f.id === 'personalNumber')?.value || '',
         personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,

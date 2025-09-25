@@ -5,6 +5,7 @@ export interface ErrorReport {
   machine: string;
   defectiveQuantity: number;
   totalDefectiveQuantity: number;
+  quantityType?: string; // Added for quantity type selection
   detectionLocation?: string;
   problemDescription: string;
   errorCause: string;
