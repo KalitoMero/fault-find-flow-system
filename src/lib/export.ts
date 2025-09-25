@@ -29,8 +29,8 @@ export const exportToExcel = async (
     // Arbeitsblatt hinzufügen
     const worksheet = workbook.addWorksheet('Fehlerberichte');
     
-    const headers = buildHeaders(fields, includeAudio);
-    const data = buildDataRows(reports, fields, includeAudio);
+    const headers = buildHeaders(fields, includeAudio, reports);
+    const data = buildDataRows(reports, fields, includeAudio, headers);
     
     console.log('📊 Headers:', headers);
     console.log('📈 Data rows:', data.length);
@@ -114,7 +114,7 @@ export const exportToCSV = async (
   fields: ExportFields,
   filename: string
 ): Promise<void> => {
-  const headers = buildHeaders(fields, false);
+  const headers = buildHeaders(fields, false, reports);
   const csvContent = buildCSVContent(reports, fields, false, headers);
   
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
@@ -122,19 +122,22 @@ export const exportToCSV = async (
 };
 
 // Header-Array basierend auf ausgewählten Feldern erstellen
-const buildHeaders = (fields: ExportFields, includeAudio: boolean): string[] => {
+const buildHeaders = (fields: ExportFields, includeAudio: boolean, reports: ErrorReport[] = []): string[] => {
   const headers: string[] = [];
 
   if (fields.basicInfo) {
     headers.push(
       'Auftragsnummer',
       'AFO-Nummer',
-      'Maschine'
+      'Maschine',
+      'Abteilung',
+      'Artikelnummer'
     );
   }
 
   if (fields.quantities) {
     headers.push(
+      'Mengentyp',
       'Beanstandete Menge',
       'Gesamt beanstandete Menge'
     );
@@ -171,6 +174,18 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean): string[] => 
       'Audio Maßnahme vorhanden'
     );
   }
+
+  // Add dynamic headers for additional Excel data
+  const additionalHeaders = new Set<string>();
+  reports.forEach(report => {
+    if (report.additionalExcelData) {
+      Object.keys(report.additionalExcelData)
+        .filter(key => key !== 'Artikelnummer') // Already included in basic info
+        .forEach(key => additionalHeaders.add(key));
+    }
+  });
+
+  headers.push(...Array.from(additionalHeaders).sort());
 
   return headers;
 };
@@ -269,7 +284,8 @@ const buildExcelCompatibleCSV = (
 const buildDataRows = (
   reports: ErrorReport[],
   fields: ExportFields,
-  includeAudio: boolean
+  includeAudio: boolean,
+  headers: string[]
 ): any[][] => {
   const formatDate = (dateString?: string): string => {
     if (!dateString) return '';
@@ -292,12 +308,15 @@ const buildDataRows = (
       row.push(
         report.orderNumber,
         report.afoNumber,
-        report.machine
+        report.machine,
+        report.excelDepartment || '',
+        report.additionalExcelData?.Artikelnummer || ''
       );
     }
 
     if (fields.quantities) {
       row.push(
+        report.quantityType || 'Ausschussmenge',
         report.defectiveQuantity,
         report.totalDefectiveQuantity
       );
@@ -334,6 +353,35 @@ const buildDataRows = (
         report.audioFiles?.correctiveAction ? 'Ja' : 'Nein'
       );
     }
+
+    // Add additional Excel data based on headers
+    const additionalHeaders = headers.slice();
+    
+    // Remove standard headers to get only additional ones
+    if (fields.basicInfo) {
+      additionalHeaders.splice(0, 5); // Remove basic info headers
+    }
+    if (fields.quantities) {
+      additionalHeaders.splice(0, 3); // Remove quantity headers
+    }
+    if (fields.descriptions) {
+      additionalHeaders.splice(0, 2); // Remove description headers
+    }
+    if (fields.timestamps) {
+      additionalHeaders.splice(0, 3); // Remove timestamp headers
+    }
+    if (fields.approval) {
+      additionalHeaders.splice(0, 4); // Remove approval headers
+    }
+    if (includeAudio) {
+      additionalHeaders.splice(0, 3); // Remove audio headers
+    }
+    
+    // Add values for additional headers
+    additionalHeaders.forEach(header => {
+      const value = report.additionalExcelData?.[header] || '';
+      row.push(value);
+    });
 
     return row;
   });
@@ -508,12 +556,15 @@ const buildCSVContent = (
       row.push(
         escapeCsvValue(report.orderNumber),
         escapeCsvValue(report.afoNumber),
-        escapeCsvValue(report.machine)
+        escapeCsvValue(report.machine),
+        escapeCsvValue(report.excelDepartment || ''),
+        escapeCsvValue(report.additionalExcelData?.Artikelnummer || '')
       );
     }
 
     if (fields.quantities) {
       row.push(
+        escapeCsvValue(report.quantityType || 'Ausschussmenge'),
         escapeCsvValue(report.defectiveQuantity),
         escapeCsvValue(report.totalDefectiveQuantity)
       );
@@ -550,6 +601,35 @@ const buildCSVContent = (
         escapeCsvValue(report.audioFiles?.correctiveAction ? 'Ja' : 'Nein')
       );
     }
+
+    // Add additional Excel data based on headers
+    const additionalHeaders = headers.slice();
+    
+    // Remove standard headers to get only additional ones
+    if (fields.basicInfo) {
+      additionalHeaders.splice(0, 5); // Remove basic info headers
+    }
+    if (fields.quantities) {
+      additionalHeaders.splice(0, 3); // Remove quantity headers
+    }
+    if (fields.descriptions) {
+      additionalHeaders.splice(0, 2); // Remove description headers
+    }
+    if (fields.timestamps) {
+      additionalHeaders.splice(0, 3); // Remove timestamp headers
+    }
+    if (fields.approval) {
+      additionalHeaders.splice(0, 4); // Remove approval headers
+    }
+    if (includeAudio) {
+      additionalHeaders.splice(0, 3); // Remove audio headers
+    }
+    
+    // Add values for additional headers
+    additionalHeaders.forEach(header => {
+      const value = report.additionalExcelData?.[header] || '';
+      row.push(escapeCsvValue(value));
+    });
 
     rows.push(row.join(','));
   });
@@ -611,6 +691,6 @@ export const generateAPIResponse = (
     approval: true
   };
   
-  const headers = buildHeaders(fields, false);
+  const headers = buildHeaders(fields, false, reports);
   return buildCSVContent(reports, fields, false, headers);
 };
