@@ -55,17 +55,14 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
           break;
       }
 
-      // Filter nur freigegebene Meldungen
-      const approvedReports = reports.filter(report => report.approvalStatus === 'approved');
-      
-      if (approvedReports.length === 0) {
-        toast.error('Keine freigegebenen Meldungen gefunden');
-      } else if (approvedReports.length === 1) {
-        onReportFound(approvedReports[0]);
+      if (reports.length === 0) {
+        toast.error('Keine Meldungen gefunden');
+      } else if (reports.length === 1) {
+        onReportFound(reports[0]);
         toast.success('Fehlermeldung gefunden!');
       } else {
-        setSearchResults(approvedReports);
-        toast.success(`${approvedReports.length} Meldungen gefunden`);
+        setSearchResults(reports);
+        toast.success(`${reports.length} Meldungen gefunden`);
       }
     } catch (error) {
       console.error('Fehler beim Suchen der Meldung:', error);
@@ -175,8 +172,14 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                   <div className="flex items-center space-x-3">
                     <Badge variant="outline">#{report.id}</Badge>
                     <h3 className="font-medium text-card-foreground">Auftrag: {report.orderNumber}</h3>
-                    <Badge variant="secondary" className="status-approved">
-                      Freigegeben
+                    <Badge variant={
+                      report.approvalStatus === 'approved' ? 'default' : 
+                      report.approvalStatus === 'pending' ? 'secondary' : 
+                      'destructive'
+                    }>
+                      {report.approvalStatus === 'approved' ? 'Freigegeben' : 
+                       report.approvalStatus === 'pending' ? 'Zur Prüfung' : 
+                       'Abgelehnt'}
                     </Badge>
                   </div>
                   <div className="mt-1 space-y-1">
