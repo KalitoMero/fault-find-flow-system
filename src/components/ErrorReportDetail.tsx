@@ -326,9 +326,15 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     <span className="font-medium">{report.afoNumber}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Abteilung:</span>
-                    <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
+                    <span className="text-sm text-gray-600">Ersteller:</span>
+                    <span className="font-medium">{report.creator}</span>
                   </div>
+                  {report.additionalExcelData?.Artikelnummer && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Artikelnummer:</span>
+                      <span className="font-medium">{report.additionalExcelData.Artikelnummer}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -340,15 +346,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                      <span className="font-medium">{report.defectiveQuantity}</span>
                    </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Ersteller:</span>
-                    <span className="font-medium">{report.creator}</span>
+                    <span className="text-sm text-gray-600">Abteilung:</span>
+                    <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
                   </div>
-                  {report.additionalExcelData?.Artikelnummer && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Artikelnummer:</span>
-                      <span className="font-medium">{report.additionalExcelData.Artikelnummer}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
