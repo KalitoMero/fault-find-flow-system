@@ -59,6 +59,13 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach(track => track.stop());
         setHasRecording(true);
+        
+        // Automatisch verarbeiten nach kurzer Verzögerung
+        setTimeout(() => {
+          if (audioChunksRef.current.length > 0) {
+            saveAndProcess();
+          }
+        }, 100);
       };
 
       mediaRecorder.start(100);
@@ -87,13 +94,6 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       }
       
       toast.success("Aufnahme beendet");
-      
-      // Automatisch nach kurzer Verzögerung an N8n senden
-      setTimeout(() => {
-        if (audioChunksRef.current.length > 0) {
-          saveAndProcess();
-        }
-      }, 500);
     }
   };
 
@@ -121,8 +121,10 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
     });
 
     if (!hasRecording || audioChunksRef.current.length === 0) {
-      console.log('❌ No recording to process');
-      toast.error("Keine Aufnahme zum Verarbeiten vorhanden");
+      console.log('❌ No recording to process', { hasRecording, audioChunksLength: audioChunksRef.current.length });
+      if (audioChunksRef.current.length === 0) {
+        toast.error("Keine Aufnahme zum Verarbeiten vorhanden");
+      }
       return;
     }
 
