@@ -175,32 +175,36 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                     {selectedReport && (
                       <div className="space-y-6">
                         {/* Basis-Infos */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="font-medium">Auftragsnummer:</label>
-                            <p className="text-gray-700">{selectedReport.orderNumber}</p>
-                          </div>
-                          <div>
-                            <label className="font-medium">AFO-Nummer:</label>
-                            <p className="text-gray-700">{selectedReport.afoNumber}</p>
-                          </div>
-                          <div>
-                            <label className="font-medium">Beanstandete Menge:</label>
-                            <p className="text-gray-700">{selectedReport.defectiveQuantity}</p>
-                          </div>
-                          <div>
-                            <label className="font-medium">Gesamt beanstandet:</label>
-                            <p className="text-gray-700">{selectedReport.totalDefectiveQuantity}</p>
-                          </div>
-                          <div>
-                            <label className="font-medium">Maschine:</label>
-                            <p className="text-gray-700">{selectedReport.machine}</p>
-                          </div>
-                          <div>
-                            <label className="font-medium">Erstellt am:</label>
-                            <p className="text-gray-700">{formatDate(selectedReport.createdAt)}</p>
-                          </div>
-                        </div>
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">PBA:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.orderNumber}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">AFO-Nummer:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.afoNumber}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">Beanstandete Menge:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.defectiveQuantity}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">Gesamt beanstandet:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.totalDefectiveQuantity}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">SA:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.additionalExcelData?.Artikelnummer || 'Nicht verfügbar'}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">Maschine:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.machine}</p>
+                           </div>
+                           <div className="flex-1">
+                             <label className="font-medium text-sm">Erstellt am:</label>
+                             <p className="text-gray-700 text-sm">{formatDate(selectedReport.createdAt)}</p>
+                           </div>
+                         </div>
 
                         {/* Detailbeschreibungen */}
                         <div className="space-y-4">
