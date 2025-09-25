@@ -260,16 +260,16 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-green-600" />
-                      <div>
+                      <div className="flex items-center gap-2">
                         <span className="text-sm text-green-700">Freigegeben von:</span>
-                        <p className="font-medium text-green-800">{approvedByName}</p>
+                        <span className="font-medium text-green-800">{approvedByName}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-green-600" />
-                      <div>
+                      <div className="flex items-center gap-2">
                         <span className="text-sm text-green-700">Freigegeben am:</span>
-                        <p className="font-medium text-green-800">{formatDate(report.approvedAt)}</p>
+                        <span className="font-medium text-green-800">{formatDate(report.approvedAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -288,16 +288,16 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-red-600" />
-                      <div>
+                      <div className="flex items-center gap-2">
                         <span className="text-sm text-red-700">Abgelehnt von:</span>
-                        <p className="font-medium text-red-800">{rejectedByName}</p>
+                        <span className="font-medium text-red-800">{rejectedByName}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-red-600" />
-                      <div>
+                      <div className="flex items-center gap-2">
                         <span className="text-sm text-red-700">Abgelehnt am:</span>
-                        <p className="font-medium text-red-800">{formatDate(report.rejectedAt)}</p>
+                        <span className="font-medium text-red-800">{formatDate(report.rejectedAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -317,17 +317,17 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Auftragsdaten</h3>
                 <div className="space-y-2">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Auftragsnummer:</span>
-                    <p className="font-medium">{report.orderNumber}</p>
+                    <span className="font-medium">{report.orderNumber}</span>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">AFO-Nummer:</span>
-                    <p className="font-medium">{report.afoNumber}</p>
+                    <span className="font-medium">{report.afoNumber}</span>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Abteilung:</span>
-                    <p className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</p>
+                    <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
                   </div>
                 </div>
               </div>
@@ -335,18 +335,18 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
-                   <div>
+                   <div className="flex items-center gap-2">
                      <span className="text-sm text-gray-600">Fehlermenge:</span>
-                     <p className="font-medium">{report.defectiveQuantity}</p>
+                     <span className="font-medium">{report.defectiveQuantity}</span>
                    </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Ersteller:</span>
-                    <p className="font-medium">{report.creator}</p>
+                    <span className="font-medium">{report.creator}</span>
                   </div>
                   {report.additionalExcelData?.Artikelnummer && (
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">Artikelnummer:</span>
-                      <p className="font-medium">{report.additionalExcelData.Artikelnummer}</p>
+                      <span className="font-medium">{report.additionalExcelData.Artikelnummer}</span>
                     </div>
                   )}
                 </div>
@@ -363,9 +363,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     {Object.entries(report.additionalExcelData)
                       .filter(([key]) => key !== 'Artikelnummer')
                       .map(([key, value]) => (
-                        <div key={key}>
+                        <div key={key} className="flex items-center gap-2">
                           <span className="text-sm text-gray-600">{key}:</span>
-                          <p className="font-medium">{value}</p>
+                          <span className="font-medium">{value}</span>
                         </div>
                       ))}
                   </div>
