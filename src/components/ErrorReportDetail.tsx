@@ -202,7 +202,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
           {backButtonText}
         </Button>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
