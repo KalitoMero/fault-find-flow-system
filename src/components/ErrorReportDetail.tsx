@@ -257,22 +257,22 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <h3 className="font-semibold text-green-800">Freigabe-Information</h3>
                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="flex items-center space-x-2">
-                       <User className="h-4 w-4 text-green-600" />
-                       <p className="text-sm">
-                         <span className="text-green-700">Freigegeben von:</span>
-                         <span className="font-medium text-green-800 ml-2">{approvedByName}</span>
-                       </p>
-                     </div>
-                     <div className="flex items-center space-x-2">
-                       <Calendar className="h-4 w-4 text-green-600" />
-                       <p className="text-sm">
-                         <span className="text-green-700">Freigegeben am:</span>
-                         <span className="font-medium text-green-800 ml-2">{formatDate(report.approvedAt)}</span>
-                       </p>
-                     </div>
-                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-green-600" />
+                      <div>
+                        <span className="text-sm text-green-700">Freigegeben von:</span>
+                        <p className="font-medium text-green-800">{approvedByName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                      <div>
+                        <span className="text-sm text-green-700">Freigegeben am:</span>
+                        <p className="font-medium text-green-800">{formatDate(report.approvedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <Separator />
               </>
@@ -285,28 +285,28 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     <XCircle className="h-5 w-5 text-red-600" />
                     <h3 className="font-semibold text-red-800">Ablehnungs-Information</h3>
                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                     <div className="flex items-center space-x-2">
-                       <User className="h-4 w-4 text-red-600" />
-                       <p className="text-sm">
-                         <span className="text-red-700">Abgelehnt von:</span>
-                         <span className="font-medium text-red-800 ml-2">{rejectedByName}</span>
-                       </p>
-                     </div>
-                     <div className="flex items-center space-x-2">
-                       <Calendar className="h-4 w-4 text-red-600" />
-                       <p className="text-sm">
-                         <span className="text-red-700">Abgelehnt am:</span>
-                         <span className="font-medium text-red-800 ml-2">{formatDate(report.rejectedAt)}</span>
-                       </p>
-                     </div>
-                   </div>
-                   {report.rejectionReason && (
-                     <p className="text-sm">
-                       <span className="text-red-700 font-medium">Ablehnungsgrund:</span>
-                       <span className="text-red-800 ml-2">{report.rejectionReason}</span>
-                     </p>
-                   )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-red-600" />
+                      <div>
+                        <span className="text-sm text-red-700">Abgelehnt von:</span>
+                        <p className="font-medium text-red-800">{rejectedByName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-red-600" />
+                      <div>
+                        <span className="text-sm text-red-700">Abgelehnt am:</span>
+                        <p className="font-medium text-red-800">{formatDate(report.rejectedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {report.rejectionReason && (
+                    <div>
+                      <span className="text-sm text-red-700 font-medium">Ablehnungsgrund:</span>
+                      <p className="text-red-800 mt-1">{report.rejectionReason}</p>
+                    </div>
+                  )}
                 </div>
                 <Separator />
               </>
@@ -317,39 +317,39 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Auftragsdaten</h3>
                 <div className="space-y-2">
-                   <p className="text-sm">
-                     <span className="text-gray-600">Auftragsnummer:</span>
-                     <span className="font-medium ml-2">{report.orderNumber}</span>
-                   </p>
-                   <p className="text-sm">
-                     <span className="text-gray-600">AFO-Nummer:</span>
-                     <span className="font-medium ml-2">{report.afoNumber}</span>
-                   </p>
-                   <p className="text-sm">
-                     <span className="text-gray-600">Abteilung:</span>
-                     <span className="font-medium ml-2">{report.excelDepartment || 'Nicht angegeben'}</span>
-                   </p>
-                 </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Auftragsnummer:</span>
+                    <p className="font-medium">{report.orderNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">AFO-Nummer:</span>
+                    <p className="font-medium">{report.afoNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Abteilung:</span>
+                    <p className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</p>
+                  </div>
+                </div>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
-                    <p className="text-sm">
-                      <span className="text-gray-600">Fehlermenge:</span>
-                      <span className="font-medium ml-2">{report.defectiveQuantity}</span>
-                    </p>
-                   <p className="text-sm">
-                     <span className="text-gray-600">Ersteller:</span>
-                     <span className="font-medium ml-2">{report.creator}</span>
-                   </p>
-                   {report.additionalExcelData?.Artikelnummer && (
-                     <p className="text-sm">
-                       <span className="text-gray-600">Artikelnummer:</span>
-                       <span className="font-medium ml-2">{report.additionalExcelData.Artikelnummer}</span>
-                     </p>
-                   )}
-                 </div>
+                   <div>
+                     <span className="text-sm text-gray-600">Fehlermenge:</span>
+                     <p className="font-medium">{report.defectiveQuantity}</p>
+                   </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Ersteller:</span>
+                    <p className="font-medium">{report.creator}</p>
+                  </div>
+                  {report.additionalExcelData?.Artikelnummer && (
+                    <div>
+                      <span className="text-sm text-gray-600">Artikelnummer:</span>
+                      <p className="font-medium">{report.additionalExcelData.Artikelnummer}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -360,14 +360,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Zusätzliche Informationen</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {Object.entries(report.additionalExcelData)
-                       .filter(([key]) => key !== 'Artikelnummer')
-                       .map(([key, value]) => (
-                         <p key={key} className="text-sm">
-                           <span className="text-gray-600">{key}:</span>
-                           <span className="font-medium ml-2">{value}</span>
-                         </p>
-                       ))}
+                    {Object.entries(report.additionalExcelData)
+                      .filter(([key]) => key !== 'Artikelnummer')
+                      .map(([key, value]) => (
+                        <div key={key}>
+                          <span className="text-sm text-gray-600">{key}:</span>
+                          <p className="font-medium">{value}</p>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </>
