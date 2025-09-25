@@ -228,7 +228,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
             variant="destructive"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '56px' }}
+            style={{ height: '100px' }}
           >
             <MicOff className="h-4 w-4" />
           </Button>
