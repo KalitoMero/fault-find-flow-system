@@ -510,7 +510,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           </Button>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-6 pt-16">
+        <div className="mx-auto space-y-6 pt-16">
           <Card className="bg-white shadow-xl">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-2xl flex items-center justify-center gap-3">

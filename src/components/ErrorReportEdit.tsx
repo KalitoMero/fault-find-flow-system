@@ -258,7 +258,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
 
   return (
     <div className="min-h-screen bg-light-blue p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto">
         <Button
           variant="ghost"
           onClick={onBack}
@@ -496,7 +496,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
 
             {/* Dialog für weitere Fehlermeldungen */}
             <Dialog open={showRelatedDialog} onOpenChange={setShowRelatedDialog}>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData?.Artikelnummer}
