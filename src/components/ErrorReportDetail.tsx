@@ -313,45 +313,35 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             )}
 
             {/* Grunddaten */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Auftragsdaten</h3>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Auftragsnummer:</span>
-                      <span className="font-medium">{report.orderNumber}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Ersteller:</span>
-                      <span className="font-medium">{report.creator}</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">AFO-Nummer:</span>
-                      <span className="font-medium">{report.afoNumber}</span>
-                    </div>
-                    {report.additionalExcelData?.Artikelnummer && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Artikelnummer:</span>
-                        <span className="font-medium">{report.additionalExcelData.Artikelnummer}</span>
-                      </div>
-                    )}
-                  </div>
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Auftragsnummer:</span>
+                  <span className="font-medium">{report.orderNumber}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Ersteller:</span>
+                  <span className="font-medium">{report.creator}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Fehlermenge:</span>
+                  <span className="font-medium">{report.defectiveQuantity}</span>
                 </div>
               </div>
-
-              <div>
-                <div className="space-y-2">
-                   <div className="flex items-center gap-2">
-                     <span className="text-sm text-gray-600">Fehlermenge:</span>
-                     <span className="font-medium">{report.defectiveQuantity}</span>
-                   </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">AFO-Nummer:</span>
+                  <span className="font-medium">{report.afoNumber}</span>
+                </div>
+                {report.additionalExcelData?.Artikelnummer && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Abteilung:</span>
-                    <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
+                    <span className="text-sm text-gray-600">Artikelnummer:</span>
+                    <span className="font-medium">{report.additionalExcelData.Artikelnummer}</span>
                   </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Abteilung:</span>
+                  <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
                 </div>
               </div>
             </div>
