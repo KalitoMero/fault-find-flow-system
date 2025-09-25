@@ -57,15 +57,23 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       };
 
       mediaRecorder.onstop = () => {
+        console.log('📹 MediaRecorder onstop triggered');
         stream.getTracks().forEach(track => track.stop());
         setHasRecording(true);
         
         // Automatisch verarbeiten nach kurzer Verzögerung
         setTimeout(() => {
+          console.log('⏰ Attempting automatic processing...', { 
+            audioChunksLength: audioChunksRef.current.length,
+            hasRecording: true 
+          });
           if (audioChunksRef.current.length > 0) {
+            console.log('✅ Triggering saveAndProcess automatically');
             saveAndProcess();
+          } else {
+            console.log('❌ No audio chunks available for processing');
           }
-        }, 100);
+        }, 500);
       };
 
       mediaRecorder.start(100);
