@@ -107,11 +107,11 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                     #{report.id}
                   </Badge>
                   <div>
-                    <h3 className="font-semibold text-lg">
-                      Auftrag: {report.orderNumber}
+                    <h3 className="font-medium text-base">
+                      PBA: {report.orderNumber}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      AFO: {report.afoNumber} | Maschine: {report.machine}
+                      AFO: {report.afoNumber} | SA: {report.additionalExcelData?.Artikelnummer || 'N/A'} | Maschine: {report.machine}
                     </p>
                   </div>
                 </div>
