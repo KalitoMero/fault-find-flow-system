@@ -433,7 +433,7 @@ const Index = () => {
                       </Button>
                     </div>
                     
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex gap-2">
                         <Button
                           variant={searchType === 'orderNumber' ? 'default' : 'outline'}
@@ -452,7 +452,7 @@ const Index = () => {
                           SA
                         </Button>
                       </div>
-                      <div className="flex items-center space-x-2 flex-1">
+                      <div className="flex items-center space-x-2 flex-1 mx-4">
                         <Search className="h-4 w-4 text-gray-500" />
                         <Input
                           placeholder={searchType === 'orderNumber' ? 'Nach PBA suchen...' : 'Nach SA suchen...'}
@@ -461,7 +461,7 @@ const Index = () => {
                           className="flex-1"
                         />
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <Button
                           variant={statusFilter === 'all' ? 'default' : 'outline'}
                           onClick={() => setStatusFilter('all')}
@@ -482,7 +482,7 @@ const Index = () => {
                           variant={statusFilter === 'approved' ? 'default' : 'outline'}
                           onClick={() => setStatusFilter('approved')}
                           size="sm"
-                          className={`w-24 ${statusFilter === 'approved' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                          className={`w-20 ${statusFilter === 'approved' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                         >
                           Freigegeben
                         </Button>
