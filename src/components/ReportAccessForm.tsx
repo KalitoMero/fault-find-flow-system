@@ -78,7 +78,12 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   };
 
   const handleReportSelect = (report: ErrorReport) => {
-    setSelectedReport(report);
+    // Abgelehnte Meldungen direkt im Bearbeitungsmodus öffnen
+    if (report.approvalStatus === 'rejected') {
+      onReportFound(report);
+    } else {
+      setSelectedReport(report);
+    }
   };
 
   const handleBackFromDetail = () => {
