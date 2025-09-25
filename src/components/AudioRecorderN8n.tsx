@@ -215,32 +215,6 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
         </div>
       )}
 
-      {hasRecording && !isSaved && !isProcessingAudio && (
-        <div className="flex flex-col gap-2" style={{ height: '200px' }}>
-          <Button
-            type="button"
-            onClick={saveAndProcess}
-            disabled={isProcessingAudio}
-            variant="outline"
-            size="sm"
-            className="w-12 p-0"
-            style={{ height: '100px' }}
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            onClick={resetRecording}
-            variant="outline"
-            size="sm"
-            className="w-12 p-0"
-            style={{ height: '96px' }}
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
       {isProcessingAudio && (
         <div style={{ height: '200px' }}>
           <Button
