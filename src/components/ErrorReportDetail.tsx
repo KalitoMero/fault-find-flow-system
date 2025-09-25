@@ -343,7 +343,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
                    <div className="flex items-center gap-2">
                      <span className="text-sm text-gray-600">Fehlermenge:</span>
