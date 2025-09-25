@@ -59,17 +59,40 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       mediaRecorder.onstop = () => {
         console.log('📹 MediaRecorder onstop triggered');
         stream.getTracks().forEach(track => track.stop());
+        
+        // Setze hasRecording auf true
         setHasRecording(true);
         
-        // Automatisch verarbeiten nach kurzer Verzögerung
-        setTimeout(() => {
+        // Automatisch verarbeiten - verwende nicht den State, sondern direkt die Chunks
+        setTimeout(async () => {
           console.log('⏰ Attempting automatic processing...', { 
-            audioChunksLength: audioChunksRef.current.length,
-            hasRecording: true 
+            audioChunksLength: audioChunksRef.current.length 
           });
+          
           if (audioChunksRef.current.length > 0) {
-            console.log('✅ Triggering saveAndProcess automatically');
-            saveAndProcess();
+            console.log('✅ Triggering automatic processing');
+            
+            try {
+              const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+              
+              if (useN8n && webhookUrl.trim()) {
+                console.log('🚀 Sending to N8N automatically...');
+                const transcription = await sendAudioToN8n(audioBlob, webhookUrl);
+                
+                // Save as base64
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64Audio = reader.result as string;
+                  onTranscription(transcription, base64Audio);
+                  setIsSaved(true);
+                  toast.success('Aufnahme erfolgreich verarbeitet!');
+                };
+                reader.readAsDataURL(audioBlob);
+              }
+            } catch (error) {
+              console.error('❌ Automatic processing error:', error);
+              toast.error("Fehler bei der automatischen Verarbeitung");
+            }
           } else {
             console.log('❌ No audio chunks available for processing');
           }
