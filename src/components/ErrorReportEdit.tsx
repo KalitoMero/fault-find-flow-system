@@ -44,8 +44,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     if (!isAuthenticated || !user) return;
     
     // First save changes
-    if (!formData.problemDescription.trim() || !formData.correctiveAction.trim()) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+    if (!formData.problemDescription.trim()) {
+      toast.error('Bitte füllen Sie die Problembeschreibung aus');
       return;
     }
 
@@ -92,8 +92,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     }
     
     // First save changes
-    if (!formData.problemDescription.trim() || !formData.correctiveAction.trim()) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+    if (!formData.problemDescription.trim()) {
+      toast.error('Bitte füllen Sie die Problembeschreibung aus');
       return;
     }
     
@@ -138,10 +138,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   const handleSaveChanges = async () => {
     if (!formData.problemDescription.trim()) {
       toast.error('Problembeschreibung darf nicht leer sein');
-      return;
-    }
-    if (!formData.correctiveAction.trim()) {
-      toast.error('Korrekturmaßnahme darf nicht leer sein');
       return;
     }
 
@@ -401,7 +397,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
             {/* Editable Corrective Action */}
             <div>
               <Label htmlFor="correctiveAction" className="font-semibold text-gray-900 mb-2 block">
-                Korrekturmaßnahme *
+                Korrekturmaßnahme
               </Label>
               <Textarea
                 id="correctiveAction"
