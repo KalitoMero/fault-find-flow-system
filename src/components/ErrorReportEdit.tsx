@@ -281,6 +281,20 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Speichern-Button für abgelehnte Meldungen - oben positioniert */}
+            {report.approvalStatus === 'rejected' && (
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={isSubmitting || !formData.problemDescription.trim()}
+                  variant="destructive"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {isSubmitting ? 'Speichere...' : 'Speichern'}
+                </Button>
+              </div>
+            )}
+
             {/* Rejection Information for rejected reports */}
             {report.approvalStatus === 'rejected' && rejectedByName && report.rejectedAt && (
               <>
@@ -289,7 +303,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                     <XCircle className="h-5 w-5 text-red-600" />
                     <h3 className="font-semibold text-red-800">Ablehnungs-Information</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-red-600" />
                       <div className="flex items-center gap-2">
@@ -304,13 +318,16 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                         <span className="font-medium text-red-800">{formatDate(report.rejectedAt)}</span>
                       </div>
                     </div>
+                    {report.rejectionReason && (
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-red-700">Grund:</span>
+                          <span className="font-medium text-red-800">{report.rejectionReason}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {report.rejectionReason && (
-                    <div>
-                      <span className="text-sm text-red-700 font-medium">Ablehnungsgrund:</span>
-                      <p className="text-red-800 mt-1">{report.rejectionReason}</p>
-                    </div>
-                  )}
                 </div>
                 <Separator />
               </>
@@ -479,23 +496,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                       </div>
                     </div>
                   )}
-                </div>
-              </>
-            )}
-
-            {/* Speichern-Button für abgelehnte Meldungen */}
-            {report.approvalStatus === 'rejected' && (
-              <>
-                <Separator />
-                <div className="flex justify-end">
-                  <Button 
-                    onClick={handleSaveChanges}
-                    disabled={isSubmitting || !formData.problemDescription.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isSubmitting ? 'Speichere...' : 'Fertigstellen'}
-                  </Button>
                 </div>
               </>
             )}
