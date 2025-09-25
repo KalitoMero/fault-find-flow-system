@@ -317,39 +317,39 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Auftragsdaten</h3>
                 <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-600">Auftragsnummer:</span>
-                    <p className="font-medium">{report.orderNumber}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">AFO-Nummer:</span>
-                    <p className="font-medium">{report.afoNumber}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Abteilung:</span>
-                    <p className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</p>
-                  </div>
-                </div>
+                   <p className="text-sm">
+                     <span className="text-gray-600">Auftragsnummer:</span>
+                     <span className="font-medium ml-2">{report.orderNumber}</span>
+                   </p>
+                   <p className="text-sm">
+                     <span className="text-gray-600">AFO-Nummer:</span>
+                     <span className="font-medium ml-2">{report.afoNumber}</span>
+                   </p>
+                   <p className="text-sm">
+                     <span className="text-gray-600">Abteilung:</span>
+                     <span className="font-medium ml-2">{report.excelDepartment || 'Nicht angegeben'}</span>
+                   </p>
+                 </div>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Mengenangaben</h3>
                 <div className="space-y-2">
-                   <div>
-                     <span className="text-sm text-gray-600">Fehlermenge:</span>
-                     <p className="font-medium">{report.defectiveQuantity}</p>
-                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Ersteller:</span>
-                    <p className="font-medium">{report.creator}</p>
-                  </div>
-                  {report.additionalExcelData?.Artikelnummer && (
-                    <div>
-                      <span className="text-sm text-gray-600">Artikelnummer:</span>
-                      <p className="font-medium">{report.additionalExcelData.Artikelnummer}</p>
-                    </div>
-                  )}
-                </div>
+                    <p className="text-sm">
+                      <span className="text-gray-600">Fehlermenge:</span>
+                      <span className="font-medium ml-2">{report.defectiveQuantity}</span>
+                    </p>
+                   <p className="text-sm">
+                     <span className="text-gray-600">Ersteller:</span>
+                     <span className="font-medium ml-2">{report.creator}</span>
+                   </p>
+                   {report.additionalExcelData?.Artikelnummer && (
+                     <p className="text-sm">
+                       <span className="text-gray-600">Artikelnummer:</span>
+                       <span className="font-medium ml-2">{report.additionalExcelData.Artikelnummer}</span>
+                     </p>
+                   )}
+                 </div>
               </div>
             </div>
 
@@ -360,14 +360,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Zusätzliche Informationen</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(report.additionalExcelData)
-                      .filter(([key]) => key !== 'Artikelnummer')
-                      .map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-sm text-gray-600">{key}:</span>
-                          <p className="font-medium">{value}</p>
-                        </div>
-                      ))}
+                     {Object.entries(report.additionalExcelData)
+                       .filter(([key]) => key !== 'Artikelnummer')
+                       .map(([key, value]) => (
+                         <p key={key} className="text-sm">
+                           <span className="text-gray-600">{key}:</span>
+                           <span className="font-medium ml-2">{value}</span>
+                         </p>
+                       ))}
                   </div>
                 </div>
               </>
