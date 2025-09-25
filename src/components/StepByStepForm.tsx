@@ -543,7 +543,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   <div key={field.id} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       {field.icon}
-                      <span className="font-medium text-gray-700">{field.label}</span>
+                      <span className="font-medium text-gray-700">
+                        {field.type === 'quantity' ? (field.quantityType || 'Ausschussmenge') : field.label}
+                      </span>
                     </div>
                     <p className="text-lg font-semibold">{field.value || 'Nicht angegeben'}</p>
                   </div>
@@ -696,7 +698,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         <p className={`text-xs font-medium ${
                           isCurrentField ? 'text-blue-800' : isCompleted ? 'text-green-800' : 'text-gray-500'
                         }`}>
-                          {field.label}
+                          {field.type === 'quantity' ? (field.quantityType || 'Ausschussmenge') : field.label}
                         </p>
                         <p className={`text-sm truncate ${
                           isCurrentField ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400'
