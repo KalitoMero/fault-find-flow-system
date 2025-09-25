@@ -138,7 +138,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 space-y-6">
+    <div className="mx-auto mt-8 space-y-6">
       {/* Suchergebnisse anzeigen wenn vorhanden */}
       {searchResults.length > 0 ? (
         <div className="space-y-4">
