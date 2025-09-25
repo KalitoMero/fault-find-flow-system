@@ -76,7 +76,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -87,6 +87,13 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       }
       
       toast.success("Aufnahme beendet");
+      
+      // Automatisch nach kurzer Verzögerung an N8n senden
+      setTimeout(() => {
+        if (audioChunksRef.current.length > 0) {
+          saveAndProcess();
+        }
+      }, 500);
     }
   };
 
@@ -206,7 +213,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
         </div>
       )}
 
-      {hasRecording && !isSaved && (
+      {hasRecording && !isSaved && !isProcessingAudio && (
         <div className="flex flex-col gap-2" style={{ height: '112px' }}>
           <Button
             type="button"
@@ -217,11 +224,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
             className="w-12 p-0"
             style={{ height: '56px' }}
           >
-            {isProcessingAudio ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
+            <Save className="h-4 w-4" />
           </Button>
           <Button
             type="button"
@@ -232,6 +235,21 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
             style={{ height: '52px' }}
           >
             <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {isProcessingAudio && (
+        <div style={{ height: '112px' }}>
+          <Button
+            type="button"
+            disabled
+            variant="outline"
+            size="sm"
+            className="w-12 p-0"
+            style={{ height: '112px' }}
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
           </Button>
         </div>
       )}
