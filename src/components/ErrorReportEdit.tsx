@@ -483,6 +483,23 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
               </>
             )}
 
+            {/* Speichern-Button für abgelehnte Meldungen */}
+            {report.approvalStatus === 'rejected' && (
+              <>
+                <Separator />
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={isSubmitting || !formData.problemDescription.trim()}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isSubmitting ? 'Speichere...' : 'Fertigstellen'}
+                  </Button>
+                </div>
+              </>
+            )}
+
             {/* Dialog für weitere Fehlermeldungen */}
             <Dialog open={showRelatedDialog} onOpenChange={setShowRelatedDialog}>
               <DialogContent className="max-h-[80vh] overflow-y-auto">
