@@ -97,7 +97,7 @@ const FloatingLabelTextarea: React.FC<{
           placeholder=""
           required={required}
           rows={rows}
-          className="modern-input pt-4 min-h-[100px] resize-none"
+          className="modern-input pt-4 min-h-[160px] resize-none"
         />
         <Label htmlFor={id} className="floating-label">
           {label} {required && <span className="text-destructive">*</span>}
@@ -673,7 +673,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     value={problemDescription}
                     onChange={setProblemDescription}
                     placeholder="Beschreiben Sie das aufgetretene Problem detailliert..."
-                    rows={4}
+                    rows={8}
                   />
                 </div>
                 <AudioRecorderN8n 
@@ -697,7 +697,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     value={correctiveAction}
                     onChange={setCorrectiveAction}
                     placeholder="Beschreiben Sie die durchgeführten Korrekturmaßnahmen..."
-                    rows={4}
+                    rows={8}
                   />
                 </div>
                 <AudioRecorderN8n 
