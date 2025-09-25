@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
@@ -22,11 +23,12 @@ interface FormField {
   id: string;
   label: string;
   value: string;
-  type: 'text' | 'number' | 'textarea';
+  type: 'text' | 'number' | 'textarea' | 'select';
   required: boolean;
   completed: boolean;
   icon: React.ReactNode;
   placeholder: string;
+  options?: { value: string; label: string }[];
 }
 
 const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClose }) => {
@@ -98,13 +100,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     },
     {
       id: 'defectiveQuantity',
-      label: 'Menge',
+      label: 'Ausschussmenge',
       value: '',
-      type: 'text',
+      type: 'select',
       required: true,
       completed: false,
       icon: <Package className="h-4 w-4" />,
-      placeholder: 'Anzahl'
+      placeholder: 'Wählen Sie eine Option',
+      options: [
+        { value: 'Ausschussmenge', label: 'Ausschussmenge' },
+        { value: 'Bearbeitungsmenge', label: 'Bearbeitungsmenge' }
+      ]
     },
     {
       id: 'problemDescription',
@@ -460,8 +466,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         id: generateErrorReportId(),
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
-        defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
-        totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
+        defectiveQuantity: 1, // Fixed value as this is now a category selection
+        totalDefectiveQuantity: 1, // Fixed value as this is now a category selection
         creator: fields.find(f => f.id === 'personalNumber')?.value || '',
         personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,
@@ -788,6 +794,24 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       />
                     )}
                   </div>
+                </div>
+              ) : currentField.type === 'select' ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <Select 
+                    value={currentField.value} 
+                    onValueChange={(value) => handleFieldUpdate(currentField.id, value)}
+                  >
+                    <SelectTrigger className="text-center text-xl max-w-md h-14">
+                      <SelectValue placeholder={currentField.placeholder} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                      {currentField.options?.map((option) => (
+                        <SelectItem key={option.value} value={option.value} className="hover:bg-gray-100">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4">
