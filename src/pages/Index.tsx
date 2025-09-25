@@ -500,9 +500,12 @@ const Index = () => {
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-4">
-                            <Badge variant="outline">#{report.id}</Badge>
-                            <span className="font-medium">Auftrag: {report.orderNumber}</span>
-                            <span className="text-gray-500">AFO: {report.afoNumber}</span>
+                            <Badge variant="outline" className="text-xs">#{report.id}</Badge>
+                            <span className="font-medium text-sm">PBA: {report.orderNumber}</span>
+                            <span className="text-gray-500 text-xs">AFO: {report.afoNumber}</span>
+                            {report.additionalExcelData?.Artikelnummer && (
+                              <span className="text-gray-500 text-xs">SA: {report.additionalExcelData.Artikelnummer}</span>
+                            )}
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             Erstellt von {report.creator} am {new Date(report.createdAt).toLocaleDateString('de-DE')}
