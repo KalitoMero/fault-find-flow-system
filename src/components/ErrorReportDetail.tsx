@@ -485,7 +485,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             {/* Dialog für weitere Fehlermeldungen */}
             <Dialog open={showRelatedDialog} onOpenChange={setShowRelatedDialog}>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     Weitere Fehlermeldungen mit Artikelnummer {report.additionalExcelData?.Artikelnummer}
