@@ -162,7 +162,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                       Details anzeigen
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-h-[80vh] overflow-y-auto">
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
                         Fehlermeldung #{report.id} - Details
