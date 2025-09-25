@@ -55,14 +55,19 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
           break;
       }
 
-      if (reports.length === 0) {
-        toast.error('Keine Meldungen gefunden');
-      } else if (reports.length === 1) {
-        onReportFound(reports[0]);
+      // Filter nur freigegebene und abgelehnte Meldungen
+      const visibleReports = reports.filter(report => 
+        report.approvalStatus === 'approved' || report.approvalStatus === 'rejected'
+      );
+      
+      if (visibleReports.length === 0) {
+        toast.error('Keine freigegebenen oder abgelehnten Meldungen gefunden');
+      } else if (visibleReports.length === 1) {
+        onReportFound(visibleReports[0]);
         toast.success('Fehlermeldung gefunden!');
       } else {
-        setSearchResults(reports);
-        toast.success(`${reports.length} Meldungen gefunden`);
+        setSearchResults(visibleReports);
+        toast.success(`${visibleReports.length} Meldungen gefunden`);
       }
     } catch (error) {
       console.error('Fehler beim Suchen der Meldung:', error);
