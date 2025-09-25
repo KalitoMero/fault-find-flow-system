@@ -257,22 +257,22 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <h3 className="font-semibold text-green-800">Freigabe-Information</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-green-600" />
-                      <div>
-                        <span className="text-sm text-green-700">Freigegeben von:</span>
-                        <p className="font-medium text-green-800">{approvedByName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-green-600" />
-                      <div>
-                        <span className="text-sm text-green-700">Freigegeben am:</span>
-                        <p className="font-medium text-green-800">{formatDate(report.approvedAt)}</p>
-                      </div>
-                    </div>
-                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="flex items-center space-x-2">
+                       <User className="h-4 w-4 text-green-600" />
+                       <p className="text-sm">
+                         <span className="text-green-700">Freigegeben von:</span>
+                         <span className="font-medium text-green-800 ml-2">{approvedByName}</span>
+                       </p>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <Calendar className="h-4 w-4 text-green-600" />
+                       <p className="text-sm">
+                         <span className="text-green-700">Freigegeben am:</span>
+                         <span className="font-medium text-green-800 ml-2">{formatDate(report.approvedAt)}</span>
+                       </p>
+                     </div>
+                   </div>
                 </div>
                 <Separator />
               </>
@@ -285,28 +285,28 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     <XCircle className="h-5 w-5 text-red-600" />
                     <h3 className="font-semibold text-red-800">Ablehnungs-Information</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-red-600" />
-                      <div>
-                        <span className="text-sm text-red-700">Abgelehnt von:</span>
-                        <p className="font-medium text-red-800">{rejectedByName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-red-600" />
-                      <div>
-                        <span className="text-sm text-red-700">Abgelehnt am:</span>
-                        <p className="font-medium text-red-800">{formatDate(report.rejectedAt)}</p>
-                      </div>
-                    </div>
-                  </div>
-                  {report.rejectionReason && (
-                    <div>
-                      <span className="text-sm text-red-700 font-medium">Ablehnungsgrund:</span>
-                      <p className="text-red-800 mt-1">{report.rejectionReason}</p>
-                    </div>
-                  )}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                     <div className="flex items-center space-x-2">
+                       <User className="h-4 w-4 text-red-600" />
+                       <p className="text-sm">
+                         <span className="text-red-700">Abgelehnt von:</span>
+                         <span className="font-medium text-red-800 ml-2">{rejectedByName}</span>
+                       </p>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <Calendar className="h-4 w-4 text-red-600" />
+                       <p className="text-sm">
+                         <span className="text-red-700">Abgelehnt am:</span>
+                         <span className="font-medium text-red-800 ml-2">{formatDate(report.rejectedAt)}</span>
+                       </p>
+                     </div>
+                   </div>
+                   {report.rejectionReason && (
+                     <p className="text-sm">
+                       <span className="text-red-700 font-medium">Ablehnungsgrund:</span>
+                       <span className="text-red-800 ml-2">{report.rejectionReason}</span>
+                     </p>
+                   )}
                 </div>
                 <Separator />
               </>
