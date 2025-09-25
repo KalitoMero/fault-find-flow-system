@@ -543,7 +543,11 @@ const Index = () => {
                           <Badge 
                             variant={
                               report.approvalStatus === 'approved' ? 'default' :
-                              report.approvalStatus === 'rejected' ? 'destructive' : 'secondary'
+                              report.approvalStatus === 'rejected' ? 'destructive' : 'destructive'
+                            }
+                            className={
+                              report.approvalStatus === 'approved' ? 'bg-green-600 text-white hover:bg-green-700' :
+                              report.approvalStatus === 'rejected' ? '' : 'bg-red-600 text-white'
                             }
                           >
                             {report.approvalStatus === 'approved' ? 'Freigegeben' :
