@@ -129,7 +129,6 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean, reports: Erro
     headers.push(
       'Auftragsnummer',
       'AFO-Nummer',
-      'Maschine',
       'Abteilung',
       'Artikelnummer'
     );
@@ -308,7 +307,6 @@ const buildDataRows = (
       row.push(
         report.orderNumber,
         report.afoNumber,
-        report.machine,
         report.excelDepartment || '',
         report.additionalExcelData?.Artikelnummer || ''
       );
@@ -359,7 +357,7 @@ const buildDataRows = (
     
     // Remove standard headers to get only additional ones
     if (fields.basicInfo) {
-      additionalHeaders.splice(0, 5); // Remove basic info headers
+      additionalHeaders.splice(0, 4); // Remove basic info headers (4 instead of 5)
     }
     if (fields.quantities) {
       additionalHeaders.splice(0, 3); // Remove quantity headers
@@ -556,7 +554,6 @@ const buildCSVContent = (
       row.push(
         escapeCsvValue(report.orderNumber),
         escapeCsvValue(report.afoNumber),
-        escapeCsvValue(report.machine),
         escapeCsvValue(report.excelDepartment || ''),
         escapeCsvValue(report.additionalExcelData?.Artikelnummer || '')
       );
@@ -607,7 +604,7 @@ const buildCSVContent = (
     
     // Remove standard headers to get only additional ones
     if (fields.basicInfo) {
-      additionalHeaders.splice(0, 5); // Remove basic info headers
+      additionalHeaders.splice(0, 4); // Remove basic info headers (4 instead of 5)
     }
     if (fields.quantities) {
       additionalHeaders.splice(0, 3); // Remove quantity headers
