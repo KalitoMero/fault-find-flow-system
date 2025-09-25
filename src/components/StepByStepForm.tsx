@@ -769,7 +769,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl flex items-center justify-center gap-3">
               {currentField.icon}
-              {currentField.label}
+              {currentField.type === 'quantity' ? (currentField.quantityType || 'Ausschussmenge') : currentField.label}
               {currentField.required && <span className="text-red-500">*</span>}
             </CardTitle>
           </CardHeader>
