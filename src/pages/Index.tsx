@@ -255,7 +255,12 @@ const Index = () => {
   };
 
   const handleReportFound = (report: ErrorReport) => {
-    setSelectedReport(report);
+    // If report is rejected, open it in edit mode for anyone accessing through search
+    if (report.approvalStatus === 'rejected') {
+      setEditingReport(report);
+    } else {
+      setSelectedReport(report);
+    }
   };
 
   // Prüfe ob Vertretungsfeld angezeigt werden soll
