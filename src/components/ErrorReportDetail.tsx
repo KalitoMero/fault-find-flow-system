@@ -192,7 +192,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
   return (
     <div className="min-h-screen bg-light-blue p-4">
-      <div className="max-w-full mx-auto">
+      <div className="w-full max-w-full mx-auto">
         <Button
           variant="ghost"
           onClick={onBack}
