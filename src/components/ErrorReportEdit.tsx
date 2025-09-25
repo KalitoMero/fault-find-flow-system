@@ -272,6 +272,18 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                 <span>Fehlermeldung #{report.id} bearbeiten</span>
               </div>
               <div className="flex items-center space-x-2">
+                {/* Speichern-Button für abgelehnte Meldungen neben dem Titel */}
+                {report.approvalStatus === 'rejected' && (
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={isSubmitting || !formData.problemDescription.trim()}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isSubmitting ? 'Speichere...' : 'Speichern'}
+                  </Button>
+                )}
                 {getStatusBadge()}
               </div>
             </CardTitle>
@@ -281,19 +293,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Speichern-Button für abgelehnte Meldungen - oben positioniert */}
-            {report.approvalStatus === 'rejected' && (
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSaveChanges}
-                  disabled={isSubmitting || !formData.problemDescription.trim()}
-                  variant="destructive"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {isSubmitting ? 'Speichere...' : 'Speichern'}
-                </Button>
-              </div>
-            )}
 
             {/* Rejection Information for rejected reports */}
             {report.approvalStatus === 'rejected' && rejectedByName && report.rejectedAt && (
