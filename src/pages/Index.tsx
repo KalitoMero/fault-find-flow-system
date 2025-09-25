@@ -437,23 +437,25 @@ const Index = () => {
                       <Button
                         variant={searchType === 'orderNumber' ? 'default' : 'outline'}
                         onClick={() => setSearchType('orderNumber')}
+                        size="sm"
                         className="flex-1"
                       >
-                        Nach Auftragsnummer
+                        PBA
                       </Button>
                       <Button
                         variant={searchType === 'articleNumber' ? 'default' : 'outline'}
                         onClick={() => setSearchType('articleNumber')}
+                        size="sm"
                         className="flex-1"
                       >
-                        Nach Artikelnummer
+                        SA
                       </Button>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2 flex-1">
                         <Search className="h-4 w-4 text-gray-500" />
                         <Input
-                          placeholder={searchType === 'orderNumber' ? 'Nach Auftragsnummer suchen...' : 'Nach Artikelnummer suchen...'}
+                          placeholder={searchType === 'orderNumber' ? 'Nach PBA suchen...' : 'Nach SA suchen...'}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="flex-1"
