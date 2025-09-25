@@ -838,7 +838,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   ) : (
                     <>
                       <CheckCircle className="h-5 w-5 mr-2" />
-                      {isFormComplete() ? 'Überprüfen' : 'Alle Pflichtfelder ausfüllen'}
+                      {isFormComplete() ? 'Fertigstellen' : 'Alle Pflichtfelder ausfüllen'}
                     </>
                   )}
                 </Button>
