@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, X } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
@@ -793,6 +793,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       rows={8}
                       className="text-center text-lg flex-1"
                     />
+                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleFieldUpdate(currentField.id, '')}
+                        className="min-w-[40px] h-10 p-2"
+                        title="Text löschen"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
                       <AudioRecorderN8n 
                         key={currentField.id}
