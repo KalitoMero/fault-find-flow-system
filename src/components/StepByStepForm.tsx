@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, X } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2 } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
@@ -779,47 +779,47 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             <div className="flex flex-col items-center space-y-4">
               {currentField.type === 'textarea' ? (
                 <div className="w-full max-w-md space-y-4">
-                  <div className="flex gap-2 items-start">
-                    <Textarea
-                      value={currentField.value}
-                      onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
-                          e.preventDefault();
-                          handleNext();
-                        }
-                      }}
-                      placeholder={currentField.placeholder}
-                      rows={8}
-                      className="text-center text-lg flex-1"
-                    />
-                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
+                  <Textarea
+                    value={currentField.value}
+                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
+                        e.preventDefault();
+                        handleNext();
+                      }
+                    }}
+                    placeholder={currentField.placeholder}
+                    rows={8}
+                    className="text-center text-lg w-full"
+                  />
+                  {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
+                    <div className="flex gap-2 justify-center">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleFieldUpdate(currentField.id, '')}
-                        className="min-w-[40px] h-10 p-2"
+                        className="h-8 px-3"
                         title="Text löschen"
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
-                    {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <AudioRecorderN8n 
-                        key={currentField.id}
-                        onTranscription={(transcription, audioBlob) => {
-                          handleFieldUpdate(currentField.id, transcription);
-                          if (audioBlob) {
-                            setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
-                          }
-                        }}
-                        label={`${currentField.label} aufnehmen`}
-                        webhookUrl={n8nWebhookUrl}
-                        useN8n={true}
-                      />
-                    )}
-                  </div>
+                      <div className="scale-75">
+                        <AudioRecorderN8n 
+                          key={currentField.id}
+                          onTranscription={(transcription, audioBlob) => {
+                            handleFieldUpdate(currentField.id, transcription);
+                            if (audioBlob) {
+                              setAudioFiles(prev => ({...prev, [currentField.id]: audioBlob}));
+                            }
+                          }}
+                          label={`${currentField.label} aufnehmen`}
+                          webhookUrl={n8nWebhookUrl}
+                          useN8n={true}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : currentField.type === 'select' ? (
                 <div className="flex flex-col items-center space-y-4">
