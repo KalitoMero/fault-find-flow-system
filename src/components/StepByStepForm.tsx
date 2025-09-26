@@ -794,13 +794,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5 self-start mt-4">
                         <Button
                           type="button"
                           variant="outline"
                           size="default"
                           onClick={() => handleFieldUpdate(currentField.id, '')}
-                          className="h-16 px-4"
+                          className="h-10 px-4"
                           title="Text löschen"
                         >
                           <Trash2 className="h-5 w-5" />

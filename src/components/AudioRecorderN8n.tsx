@@ -205,7 +205,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
   const isProcessingAudio = isProcessing;
 
   return (
-    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '220px', paddingTop: '6px' }}>
+    <div className="flex flex-col gap-2 w-12" style={{ minHeight: '200px', paddingTop: '6px' }}>
       {/* Recording Controls */}
       {!isRecording && !hasRecording && (
         <Button
@@ -214,25 +214,25 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
           variant="destructive"
           size="sm"
           className="w-12 p-0"
-          style={{ height: '220px' }}
+          style={{ height: '200px' }}
         >
           <Mic className="h-4 w-4" />
         </Button>
       )}
 
       {isRecording && (
-        <div className="flex flex-col gap-2" style={{ height: '220px' }}>
+        <div className="flex flex-col gap-2" style={{ height: '200px' }}>
           <Button
             type="button"
             onClick={stopRecording}
             variant="destructive"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '110px' }}
+            style={{ height: '100px' }}
           >
             <MicOff className="h-4 w-4" />
           </Button>
-          <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-12" style={{ height: '106px' }}>
+          <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-12" style={{ height: '96px' }}>
             <div className="flex flex-col gap-1 items-center">
               <div className="flex gap-1">
                 <div className="audio-wave bg-red-500 w-1 h-2"></div>
@@ -248,14 +248,14 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       )}
 
       {hasRecording && !isSaved && !isProcessingAudio && (
-        <div style={{ height: '220px' }}>
+        <div style={{ height: '200px' }}>
           <Button
             type="button"
             onClick={resetRecording}
             variant="outline"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '220px' }}
+            style={{ height: '200px' }}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -263,14 +263,14 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       )}
 
       {isProcessingAudio && (
-        <div style={{ height: '220px' }}>
+        <div style={{ height: '200px' }}>
           <Button
             type="button"
             disabled
             variant="outline"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '220px' }}
+            style={{ height: '200px' }}
           >
             <Loader2 className="h-4 w-4 animate-spin" />
           </Button>
@@ -278,14 +278,14 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
       )}
 
       {isSaved && (
-        <div style={{ height: '220px' }}>
+        <div style={{ height: '200px' }}>
           <Button
             type="button"
             onClick={resetRecording}
             variant="outline"
             size="sm"
             className="w-12 p-0"
-            style={{ height: '220px' }}
+            style={{ height: '200px' }}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
