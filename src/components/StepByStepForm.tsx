@@ -5,10 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2 } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
+import { printErrorReport } from '@/lib/printUtils';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
@@ -455,6 +456,64 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     handleFieldUpdate(currentField.id, currentField.value.slice(0, -1));
   };
 
+  const handleSubmitAndPrint = useCallback(async () => {
+    // Show review first if all fields are complete
+    if (isFormComplete() && !showReview) {
+      setShowReview(true);
+      return;
+    }
+
+    const requiredFields = fields.filter(f => f.required);
+    const missingFields = requiredFields.filter(f => !f.value);
+    
+    if (missingFields.length > 0) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const reportId = generateErrorReportId();
+      const report = {
+        id: reportId,
+        orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
+        afoNumber: fields.find(f => f.id === 'afoNumber')?.value || '',
+        personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
+        defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
+        totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
+        quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
+        problemDescription: fields.find(f => f.id === 'problemDescription')?.value || '',
+        errorCause: fields.find(f => f.id === 'problemDescription')?.value || '',
+        correctiveAction: fields.find(f => f.id === 'correctiveAction')?.value || '',
+        machine: 'Standard',
+        creator: 'System',
+        createdAt: new Date().toISOString(),
+        approvalStatus: 'pending' as const,
+        assignedTeamLeader,
+        excelDepartment,
+        additionalExcelData,
+        audioFiles
+      };
+      
+      console.log('Saving report:', report);
+      await saveErrorReport(report);
+      
+      // Print the report after saving
+      printErrorReport(report);
+      
+      onReportCreated();
+      onClose();
+      
+      toast.success('Fehlermeldung erstellt und wird gedruckt!');
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+      toast.error('Fehler beim Speichern der Fehlermeldung');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [fields, isFormComplete, showReview, assignedTeamLeader, excelDepartment, additionalExcelData, audioFiles, onReportCreated, onClose]);
+
   const handleSubmit = useCallback(async () => {
     // Show review first if all fields are complete
     if (isFormComplete() && !showReview) {
@@ -581,19 +640,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 </div>
               )}
 
-              <div className="flex justify-center gap-4 pt-6">
+              <div className="flex justify-center gap-3 pt-6">
                 <Button 
                   onClick={() => setShowReview(false)}
                   variant="outline"
                   size="lg"
-                  className="px-8 py-3"
+                  className="px-6 py-3"
                 >
                   Bearbeiten
                 </Button>
                 <Button 
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="px-8 py-3 bg-green-600 hover:bg-green-700"
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
                   size="lg"
                 >
                   {isSubmitting ? (
@@ -605,6 +664,24 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     <>
                       <CheckCircle className="h-5 w-5 mr-2" />
                       Fertigstellen
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={handleSubmitAndPrint}
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Settings className="h-5 w-5 mr-2 animate-spin" />
+                      Wird gespeichert...
+                    </>
+                  ) : (
+                    <>
+                      <Printer className="h-5 w-5 mr-2" />
+                      Fertigstellen und Drucken
                     </>
                   )}
                 </Button>
