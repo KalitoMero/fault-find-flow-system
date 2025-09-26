@@ -798,14 +798,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleFieldUpdate(currentField.id, '')}
-                          className="h-8 px-3"
+                          className="h-10 px-4"
                           title="Text löschen"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
                         </Button>
-                        <div className="scale-75 -mt-3">
+                        <div className="-mt-2">
                           <AudioRecorderN8n
                             key={currentField.id}
                             onTranscription={(transcription, audioBlob) => {
