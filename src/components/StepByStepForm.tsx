@@ -794,19 +794,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <div className="flex flex-col gap-0.5">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleFieldUpdate(currentField.id, '')}
-                          className="h-10 px-4"
-                          title="Text löschen"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
-                        <div className="-mt-2">
-                          <AudioRecorderN8n
+                      <div className="flex flex-col gap-2">
+                        <div className="-mb-1">
+                          <AudioRecorderN8n 
                             key={currentField.id}
                             onTranscription={(transcription, audioBlob) => {
                               handleFieldUpdate(currentField.id, transcription);
@@ -819,6 +809,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                             useN8n={true}
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => handleFieldUpdate(currentField.id, '')}
+                          className="h-10 px-4"
+                          title="Text löschen"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
                       </div>
                     )}
                   </div>
