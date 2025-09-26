@@ -800,7 +800,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           variant="outline"
                           size="default"
                           onClick={() => handleFieldUpdate(currentField.id, '')}
-                          className="h-10 px-4"
+                          className="h-16 px-4"
                           title="Text löschen"
                         >
                           <Trash2 className="h-5 w-5" />
