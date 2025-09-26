@@ -110,7 +110,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       placeholder: 'Anzahl eingeben',
       options: [
         { value: 'Ausschussmenge', label: 'Ausschussmenge' },
-        { value: 'Bearbeitungsmenge', label: 'Bearbeitungsmenge' }
+        { value: 'Nacharbeit', label: 'Nacharbeit' }
       ],
       quantityType: 'Ausschussmenge'
     },
