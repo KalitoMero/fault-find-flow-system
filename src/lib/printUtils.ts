@@ -334,13 +334,20 @@ export const printErrorReport = (report: ErrorReport) => {
     
     // Warte bis der Inhalt geladen ist und drucke dann
     printFrame.onload = () => {
-      printFrame.contentWindow?.focus();
-      printFrame.contentWindow?.print();
-      
-      // Entferne das iframe nach dem Drucken
+      // Kurze Verzögerung und dann direkt drucken
       setTimeout(() => {
-        document.body.removeChild(printFrame);
-      }, 1000);
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+        
+        // Entferne das iframe sofort nach dem Druckaufruf
+        setTimeout(() => {
+          try {
+            document.body.removeChild(printFrame);
+          } catch (e) {
+            // Frame bereits entfernt
+          }
+        }, 100);
+      }, 100);
     };
   }
 };
