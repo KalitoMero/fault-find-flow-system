@@ -794,7 +794,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       className="text-center text-lg flex-1"
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
-                      <div className="flex flex-col gap-0.5 self-start mt-4">
+                      <div className="flex flex-col gap-0.5 self-start -mt-2">
                         <Button
                           type="button"
                           variant="outline"
