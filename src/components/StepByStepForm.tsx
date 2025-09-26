@@ -805,8 +805,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                        <div className="scale-75">
-                          <AudioRecorderN8n 
+                        <div className="scale-75 -mt-3">
+                          <AudioRecorderN8n
                             key={currentField.id}
                             onTranscription={(transcription, audioBlob) => {
                               handleFieldUpdate(currentField.id, transcription);
