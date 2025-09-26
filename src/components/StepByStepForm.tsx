@@ -10,6 +10,7 @@ import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelData } from '@/lib/excelStorage';
 import { printErrorReport } from '@/lib/printUtils';
+import { generatePDF } from '@/lib/pdfUtils';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
@@ -499,13 +500,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       console.log('Saving report:', report);
       await saveErrorReport(report);
       
-      // Print the report after saving
-      printErrorReport(report);
+      // PDF automatisch generieren und herunterladen
+      generatePDF(report);
       
       onReportCreated();
       onClose();
       
-      toast.success('Fehlermeldung erstellt und wird gedruckt!');
+      toast.success('Fehlermeldung erstellt und PDF wird heruntergeladen!');
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
       toast.error('Fehler beim Speichern der Fehlermeldung');
@@ -681,7 +682,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   ) : (
                     <>
                       <Printer className="h-5 w-5 mr-2" />
-                      Fertigstellen und Drucken
+                      Fertigstellen und PDF herunterladen
                     </>
                   )}
                 </Button>
