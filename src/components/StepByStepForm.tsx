@@ -52,18 +52,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
-  // Auto-focus the first input field
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const firstInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (firstInput) {
-        firstInput.focus();
-      }
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (username: string): string => {
     const employee = employees.find(emp => emp.account?.username === username);
@@ -185,6 +173,31 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
     }
   }, [fields.find(f => f.id === 'afoNumber')?.value]);
+
+  // Auto-focus input field when step changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentField = fields[currentStep];
+      if (!currentField) return;
+      
+      // Focus on textarea for text fields
+      if (currentField.type === 'textarea') {
+        const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+        if (textarea) {
+          textarea.focus();
+        }
+      } 
+      // Focus on input for text and quantity fields
+      else if (currentField.type === 'text' || currentField.type === 'quantity') {
+        const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+      }
+    }, 150);
+    
+    return () => clearTimeout(timer);
+  }, [currentStep, fields]);
 
   // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
   const findTeamLeaderForDepartment = (departmentName: string): string => {
