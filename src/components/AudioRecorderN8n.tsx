@@ -228,9 +228,9 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
             variant="destructive"
             size="sm"
             className="w-12 p-0 flex items-center justify-center"
-            style={{ height: '100px', writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            style={{ height: '100px' }}
           >
-            <span className="text-[10px] font-medium">Aufnahme stoppen</span>
+            <span className="text-xs font-medium">Stopp</span>
           </Button>
           <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-12" style={{ height: '96px' }}>
             <div className="flex flex-col gap-1 items-center">
