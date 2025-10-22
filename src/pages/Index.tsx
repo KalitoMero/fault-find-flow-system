@@ -22,11 +22,13 @@ import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber, deleteErrorReport } from '@/lib/storage';
 import { getEmployees } from '@/lib/settingsStorage';
 import { toast } from "sonner";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [showLogin, setShowLogin] = useState(false);
   const [showSettingsPrompt, setShowSettingsPrompt] = useState(false);
@@ -43,41 +45,40 @@ const Index = () => {
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showStepForm, setShowStepForm] = useState(false);
-  const { user, logout, isAuthenticated } = useAuth();
+  const { profile, logout, isAuthenticated, loading } = useAuth();
+
+  // Redirect to auth page if not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [loading, isAuthenticated, navigate]);
 
   const loadData = () => {
-    if (isAuthenticated && user) {
-      if (user.role === 'teamleader') {
-        // Teamleiter sieht seine zugewiesenen Meldungen + Meldungen als Vertretung
-        const directReports = getErrorReportsForTeamLeader(user.username);
-        const deputyReports = getErrorReportsForDeputy(user.username);
-        
-        // Kombiniere beide Listen und entferne Duplikate
-        const allReports = [...directReports];
-        deputyReports.forEach(deputyReport => {
-          if (!allReports.find(report => report.id === deputyReport.id)) {
-            allReports.push(deputyReport);
-          }
-        });
-        
-        setErrorReports(allReports);
-      } else {
-        // Normale Mitarbeiter sehen nur Meldungen als Vertretung
-        const deputyReports = getErrorReportsForDeputy(user.username);
-        setErrorReports(deputyReports);
-      }
-    } else {
-      // Nicht angemeldete Benutzer sehen alle Meldungen
-      const reports = getErrorReports();
-      setErrorReports(reports);
-    }
+    // Temporarily load all reports
+    // TODO: Filter by user role and load from Supabase
+    setErrorReports([]);
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, user]);
+    if (isAuthenticated) {
+      loadData();
+      const interval = setInterval(loadData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, profile]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Lädt...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Filter and sort reports based on search term, status, and sort preferences
   const filteredReports = errorReports
@@ -208,7 +209,7 @@ const Index = () => {
 
     if (isAuthenticated) {
       // Teamleiter: pending Meldungen direkt bearbeiten, andere zur Detail-Ansicht
-      if (user?.role === 'teamleader') {
+      if (profile?.role === 'teamleader') {
         if (latestReport.approvalStatus === 'pending') {
           setEditingReport(latestReport);
         } else {
@@ -265,13 +266,13 @@ const Index = () => {
 
   // Prüfe ob Vertretungsfeld angezeigt werden soll
   const shouldShowDeputySelection = () => {
-    if (!isAuthenticated || !user) return false;
+    if (!isAuthenticated || !profile) return false;
     
     // Zeige für Teamleiter
-    if (user.role === 'teamleader') return true;
+    if (profile.role === 'teamleader') return true;
     
     // Zeige für normale Mitarbeiter nur wenn sie bereits als Vertretung eingetragen sind
-    return isUserDeputy(user.username);
+    return isUserDeputy(profile.id);
   };
 
   const handleToggleSort = (newSortBy: 'date' | 'orderNumber') => {
@@ -333,12 +334,12 @@ const Index = () => {
     <div className="min-h-screen bg-light-blue">
       {/* Buttons fixed in top right corner */}
       <div className="fixed top-4 right-4 z-50 flex items-center space-x-4">
-        {isAuthenticated && user ? (
+        {isAuthenticated && profile ? (
           <>
             <Badge variant="default">
-              {user.role === 'admin' ? 'Administrator' : user.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {user.name}
+              {profile.role === 'admin' ? 'Administrator' : profile.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {profile.name}
             </Badge>
-            {user.role === 'admin' && (
+            {profile.role === 'admin' && (
               <Button variant="outline" onClick={() => setShowSettingsPasswordDialog(true)}>
                 <Settings className="h-4 w-4 mr-2" />
                 Passwort ändern
@@ -364,14 +365,14 @@ const Index = () => {
 
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
-        {isAuthenticated && user ? (
-          user.role === 'admin' ? (
+        {isAuthenticated && profile ? (
+          profile.role === 'admin' ? (
             // Admin Dashboard
-            <AdminDashboard currentUser={user.username} />
+            <AdminDashboard currentUser={profile.id} />
           ) : (
           <div className="space-y-6">
             {/* Status-Anzeige für Teamleiter */}
-            {user.role === 'teamleader' && pendingReportsCount > 0 && (
+            {profile.role === 'teamleader' && pendingReportsCount > 0 && (
               <Card className="border-orange-200 bg-orange-50">
                 <CardContent className="pt-6">
                   <div className="flex items-center space-x-3">
@@ -397,7 +398,7 @@ const Index = () => {
             {/* Deputy Selection with Error Boundary - nur anzeigen wenn berechtigt */}
             <ErrorBoundary>
               <DeputySelection 
-                currentUser={user?.username || ''} 
+                currentUser={profile?.id || ''} 
                 shouldShow={shouldShowDeputySelection()}
               />
             </ErrorBoundary>
@@ -405,15 +406,15 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {user.role === 'teamleader' ? 'Meine Fehlermeldungen' : 'Vertretungs-Fehlermeldungen'}
+                  {profile.role === 'teamleader' ? 'Meine Fehlermeldungen' : 'Vertretungs-Fehlermeldungen'}
                 </CardTitle>
                 <CardDescription>
-                  {user.role === 'teamleader' 
+                  {profile.role === 'teamleader' 
                     ? 'Fehlermeldungen, die Ihnen zur Prüfung zugewiesen sind (inkl. Vertretungsmeldungen, sortiert nach Datum)'
                     : 'Fehlermeldungen, für die Sie als Vertretung eingetragen sind'
                   }
                 </CardDescription>
-                {user.role === 'teamleader' && (
+                {profile.role === 'teamleader' && (
                   <div className="flex flex-col space-y-4 mt-4">
                     {/* Sortierungsoptionen */}
                     <div className="flex items-center space-x-2">
@@ -510,11 +511,11 @@ const Index = () => {
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       {searchTerm || statusFilter !== 'all' ? 'Keine Meldungen gefunden' : 
-                       user.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
+                       profile.role === 'teamleader' ? 'Keine Meldungen zugewiesen' : 'Keine Vertretungsmeldungen'}
                     </h3>
                     <p className="text-gray-500">
                       {searchTerm || statusFilter !== 'all' ? 'Keine Meldungen entsprechen den aktuellen Filterkriterien.' :
-                       user.role === 'teamleader' 
+                       profile.role === 'teamleader' 
                         ? 'Es sind Ihnen aktuell keine Fehlermeldungen zur Prüfung zugewiesen.'
                         : 'Sie sind aktuell für keine Fehlermeldungen als Vertretung eingetragen.'
                       }
@@ -558,7 +559,7 @@ const Index = () => {
                             {report.approvalStatus === 'approved' ? 'Freigegeben' :
                              report.approvalStatus === 'rejected' ? 'Abgelehnt' : 'Prüfung'}
                           </Badge>
-                          {user.role === 'teamleader' && (
+                          {profile.role === 'teamleader' && (
                             <Button
                               variant="destructive"
                               size="sm"

@@ -27,17 +27,17 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
 
   const handleApprove = async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !profile) return;
     
     setIsSubmitting(true);
     try {
       // Find the current user's employee record to get their name
       const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-      const approverName = currentEmployee?.name || user.username;
+      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
+      const approverName = currentEmployee?.name || profile.name;
       
       updateErrorReportStatus(report.id, 'approved', undefined, approverName);
       toast.success('Fehlermeldung wurde freigegeben!');
@@ -59,8 +59,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     try {
       // Find the current user's employee record to get their name
       const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-      const rejectorName = currentEmployee?.name || user.username;
+      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
+      const rejectorName = currentEmployee?.name || profile.name;
       
       updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
       toast.success('Fehlermeldung wurde abgelehnt!');

@@ -1,93 +1,142 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { getEmployees } from '@/lib/settingsStorage';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-interface User {
-  username: string;
-  role: 'teamleader' | 'employee' | 'admin';
+interface UserProfile {
+  id: string;
   name: string;
+  personal_number?: string;
+  department_id?: string;
+  role: 'admin' | 'teamleader' | 'employee';
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  session: Session | null;
+  profile: UserProfile | null;
+  login: (email: string, password: string) => Promise<{ error: any }>;
+  signup: (email: string, password: string, name: string, personalNumber?: string) => Promise<{ error: any }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-
-// Standard-Admin Account
-const defaultAdminAccount = {
-  username: 'admin',
-  password: 'admin'
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profileData) return;
+
+      const { data: roleData, error: roleError } = await (supabase as any)
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (roleError) console.error('Error loading role:', roleError);
+
+      const userRole = (roleData as any)?.role || 'employee';
+
+      setProfile({
+        id: (profileData as any).id,
+        name: (profileData as any).name,
+        personal_number: (profileData as any).personal_number || undefined,
+        department_id: (profileData as any).department_id || undefined,
+        role: userRole as 'admin' | 'teamleader' | 'employee'
+      });
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      setProfile(null);
     }
-  }, []);
-
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Erst in den erstellten Mitarbeiter-Accounts suchen
-    const employees = getEmployees();
-    const employeeAccount = employees.find(emp => 
-      emp.account && 
-      emp.account.username === username && 
-      emp.account.password === password
-    );
-
-    if (employeeAccount) {
-      let role: 'teamleader' | 'employee' | 'admin' = 'employee';
-      if (employeeAccount.isAdmin) {
-        role = 'admin';
-      } else if (employeeAccount.isTeamLeader) {
-        role = 'teamleader';
-      }
-      
-      const user = { 
-        username, 
-        role,
-        name: employeeAccount.name
-      };
-      setUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return true;
-    }
-
-    // Standard-Admin Account prüfen
-    if (username === defaultAdminAccount.username && password === defaultAdminAccount.password) {
-      const user = { 
-        username, 
-        role: 'admin' as const,
-        name: 'Administrator'
-      };
-      setUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return true;
-    }
-
-
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            loadUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signup = async (email: string, password: string, name: string, personalNumber?: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name,
+          personal_number: personalNumber,
+        }
+      }
+    });
+    return { error };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setProfile(null);
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
+      profile,
       login,
+      signup,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user && !!profile,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

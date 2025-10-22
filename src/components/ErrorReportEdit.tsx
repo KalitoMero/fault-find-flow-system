@@ -31,7 +31,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRelatedReports, setShowRelatedReports] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -41,7 +41,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   };
 
   const handleApprove = async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !profile) return;
     
     // First save changes
     if (!formData.problemDescription.trim()) {
@@ -56,8 +56,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
       const updatedReports = allReports.map(r => {
         if (r.id === report.id) {
           const employees = getEmployees();
-          const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-          const approverName = currentEmployee?.name || user.username;
+          const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
+          const approverName = currentEmployee?.name || profile.name;
           
           return {
             ...r,
@@ -104,8 +104,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
       const updatedReports = allReports.map(r => {
         if (r.id === report.id) {
           const employees = getEmployees();
-          const currentEmployee = employees.find(emp => emp.account?.username === user.username);
-          const rejectorName = currentEmployee?.name || user.username;
+          const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
+          const rejectorName = currentEmployee?.name || profile.name;
           
           return {
             ...r,
