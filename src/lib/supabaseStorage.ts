@@ -266,3 +266,136 @@ export const getEmployeesByDepartment = async (departmentId: string) => {
   if (error) throw error;
   return data || [];
 };
+
+// Alle Profile abrufen (mit Rollen)
+export const getProfiles = async () => {
+  const { data: profiles, error: profileError } = await (supabase as any)
+    .from('profiles')
+    .select('*')
+    .order('name');
+
+  if (profileError) throw profileError;
+
+  // Rollen für alle Profile abrufen
+  const { data: roles, error: roleError } = await (supabase as any)
+    .from('user_roles')
+    .select('user_id, role');
+
+  if (roleError) throw roleError;
+
+  // Profile mit Rollen anreichern
+  return (profiles || []).map((profile: any) => {
+    const userRoles = (roles || []).filter((r: any) => r.user_id === profile.id);
+    return {
+      ...profile,
+      roles: userRoles.map((r: any) => r.role),
+      isTeamLeader: userRoles.some((r: any) => r.role === 'teamleader'),
+      isAdmin: userRoles.some((r: any) => r.role === 'admin')
+    };
+  });
+};
+
+// Profil aktualisieren
+export const updateProfile = async (userId: string, updates: any) => {
+  const { error } = await (supabase as any)
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+
+  if (error) throw error;
+};
+
+// Rolle hinzufügen
+export const addUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee') => {
+  const { error } = await (supabase as any)
+    .from('user_roles')
+    .insert({ user_id: userId, role });
+
+  if (error) throw error;
+};
+
+// Rolle entfernen
+export const removeUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee') => {
+  const { error } = await (supabase as any)
+    .from('user_roles')
+    .delete()
+    .eq('user_id', userId)
+    .eq('role', role);
+
+  if (error) throw error;
+};
+
+// Abteilung erstellen
+export const createDepartment = async (name: string) => {
+  const { data, error } = await (supabase as any)
+    .from('departments')
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Abteilung löschen
+export const deleteDepartment = async (departmentId: string) => {
+  const { error } = await (supabase as any)
+    .from('departments')
+    .delete()
+    .eq('id', departmentId);
+
+  if (error) throw error;
+};
+
+// Maschine erstellen
+export const createMachine = async (name: string) => {
+  const { data, error } = await (supabase as any)
+    .from('machines')
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Maschine löschen
+export const deleteMachine = async (machineId: string) => {
+  const { error } = await (supabase as any)
+    .from('machines')
+    .delete()
+    .eq('id', machineId);
+
+  if (error) throw error;
+};
+
+// Logo aus app_settings abrufen
+export const getLogo = async (): Promise<string | null> => {
+  const { data, error } = await (supabase as any)
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'logo')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.value || null;
+};
+
+// Logo in app_settings speichern
+export const saveLogo = async (logoDataUrl: string) => {
+  const { error } = await (supabase as any)
+    .from('app_settings')
+    .upsert({ key: 'logo', value: logoDataUrl });
+
+  if (error) throw error;
+};
+
+// Logo aus app_settings entfernen
+export const removeLogo = async () => {
+  const { error } = await (supabase as any)
+    .from('app_settings')
+    .delete()
+    .eq('key', 'logo');
+
+  if (error) throw error;
+};

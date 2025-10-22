@@ -132,14 +132,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
       const savedReport = await saveErrorReport(reportData);
       
-      // Audio-Dateien hochladen falls vorhanden
-      if (audioBlobs.problemDescription) {
-        await uploadAudioFile(savedReport.id, 'problemDescription', audioBlobs.problemDescription);
-      }
-      if (audioBlobs.correctiveAction) {
-        await uploadAudioFile(savedReport.id, 'correctiveAction', audioBlobs.correctiveAction);
-      }
-
+      // Audio wird nur zu N8N gesendet, nicht gespeichert
+      
       setShowSuccess(true);
       setShowReview(false);
       setLastCreatedReportId(savedReport.id);

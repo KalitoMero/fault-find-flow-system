@@ -1,74 +1,68 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Lock, Save } from 'lucide-react';
-import { Employee, saveEmployee } from '@/lib/settingsStorage';
+import { Lock, Save } from 'lucide-react';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 interface AccountManagementDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: Employee;
+  userId: string;
+  userName: string;
   onAccountUpdated: () => void;
 }
 
 const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({ 
   isOpen, 
   onClose, 
-  employee, 
+  userId,
+  userName,
   onAccountUpdated 
 }) => {
-  const [username, setUsername] = useState(employee.account?.username || '');
-  const [email, setEmail] = useState(employee.account?.email || '');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateAccount = async () => {
-    if (!username.trim() || !email.trim()) {
-      toast.error('Benutzername und E-Mail sind erforderlich');
+    if (!newPassword) {
+      toast.error('Bitte geben Sie ein neues Passwort ein');
       return;
     }
 
-    if (newPassword && newPassword !== confirmPassword) {
-      toast.error('Neue Passwörter stimmen nicht überein');
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwörter stimmen nicht überein');
       return;
     }
 
-    if (newPassword && currentPassword !== employee.account?.password) {
-      toast.error('Aktuelles Passwort ist falsch');
+    if (newPassword.length < 6) {
+      toast.error('Passwort muss mindestens 6 Zeichen lang sein');
       return;
     }
 
     setIsUpdating(true);
     
     try {
-      const updatedEmployee = {
-        ...employee,
-        account: {
-          ...employee.account!,
-          username: username.trim(),
-          email: email.trim(),
-          password: newPassword || employee.account!.password
-        }
-      };
+      // Passwort über Supabase Auth aktualisieren
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
-      saveEmployee(updatedEmployee);
+      if (error) throw error;
+
+      toast.success('Passwort erfolgreich aktualisiert');
       onAccountUpdated();
       onClose();
-      toast.success('Account erfolgreich aktualisiert');
       
-      // Reset password fields
-      setCurrentPassword('');
+      // Felder zurücksetzen
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
-      toast.error('Fehler beim Aktualisieren des Accounts');
+    } catch (error: any) {
+      console.error('Fehler beim Aktualisieren des Passworts:', error);
+      toast.error('Fehler beim Aktualisieren: ' + error.message);
     } finally {
       setIsUpdating(false);
     }
@@ -78,9 +72,9 @@ const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Account verwalten - {employee.name}</DialogTitle>
+          <DialogTitle>Account verwalten - {userName}</DialogTitle>
           <DialogDescription>
-            Bearbeiten Sie Ihre Anmeldedaten
+            Passwort ändern
           </DialogDescription>
         </DialogHeader>
 
@@ -88,56 +82,14 @@ const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-base">
-                <User className="h-4 w-4" />
-                <span>Grunddaten</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="username">Benutzername</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Benutzername"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">E-Mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@firma.de"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-base">
                 <Lock className="h-4 w-4" />
-                <span>Passwort ändern</span>
+                <span>Neues Passwort</span>
               </CardTitle>
               <CardDescription>
-                Lassen Sie die Felder leer, um das Passwort unverändert zu lassen
+                Geben Sie ein neues Passwort ein (mindestens 6 Zeichen)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="currentPassword">Aktuelles Passwort</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Aktuelles Passwort eingeben"
-                />
-              </div>
-
               <div>
                 <Label htmlFor="newPassword">Neues Passwort</Label>
                 <Input

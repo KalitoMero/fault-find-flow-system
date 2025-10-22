@@ -1,123 +1,152 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Shield, Key, UserCog } from 'lucide-react';
-import { 
-  Employee, 
-  getEmployees, 
-  saveEmployee,
-  deleteEmployee,
-  getDepartments,
-  generateId 
-} from '@/lib/settingsStorage';
-import { getSettingsPassword, setSettingsPassword } from '@/lib/settingsStorage';
+import { UserPlus, Trash2, Shield } from 'lucide-react';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
+import { getProfiles, addUserRole, removeUserRole } from '@/lib/supabaseStorage';
+
+interface Profile {
+  id: string;
+  name: string;
+  personal_number?: string;
+  department_id?: string;
+  roles: string[];
+  isAdmin: boolean;
+  isTeamLeader: boolean;
+}
 
 const AdminManagement: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [newAdminUsername, setNewAdminUsername] = useState('');
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
 
   useEffect(() => {
-    loadData();
+    loadProfiles();
   }, []);
 
-  const loadData = () => {
-    setEmployees(getEmployees());
-    setDepartments(getDepartments());
+  const loadProfiles = async () => {
+    try {
+      const data = await getProfiles();
+      setProfiles(data);
+    } catch (error) {
+      console.error('Fehler beim Laden der Profile:', error);
+      toast.error('Fehler beim Laden der Profile');
+    }
   };
 
-  const handleCreateAdmin = () => {
-    if (!newAdminUsername.trim()) {
-      toast.error('Bitte geben Sie einen Benutzernamen ein');
-      return;
-    }
-    if (!newAdminPassword.trim()) {
-      toast.error('Bitte geben Sie ein Passwort ein');
+  const handleCreateAdmin = async () => {
+    if (!newAdminEmail.trim() || !newAdminPassword || !newAdminName.trim()) {
+      toast.error('Bitte alle Felder ausfüllen');
       return;
     }
 
-    // Prüfen ob Username bereits existiert
-    const existingEmployee = employees.find(emp => emp.account?.username === newAdminUsername.trim());
-    if (existingEmployee) {
-      toast.error('Ein Benutzer mit diesem Benutzernamen existiert bereits');
-      return;
-    }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newAdminEmail.trim(),
+        password: newAdminPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: newAdminName.trim()
+          }
+        }
+      });
 
-    const newAdmin: Employee = {
-      id: generateId(),
-      name: newAdminUsername.trim(), // Use username as name
-      departmentId: 'admin', // Default admin department
-      isTeamLeader: false,
-      isAdmin: true,
-      account: {
-        username: newAdminUsername.trim(),
-        email: `${newAdminUsername.trim()}@admin.local`,
-        password: newAdminPassword.trim()
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        throw new Error('Benutzer konnte nicht erstellt werden');
       }
-    };
 
-    saveEmployee(newAdmin);
-    setNewAdminUsername('');
-    setNewAdminPassword('');
-    loadData();
-    toast.success('Admin-Account erfolgreich erstellt');
-  };
+      await addUserRole(authData.user.id, 'admin');
 
-  const handleToggleAdmin = (employeeId: string, isAdmin: boolean) => {
-    const employee = employees.find(e => e.id === employeeId);
-    if (employee) {
-      const updatedEmployee = { ...employee, isAdmin };
-      saveEmployee(updatedEmployee);
-      loadData();
-      toast.success(`Admin-Status für ${employee.name} ${isAdmin ? 'aktiviert' : 'deaktiviert'}`);
+      toast.success('Admin erfolgreich erstellt');
+      setNewAdminEmail('');
+      setNewAdminPassword('');
+      setNewAdminName('');
+      loadProfiles();
+    } catch (error: any) {
+      console.error('Fehler beim Erstellen des Admins:', error);
+      
+      if (error.message?.includes('already registered')) {
+        toast.error('Diese E-Mail-Adresse ist bereits registriert');
+      } else {
+        toast.error('Fehler beim Erstellen des Admins: ' + error.message);
+      }
     }
   };
 
-  const handleDeleteAdmin = (employeeId: string) => {
-    const employee = employees.find(e => e.id === employeeId);
-    if (employee && window.confirm(`Möchten Sie den Admin-Account von ${employee.name} wirklich löschen?`)) {
-      deleteEmployee(employeeId);
-      loadData();
-      toast.success('Admin-Account gelöscht');
+  const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
+    try {
+      if (isCurrentlyAdmin) {
+        await removeUserRole(userId, 'admin');
+        toast.success('Admin-Rechte entfernt');
+      } else {
+        await addUserRole(userId, 'admin');
+        toast.success('Admin-Rechte hinzugefügt');
+      }
+      loadProfiles();
+    } catch (error) {
+      console.error('Fehler beim Ändern der Admin-Rechte:', error);
+      toast.error('Fehler beim Ändern der Admin-Rechte');
     }
   };
 
+  const handleDeleteAdmin = async (userId: string, userName: string) => {
+    if (!confirm(`Möchten Sie den Account von "${userName}" wirklich löschen?`)) {
+      return;
+    }
 
-  const getDepartmentName = (departmentId: string) => {
-    const department = departments.find(d => d.id === departmentId);
-    return department ? department.name : 'Unbekannte Abteilung';
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (error) throw error;
+
+      toast.success('Account erfolgreich gelöscht');
+      loadProfiles();
+    } catch (error: any) {
+      console.error('Fehler beim Löschen des Accounts:', error);
+      toast.error('Fehler beim Löschen: ' + error.message);
+    }
   };
-
-  const adminEmployees = employees.filter(emp => emp.isAdmin && emp.account);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <UserCog className="h-5 w-5" />
-            <span>Neuen Admin-Account erstellen</span>
+            <UserPlus className="h-5 w-5" />
+            <span>Neuen Administrator anlegen</span>
           </CardTitle>
           <CardDescription>
             Erstellen Sie einen neuen Administrator-Account
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="adminUsername">Benutzername</Label>
+              <Label htmlFor="adminName">Name</Label>
               <Input
-                id="adminUsername"
-                value={newAdminUsername}
-                onChange={(e) => setNewAdminUsername(e.target.value)}
-                placeholder="Benutzername"
+                id="adminName"
+                value={newAdminName}
+                onChange={(e) => setNewAdminName(e.target.value)}
+                placeholder="Max Mustermann"
+              />
+            </div>
+            <div>
+              <Label htmlFor="adminEmail">E-Mail</Label>
+              <Input
+                id="adminEmail"
+                type="email"
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+                placeholder="admin@firma.de"
               />
             </div>
             <div>
@@ -131,76 +160,74 @@ const AdminManagement: React.FC = () => {
               />
             </div>
           </div>
-          <Button onClick={handleCreateAdmin}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleCreateAdmin} className="mt-4">
+            <UserPlus className="h-4 w-4 mr-2" />
             Admin erstellen
           </Button>
         </CardContent>
       </Card>
 
-      {/* Vorhandene Admin-Accounts */}
       <Card>
         <CardHeader>
-          <CardTitle>Vorhandene Admin-Accounts</CardTitle>
+          <CardTitle>Bestehende Accounts</CardTitle>
           <CardDescription>
-            Verwalten Sie bestehende Administrator-Accounts
+            Verwalten Sie bestehende Benutzer-Accounts
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {adminEmployees.length === 0 ? (
-            <div className="text-center py-8">
-              <UserCog className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Keine Admin-Accounts vorhanden
-              </h3>
-              <p className="text-gray-500">
-                Erstellen Sie den ersten Administrator-Account.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {adminEmployees.map((employee) => (
-                <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-medium">{employee.name}</span>
-                      <Badge variant="default">
-                        <Shield className="h-3 w-3 mr-1" />
-                        Admin
-                      </Badge>
-                      <span className="text-sm text-gray-500">@{employee.account?.username}</span>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Personalnummer</TableHead>
+                <TableHead>Rollen</TableHead>
+                <TableHead>Aktionen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {profiles.map((profile) => (
+                <TableRow key={profile.id}>
+                  <TableCell>{profile.name}</TableCell>
+                  <TableCell>{profile.personal_number || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {profile.isAdmin && (
+                        <Badge variant="destructive">
+                          <Shield className="h-3 w-3 mr-1" />
+                          Admin
+                        </Badge>
+                      )}
+                      {profile.isTeamLeader && (
+                        <Badge variant="secondary">Teamleiter</Badge>
+                      )}
+                      {!profile.isAdmin && !profile.isTeamLeader && (
+                        <Badge variant="outline">Mitarbeiter</Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {getDepartmentName(employee.departmentId)}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`admin-${employee.id}`}
-                        checked={employee.isAdmin || false}
-                        onCheckedChange={(checked) => 
-                          handleToggleAdmin(employee.id, checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={`admin-${employee.id}`} className="text-sm">
-                        Admin
-                      </Label>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={profile.isAdmin ? "outline" : "default"}
+                        onClick={() => handleToggleAdmin(profile.id, profile.isAdmin)}
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        {profile.isAdmin ? 'Admin entziehen' : 'Zu Admin machen'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteAdmin(profile.id, profile.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteAdmin(employee.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

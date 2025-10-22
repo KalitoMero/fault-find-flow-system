@@ -608,7 +608,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         <AccountCreationDialog
           isOpen={!!accountCreationEmployee}
           onClose={() => setAccountCreationEmployee(null)}
-          employee={accountCreationEmployee}
+          profileId={accountCreationEmployee.id}
+          profileName={accountCreationEmployee.name}
           onAccountCreated={handleAccountCreated}
         />
       )}
@@ -617,7 +618,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <AccountManagementDialog
             isOpen={!!accountManagementEmployee}
             onClose={() => setAccountManagementEmployee(null)}
-            employee={accountManagementEmployee}
+            userId={accountManagementEmployee.id}
+            userName={accountManagementEmployee.name}
             onAccountUpdated={handleAccountUpdated}
           />
         )}
