@@ -7,11 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, CheckCircle, Printer } from 'lucide-react';
-import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
-import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
+import { 
+  saveErrorReport, 
+  getDepartments, 
+  getMachines, 
+  getEmployeesByDepartment,
+  uploadAudioFile 
+} from '@/lib/supabaseStorage';
+import { useAuth } from '@/hooks/useAuth';
 import AudioRecorder from './AudioRecorder';
 import SearchableCombobox from './SearchableCombobox';
-import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
 
 interface ErrorReportFormProps {
@@ -20,6 +25,7 @@ interface ErrorReportFormProps {
 }
 
 const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refreshDepartments }) => {
+  const { user, profile } = useAuth();
   const [orderNumber, setOrderNumber] = useState('');
   const [afoNumber, setAfoNumber] = useState('');
   const [defectiveQuantity, setDefectiveQuantity] = useState('');
@@ -27,39 +33,62 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [problemDescription, setProblemDescription] = useState('');
   const [correctiveAction, setCorrectiveAction] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [machines, setMachines] = useState<Machine[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [machines, setMachines] = useState<any[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState('');
-  const [audioFiles, setAudioFiles] = useState<{
-    problemDescription?: string;
-    correctiveAction?: string;
+  const [audioBlobs, setAudioBlobs] = useState<{
+    problemDescription?: Blob;
+    correctiveAction?: Blob;
   }>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [lastCreatedReport, setLastCreatedReport] = useState<any>(null);
+  const [lastCreatedReportId, setLastCreatedReportId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadDepartmentsData();
+    loadData();
   }, [refreshDepartments]);
+
+  useEffect(() => {
+    if (selectedDepartment) {
+      loadEmployees(selectedDepartment);
+    }
+  }, [selectedDepartment]);
 
   // Auto-hide success message after 2 minutes
   useEffect(() => {
     if (showSuccess) {
       const timer = setTimeout(() => {
         setShowSuccess(false);
-        setLastCreatedReport(null);
-      }, 120000); // 2 minutes
+        setLastCreatedReportId(null);
+      }, 120000);
       
       return () => clearTimeout(timer);
     }
   }, [showSuccess]);
 
-  const loadDepartmentsData = () => {
-    setDepartments(getDepartments());
-    setEmployees(getEmployees());
-    setMachines(getMachines());
+  const loadData = async () => {
+    try {
+      const [depts, machs] = await Promise.all([
+        getDepartments(),
+        getMachines()
+      ]);
+      setDepartments(depts);
+      setMachines(machs);
+    } catch (error) {
+      console.error('Fehler beim Laden der Daten:', error);
+      toast.error('Fehler beim Laden der Daten');
+    }
+  };
+
+  const loadEmployees = async (departmentId: string) => {
+    try {
+      const emps = await getEmployeesByDepartment(departmentId);
+      setEmployees(emps);
+    } catch (error) {
+      console.error('Fehler beim Laden der Mitarbeiter:', error);
+      toast.error('Fehler beim Laden der Mitarbeiter');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,60 +96,55 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
     if (!orderNumber || !afoNumber || !defectiveQuantity || 
         !problemDescription || !correctiveAction || 
-        !selectedDepartment || !selectedEmployee) {
+        !selectedDepartment || !user || !profile) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
 
-    // Show review screen
     setShowReview(true);
   };
 
   const handleFinalSubmit = async () => {
+    if (!user || !profile) {
+      toast.error('Benutzer nicht angemeldet');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Find team leader for the selected department
-      const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
-      const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-      
-      if (!teamLeader) {
-        toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
-        return;
-      }
-
-      // Get selected employee for creator name and personal number
-      const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
-      if (!selectedEmp) {
-        toast.error('Ausgewählter Mitarbeiter nicht gefunden');
-        return;
-      }
-
-      const report = {
-        id: generateErrorReportId(),
-        orderNumber,
-        afoNumber: afoNumber || undefined,
-        defectiveQuantity: parseInt(defectiveQuantity),
-        totalDefectiveQuantity: parseInt(defectiveQuantity), // Use same as defective quantity
-        creator: selectedEmp.name,
-        personalNumber: selectedEmp.id, // Use employee ID as personal number
-        machine: machine || undefined,
-        problemDescription,
-        errorCause: problemDescription, // Use problem description as error cause
-        correctiveAction,
-        createdAt: new Date().toISOString(),
-        approvalStatus: 'pending' as const,
-        assignedTeamLeader: teamLeader.account?.username || teamLeader.name,
-        audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
+      // Fehlermeldung speichern
+      const reportData = {
+        order_number: orderNumber,
+        afo_number: afoNumber,
+        defective_quantity: parseInt(defectiveQuantity),
+        total_defective_quantity: parseInt(defectiveQuantity),
+        machine_id: machine || null,
+        problem_description: problemDescription,
+        error_cause: problemDescription,
+        corrective_action: correctiveAction,
+        creator_id: user.id,
+        creator_name: profile.name,
+        personal_number: profile.personal_number,
+        department_id: selectedDepartment,
+        approval_status: 'pending' as const
       };
 
-      saveErrorReport(report);
+      const savedReport = await saveErrorReport(reportData);
       
-      // Show success state and store created report
+      // Audio-Dateien hochladen falls vorhanden
+      if (audioBlobs.problemDescription) {
+        await uploadAudioFile(savedReport.id, 'problemDescription', audioBlobs.problemDescription);
+      }
+      if (audioBlobs.correctiveAction) {
+        await uploadAudioFile(savedReport.id, 'correctiveAction', audioBlobs.correctiveAction);
+      }
+
       setShowSuccess(true);
       setShowReview(false);
-      setLastCreatedReport(report);
+      setLastCreatedReportId(savedReport.id);
       
+      toast.success('Fehlermeldung erfolgreich erstellt');
       onReportCreated();
     } catch (error) {
       console.error('Fehler beim Speichern der Fehlermeldung:', error);
@@ -135,7 +159,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   };
 
   const handleNewReport = () => {
-    // Reset form
     setOrderNumber('');
     setAfoNumber('');
     setDefectiveQuantity('');
@@ -143,26 +166,14 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setProblemDescription('');
     setCorrectiveAction('');
     setSelectedDepartment('');
-    setSelectedEmployee('');
-    setAudioFiles({});
+    setAudioBlobs({});
     setShowSuccess(false);
-    setLastCreatedReport(null);
+    setLastCreatedReportId(null);
   };
-
-  const handlePrintReport = () => {
-    if (lastCreatedReport) {
-      printErrorReport(lastCreatedReport);
-    }
-  };
-
-  const filteredEmployees = selectedDepartment 
-    ? employees.filter(emp => emp.departmentId === selectedDepartment)
-    : [];
 
   if (showReview) {
-    const selectedDept = departments.find(dept => dept.id === selectedDepartment);
-    const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
-    const selectedMach = machines.find(mach => mach.id === machine);
+    const selectedDept = departments.find((dept: any) => dept.id === selectedDepartment);
+    const selectedMach = machines.find((mach: any) => mach.id === machine);
 
     return (
       <Card>
@@ -199,7 +210,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Ersteller</Label>
-              <p className="text-sm bg-muted p-2 rounded">{selectedEmp?.name}</p>
+              <p className="text-sm bg-muted p-2 rounded">{profile?.name}</p>
             </div>
           </div>
 
@@ -250,10 +261,6 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           <div className="flex space-x-3">
             <Button onClick={handleNewReport} className="flex-1">
               Neue Fehlermeldung erstellen
-            </Button>
-            <Button onClick={handlePrintReport} variant="outline">
-              <Printer className="h-4 w-4 mr-2" />
-              Drucken
             </Button>
           </div>
         </CardContent>
@@ -310,40 +317,26 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="selectedDepartment">Abteilung *</Label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Abteilung auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="selectedEmployee">Ersteller *</Label>
-              <SearchableCombobox
-                options={filteredEmployees.map(emp => ({ value: emp.id, label: emp.name }))}
-                value={selectedEmployee}
-                onValueChange={setSelectedEmployee}
-                placeholder="Mitarbeiter auswählen"
-                searchPlaceholder="Mitarbeiter suchen..."
-                className="w-full"
-                disabled={!selectedDepartment}
-              />
-            </div>
+          <div>
+            <Label htmlFor="selectedDepartment">Abteilung *</Label>
+            <Select value={selectedDepartment} onValueChange={setSelectedDepartment} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Abteilung auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((department: any) => (
+                  <SelectItem key={department.id} value={department.id}>
+                    {department.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <Label htmlFor="machine">Feststellort</Label>
             <SearchableCombobox
-              options={machines.map(machine => ({ value: machine.id, label: machine.name }))}
+              options={machines.map((machine: any) => ({ value: machine.id, label: machine.name }))}
               value={machine}
               onValueChange={setMachine}
               placeholder="Feststellort auswählen"
@@ -365,7 +358,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             <AudioRecorder 
               onTranscription={(transcription, audioBlob) => {
                 setProblemDescription(transcription);
-                setAudioFiles(prev => ({...prev, problemDescription: audioBlob}));
+                if (audioBlob && typeof audioBlob !== 'string') {
+                  setAudioBlobs(prev => ({...prev, problemDescription: audioBlob}));
+                }
               }}
               label="Problembeschreibung aufnehmen"
             />
@@ -384,7 +379,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             <AudioRecorder 
               onTranscription={(transcription, audioBlob) => {
                 setCorrectiveAction(transcription);
-                setAudioFiles(prev => ({...prev, correctiveAction: audioBlob}));
+                if (audioBlob && typeof audioBlob !== 'string') {
+                  setAudioBlobs(prev => ({...prev, correctiveAction: audioBlob}));
+                }
               }}
               label="Korrekturmaßnahme aufnehmen"
             />

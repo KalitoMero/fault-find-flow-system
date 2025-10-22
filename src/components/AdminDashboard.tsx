@@ -1,15 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle, Clock } from 'lucide-react';
-import { getTeamLeaderStatistics } from '@/lib/storage';
+import { getTeamLeaderStatistics } from '@/lib/supabaseStorage';
+import { toast } from 'sonner';
 
 interface AdminDashboardProps {
   currentUser: string;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
-  const teamLeaderStats = getTeamLeaderStatistics();
+  const [teamLeaderStats, setTeamLeaderStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStatistics();
+  }, []);
+
+  const loadStatistics = async () => {
+    try {
+      const stats = await getTeamLeaderStatistics();
+      setTeamLeaderStats(stats);
+    } catch (error) {
+      console.error('Fehler beim Laden der Statistiken:', error);
+      toast.error('Fehler beim Laden der Statistiken');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -24,7 +42,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {teamLeaderStats.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Lädt...</p>
+            </div>
+          ) : teamLeaderStats.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -36,15 +58,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {teamLeaderStats.map((leader) => (
+              {teamLeaderStats.map((leader: any) => (
                 <div 
-                  key={leader.username} 
+                  key={leader.id} 
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <h3 className="font-medium text-gray-900">{leader.name}</h3>
-                      <Badge variant="outline">@{leader.username}</Badge>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
                       Abteilung: {leader.department}

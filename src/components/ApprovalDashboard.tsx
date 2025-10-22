@@ -5,9 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Eye, Play, Clock, User, Package } from 'lucide-react';
-import { ErrorReport, updateErrorReportStatus } from '@/lib/storage';
+import { CheckCircle, XCircle, Eye, Clock, User, Package } from 'lucide-react';
+import { updateErrorReportStatus } from '@/lib/supabaseStorage';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
+
+interface ErrorReport {
+  id: string;
+  order_number: string;
+  afo_number: string;
+  machine_id?: string;
+  defective_quantity: number;
+  total_defective_quantity: number;
+  quantity_type?: string;
+  problem_description: string;
+  corrective_action: string;
+  creator_name: string;
+  personal_number?: string;
+  created_at: string;
+  approval_status: 'pending' | 'approved' | 'rejected';
+}
 
 interface ApprovalDashboardProps {
   reports: ErrorReport[];
@@ -15,14 +32,17 @@ interface ApprovalDashboardProps {
 }
 
 const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprovalChange }) => {
+  const { user } = useAuth();
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleApprove = async (reportId: string) => {
+    if (!user) return;
+    
     setIsProcessing(true);
     try {
-      updateErrorReportStatus(reportId, 'approved');
+      await updateErrorReportStatus(reportId, 'approved', undefined, user.id);
       toast.success("Fehlermeldung freigegeben");
       onApprovalChange();
     } catch (error) {
@@ -33,6 +53,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
   };
 
   const handleReject = async (reportId: string, reason: string) => {
+    if (!user) return;
     if (!reason.trim()) {
       toast.error("Bitte geben Sie einen Ablehnungsgrund an");
       return;
@@ -40,7 +61,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
 
     setIsProcessing(true);
     try {
-      updateErrorReportStatus(reportId, 'rejected', reason);
+      await updateErrorReportStatus(reportId, 'rejected', reason, user.id);
       toast.success("Fehlermeldung zur Überarbeitung zurückgewiesen");
       setRejectionReason('');
       setSelectedReport(null);
@@ -49,16 +70,6 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
       toast.error("Fehler beim Ablehnen der Meldung");
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const playAudio = (audioBase64: string) => {
-    if (audioBase64) {
-      const audio = new Audio(audioBase64);
-      audio.play().catch(error => {
-        console.error('Fehler beim Abspielen der Audio:', error);
-        toast.error("Audio konnte nicht abgespielt werden");
-      });
     }
   };
 
@@ -108,10 +119,10 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                   </Badge>
                   <div>
                     <h3 className="font-medium text-base">
-                      PBA: {report.orderNumber}
+                      PBA: {report.order_number}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      AFO: {report.afoNumber} | SA: {report.additionalExcelData?.Artikelnummer || 'N/A'} | Maschine: {report.machine}
+                      AFO: {report.afo_number}
                     </p>
                   </div>
                 </div>
@@ -127,9 +138,9 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
               <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                 <User className="h-5 w-5 text-gray-500" />
                 <div>
-                  <p className="font-medium">{report.creator}</p>
+                  <p className="font-medium">{report.creator_name}</p>
                   <p className="text-sm text-gray-600">
-                    Personal-Nr: {report.personalNumber} | {formatDate(report.createdAt)}
+                    Personal-Nr: {report.personal_number} | {formatDate(report.created_at)}
                   </p>
                 </div>
               </div>
@@ -139,7 +150,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                 <Package className="h-5 w-5 text-red-600" />
                 <div>
                   <p className="font-medium text-red-800">
-                    {report.quantityType || 'Beanstandete Menge'}: {report.defectiveQuantity} von {report.totalDefectiveQuantity}
+                    {report.quantity_type || 'Beanstandete Menge'}: {report.defective_quantity} von {report.total_defective_quantity}
                   </p>
                 </div>
               </div>
@@ -148,8 +159,8 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
               <div className="space-y-2">
                 <h4 className="font-medium">Problembeschreibung:</h4>
                 <p className="text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-l-blue-400">
-                  {report.problemDescription.slice(0, 200)}
-                  {report.problemDescription.length > 200 && '...'}
+                  {report.problem_description.slice(0, 200)}
+                  {report.problem_description.length > 200 && '...'}
                 </p>
               </div>
 
@@ -174,76 +185,41 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
                     
                     {selectedReport && (
                       <div className="space-y-6">
-                        {/* Basis-Infos */}
-                         <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                            <div className="flex-1">
                              <label className="font-medium text-sm">PBA:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.orderNumber}</p>
+                             <p className="text-gray-700 text-sm">{selectedReport.order_number}</p>
                            </div>
                            <div className="flex-1">
                              <label className="font-medium text-sm">AFO-Nummer:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.afoNumber}</p>
+                             <p className="text-gray-700 text-sm">{selectedReport.afo_number}</p>
                            </div>
                            <div className="flex-1">
-                             <label className="font-medium text-sm">{selectedReport.quantityType || 'Beanstandete Menge'}:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.defectiveQuantity}</p>
+                             <label className="font-medium text-sm">{selectedReport.quantity_type || 'Beanstandete Menge'}:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.defective_quantity}</p>
                            </div>
                            <div className="flex-1">
-                             <label className="font-medium text-sm">Gesamt {selectedReport.quantityType?.toLowerCase() || 'beanstandet'}:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.totalDefectiveQuantity}</p>
-                           </div>
-                           <div className="flex-1">
-                             <label className="font-medium text-sm">SA:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.additionalExcelData?.Artikelnummer || 'Nicht verfügbar'}</p>
-                           </div>
-                           <div className="flex-1">
-                             <label className="font-medium text-sm">Maschine:</label>
-                             <p className="text-gray-700 text-sm">{selectedReport.machine}</p>
+                             <label className="font-medium text-sm">Gesamt:</label>
+                             <p className="text-gray-700 text-sm">{selectedReport.total_defective_quantity}</p>
                            </div>
                            <div className="flex-1">
                              <label className="font-medium text-sm">Erstellt am:</label>
-                             <p className="text-gray-700 text-sm">{formatDate(selectedReport.createdAt)}</p>
+                             <p className="text-gray-700 text-sm">{formatDate(selectedReport.created_at)}</p>
                            </div>
                          </div>
 
-                        {/* Detailbeschreibungen */}
                         <div className="space-y-4">
                           <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="font-medium">Problembeschreibung:</label>
-                              {selectedReport.audioFiles?.problemDescription && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => playAudio(selectedReport.audioFiles!.problemDescription!)}
-                                >
-                                  <Play className="h-4 w-4 mr-1" />
-                                  Audio
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-gray-700 p-3 bg-gray-50 rounded">
-                              {selectedReport.problemDescription}
+                            <label className="font-medium">Problembeschreibung:</label>
+                            <p className="text-gray-700 p-3 bg-gray-50 rounded mt-2">
+                              {selectedReport.problem_description}
                             </p>
                           </div>
 
-
                           <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="font-medium">Korrekturmaßnahme:</label>
-                              {selectedReport.audioFiles?.correctiveAction && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => playAudio(selectedReport.audioFiles!.correctiveAction!)}
-                                >
-                                  <Play className="h-4 w-4 mr-1" />
-                                  Audio
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-gray-700 p-3 bg-gray-50 rounded">
-                              {selectedReport.correctiveAction}
+                            <label className="font-medium">Korrekturmaßnahme:</label>
+                            <p className="text-gray-700 p-3 bg-gray-50 rounded mt-2">
+                              {selectedReport.corrective_action}
                             </p>
                           </div>
                         </div>
