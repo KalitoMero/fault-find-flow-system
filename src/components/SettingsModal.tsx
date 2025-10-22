@@ -23,7 +23,6 @@ import {
   deleteMachine,
   getEmployeesByDepartment,
   generateId,
-  initializeDefaultAdmin,
   getLogo,
   setLogo,
   removeLogo
@@ -72,19 +71,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    // Filter out admin accounts from regular employee view
-    const nonAdminEmployees = employees.filter(emp => !emp.isAdmin);
-    
     if (selectedDepartmentFilter === 'all') {
-      setFilteredEmployees(nonAdminEmployees);
+      setFilteredEmployees(employees);
     } else {
-      setFilteredEmployees(nonAdminEmployees.filter(emp => emp.departmentId === selectedDepartmentFilter));
+      setFilteredEmployees(employees.filter(emp => emp.departmentId === selectedDepartmentFilter));
     }
   }, [employees, selectedDepartmentFilter]);
 
   const loadData = () => {
-    // Initialize default admin if needed
-    initializeDefaultAdmin();
     setDepartments(getDepartments());
     setEmployees(getEmployees());
     setMachines(getMachines());

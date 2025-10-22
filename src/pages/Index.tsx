@@ -14,9 +14,8 @@ import LoginForm from '@/components/LoginForm';
 import ErrorReportDetail from '@/components/ErrorReportDetail';
 import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
-import SettingsPasswordPrompt from '@/components/SettingsPasswordPrompt';
-import SettingsPasswordDialog from '@/components/SettingsPasswordDialog';
 import SettingsModal from '@/components/SettingsModal';
+import AdminAuthDialog from '@/components/AdminAuthDialog';
 import AdminDashboard from '@/components/AdminDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -31,9 +30,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [errorReports, setErrorReports] = useState<ErrorReport[]>([]);
   const [showLogin, setShowLogin] = useState(false);
-  const [showSettingsPrompt, setShowSettingsPrompt] = useState(false);
+  const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showSettingsPasswordDialog, setShowSettingsPasswordDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
@@ -178,11 +176,11 @@ const Index = () => {
   };
 
   const handleSettingsClick = () => {
-    setShowSettingsPrompt(true);
+    setShowAdminAuth(true);
   };
 
-  const handleSettingsPasswordSuccess = () => {
-    setShowSettingsPrompt(false);
+  const handleAdminAuthSuccess = () => {
+    setShowAdminAuth(false);
     setShowSettings(true);
   };
 
@@ -339,12 +337,6 @@ const Index = () => {
             <Badge variant="default">
               {profile.role === 'admin' ? 'Administrator' : profile.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {profile.name}
             </Badge>
-            {profile.role === 'admin' && (
-              <Button variant="outline" onClick={() => setShowSettingsPasswordDialog(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Passwort ändern
-              </Button>
-            )}
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Abmelden
@@ -630,23 +622,17 @@ const Index = () => {
         )}
       </div>
 
-      {/* Settings Password Prompt */}
-      <SettingsPasswordPrompt
-        isOpen={showSettingsPrompt}
-        onClose={() => setShowSettingsPrompt(false)}
-        onSuccess={handleSettingsPasswordSuccess}
+      {/* Admin Auth Dialog */}
+      <AdminAuthDialog
+        isOpen={showAdminAuth}
+        onClose={() => setShowAdminAuth(false)}
+        onSuccess={handleAdminAuthSuccess}
       />
 
       {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettings}
         onClose={handleSettingsClose}
-      />
-
-      {/* Settings Password Dialog for Admins */}
-      <SettingsPasswordDialog
-        isOpen={showSettingsPasswordDialog}
-        onClose={() => setShowSettingsPasswordDialog(false)}
       />
 
       {/* Logo Component - Fixed to bottom right */}

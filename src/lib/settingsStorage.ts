@@ -115,38 +115,8 @@ export const deleteMachine = (machineId: string) => {
   localStorage.setItem('production_machines', JSON.stringify(machines));
 };
 
-// Settings password management
-export const getSettingsPassword = (): string => {
-  return localStorage.getItem('settings_password') || 'admin';
-};
-
-export const setSettingsPassword = (password: string) => {
-  localStorage.setItem('settings_password', password);
-};
-
-// Initialize default admin if not exists
-export const initializeDefaultAdmin = () => {
-  const employees = getEmployees();
-  const defaultAdminExists = employees.find(emp => 
-    emp.isAdmin && emp.account?.username === 'admin'
-  );
-
-  if (!defaultAdminExists) {
-    const defaultAdmin: Employee = {
-      id: generateId(),
-      name: 'Administrator',
-      departmentId: 'admin',
-      isTeamLeader: false,
-      isAdmin: true,
-      account: {
-        username: 'admin',
-        email: 'admin@admin.local',
-        password: 'admin'
-      }
-    };
-    saveEmployee(defaultAdmin);
-  }
-};
+// Settings password management and admin initialization functions have been removed.
+// Authentication is now handled via Supabase. Use src/lib/authz.ts for admin checks.
 
 // Logo management
 export const getLogo = (): string | null => {
