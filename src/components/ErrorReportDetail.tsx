@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +6,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
-import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
-import { getEmployees, getMachines } from '@/lib/settingsStorage';
+import { ErrorReport, updateErrorReportStatus, getErrorReports, deleteErrorReport } from '@/lib/supabaseStorage';
+import { getProfiles, getMachines } from '@/lib/supabaseStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
@@ -27,22 +27,40 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
-  const { isAuthenticated, profile } = useAuth();
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [machines, setMachines] = useState<any[]>([]);
+  const { isAuthenticated, profile, session } = useAuth();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [profilesData, machinesData] = await Promise.all([
+        getProfiles(),
+        getMachines()
+      ]);
+      setProfiles(profilesData);
+      setMachines(machinesData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
 
   const handleApprove = async () => {
-    if (!isAuthenticated || !profile) return;
+    if (!isAuthenticated || !session?.user?.id) return;
     
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-      const approverName = currentEmployee?.name || profile.name;
+      const currentProfile = profiles.find(p => p.id === session.user.id);
+      const approverName = currentProfile?.name || profile?.name || 'Unknown';
       
-      updateErrorReportStatus(report.id, 'approved', undefined, approverName);
+      await updateErrorReportStatus(report.id, 'approved', undefined, approverName);
       toast.success('Fehlermeldung wurde freigegeben!');
       onStatusChange();
     } catch (error) {
+      console.error('Error approving report:', error);
       toast.error('Fehler beim Freigeben der Meldung');
     } finally {
       setIsSubmitting(false);
@@ -50,24 +68,23 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   };
 
   const handleReject = async () => {
-    if (!isAuthenticated || !rejectionReason.trim()) {
+    if (!isAuthenticated || !rejectionReason.trim() || !session?.user?.id) {
       toast.error('Bitte geben Sie einen Ablehnungsgrund ein');
       return;
     }
     
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-      const rejectorName = currentEmployee?.name || profile.name;
+      const currentProfile = profiles.find(p => p.id === session.user.id);
+      const rejectorName = currentProfile?.name || profile?.name || 'Unknown';
       
-      updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
+      await updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
       toast.success('Fehlermeldung wurde abgelehnt!');
       onStatusChange();
       setShowRejectionForm(false);
       setRejectionReason('');
     } catch (error) {
+      console.error('Error rejecting report:', error);
       toast.error('Fehler beim Ablehnen der Meldung');
     } finally {
       setIsSubmitting(false);
@@ -83,18 +100,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
     setIsDeleting(true);
     try {
-      // Lade alle Berichte und entferne den entsprechenden
-      const allReports = getErrorReports();
-      const updatedReports = allReports.filter(r => r.id !== report.id);
-      
-      // Speichere die gefilterte Liste zurück
-      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
-      
+      await deleteErrorReport(report.id);
       toast.success('Fehlermeldung wurde erfolgreich gelöscht!');
-      
-      // Trigger onStatusChange to refresh the list, then navigate back
       onStatusChange();
-      onBack(); // Zurück zur Übersicht
+      onBack();
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
       toast.error('Fehler beim Löschen der Fehlermeldung');
@@ -113,23 +122,34 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     printErrorReport(report);
   };
 
-  const getRelatedReports = () => {
-    if (!report.additionalExcelData?.Artikelnummer) return [];
+  const getRelatedReports = async () => {
+    if (!report.additional_info) return [];
     
-    const allReports = getErrorReports();
-    const relatedReports = allReports.filter(r => 
-      String(r.id) !== String(report.id) && 
-      r.additionalExcelData?.Artikelnummer === report.additionalExcelData.Artikelnummer
-    );
-    
-    console.log('Current report ID:', report.id);
-    console.log('Related reports found:', relatedReports.map(r => r.id));
-    
-    return relatedReports;
+    try {
+      const additionalInfo = typeof report.additional_info === 'string' 
+        ? JSON.parse(report.additional_info) 
+        : report.additional_info;
+      
+      if (!additionalInfo?.Artikelnummer) return [];
+      
+      const allReports = await getErrorReports();
+      const relatedReports = allReports.filter(r => {
+        if (String(r.id) === String(report.id)) return false;
+        const rInfo = typeof r.additional_info === 'string' 
+          ? JSON.parse(r.additional_info) 
+          : r.additional_info;
+        return rInfo?.Artikelnummer === additionalInfo.Artikelnummer;
+      });
+      
+      return relatedReports;
+    } catch (error) {
+      console.error('Error getting related reports:', error);
+      return [];
+    }
   };
 
-  const handleShowRelatedReports = () => {
-    const related = getRelatedReports();
+  const handleShowRelatedReports = async () => {
+    const related = await getRelatedReports();
     if (related.length === 0) {
       toast.success('Es gibt keine anderen Fehlermeldungen mit dieser Artikelnummer.');
       return;
@@ -172,23 +192,19 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     }
   };
 
-  // Hole den Namen des Freigabenden/Ablehnenden
-  const employees = getEmployees();
-  const getEmployeeName = (username: string) => {
-    const employee = employees.find(emp => emp.account?.username === username);
-    return employee ? employee.name : username;
-  };
+  // Get approver/rejector name from report (stored directly in report now)
+  const approvedByName = report.approved_by_id;
+  const rejectedByName = report.rejected_by_id;
 
-  const approvedByName = report.approvedBy ? getEmployeeName(report.approvedBy) : report.approvedBy;
-  const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
-
-  // Hole den richtigen Feststellort-Namen
-  const machines = getMachines();
-  const machine = machines.find(m => m.id === report.machine);
-  const machineName = machine ? machine.name : report.machine;
+  // Get machine name
+  const machine = machines.find(m => m.id === report.machine_id);
+  const machineName = machine ? machine.name : report.detection_location || '';
   
-  // Hole Ressource-Daten aus additionalExcelData oder machine field
-  const resourceValue = report.additionalExcelData?.Ressource || machineName || report.machine;
+  // Get additional info
+  const additionalInfo = report.additional_info 
+    ? (typeof report.additional_info === 'string' ? JSON.parse(report.additional_info) : report.additional_info)
+    : {};
+  const resourceValue = additionalInfo?.Ressource || machineName;
 
   return (
     <div className="min-h-screen bg-light-blue p-4">
