@@ -280,6 +280,33 @@ export type Database = {
         }
         Relationships: []
       }
+      n8n_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
