@@ -14,16 +14,346 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
+      audio_files: {
+        Row: {
+          created_at: string | null
+          field_name: string
+          id: string
+          report_id: string | null
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          field_name: string
+          id?: string
+          report_id?: string | null
+          storage_path: string
+        }
+        Update: {
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          report_id?: string | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_files_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "error_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      deputy_assignments: {
+        Row: {
+          assigned_at: string | null
+          deputy_id: string | null
+          id: string
+          is_active: boolean | null
+          team_leader_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          deputy_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_leader_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          deputy_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_leader_id?: string | null
+        }
+        Relationships: []
+      }
+      error_reports: {
+        Row: {
+          additional_info: string | null
+          afo_number: string
+          approval_status: string | null
+          approved_at: string | null
+          approved_by_id: string | null
+          assigned_team_leader_id: string | null
+          corrective_action: string
+          created_at: string | null
+          creator_id: string
+          creator_name: string
+          defective_quantity: number
+          department_id: string | null
+          detection_location: string | null
+          error_cause: string
+          id: string
+          machine_id: string | null
+          order_number: string
+          personal_number: string | null
+          problem_description: string
+          quantity_type: string | null
+          rejected_at: string | null
+          rejected_by_id: string | null
+          rejection_reason: string | null
+          total_defective_quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          additional_info?: string | null
+          afo_number: string
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_id?: string | null
+          assigned_team_leader_id?: string | null
+          corrective_action: string
+          created_at?: string | null
+          creator_id: string
+          creator_name: string
+          defective_quantity: number
+          department_id?: string | null
+          detection_location?: string | null
+          error_cause: string
+          id: string
+          machine_id?: string | null
+          order_number: string
+          personal_number?: string | null
+          problem_description: string
+          quantity_type?: string | null
+          rejected_at?: string | null
+          rejected_by_id?: string | null
+          rejection_reason?: string | null
+          total_defective_quantity: number
+          updated_at?: string | null
+        }
+        Update: {
+          additional_info?: string | null
+          afo_number?: string
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_id?: string | null
+          assigned_team_leader_id?: string | null
+          corrective_action?: string
+          created_at?: string | null
+          creator_id?: string
+          creator_name?: string
+          defective_quantity?: number
+          department_id?: string | null
+          detection_location?: string | null
+          error_cause?: string
+          id?: string
+          machine_id?: string | null
+          order_number?: string
+          personal_number?: string | null
+          problem_description?: string
+          quantity_type?: string | null
+          rejected_at?: string | null
+          rejected_by_id?: string | null
+          rejection_reason?: string | null
+          total_defective_quantity?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_reports_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_reports_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      excel_data: {
+        Row: {
+          created_at: string | null
+          id: string
+          row_data: Json
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          row_data: Json
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          row_data?: Json
+        }
+        Relationships: []
+      }
+      excel_settings: {
+        Row: {
+          additional_columns: Json | null
+          afo_number_column: string | null
+          article_description_column: string | null
+          article_number_column: string | null
+          department_column: string | null
+          file_name: string | null
+          id: string
+          order_number_column: string | null
+          row_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_columns?: Json | null
+          afo_number_column?: string | null
+          article_description_column?: string | null
+          article_number_column?: string | null
+          department_column?: string | null
+          file_name?: string | null
+          id?: string
+          order_number_column?: string | null
+          row_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_columns?: Json | null
+          afo_number_column?: string | null
+          article_description_column?: string | null
+          article_number_column?: string | null
+          department_column?: string | null
+          file_name?: string | null
+          id?: string
+          order_number_column?: string | null
+          row_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      machines: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          id: string
+          name: string
+          personal_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          id: string
+          name: string
+          personal_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          name?: string
+          personal_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | { Args: { target_role: string }; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "teamleader" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +480,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "teamleader", "employee"],
+    },
   },
 } as const

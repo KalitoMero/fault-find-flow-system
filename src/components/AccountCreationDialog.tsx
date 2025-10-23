@@ -8,6 +8,7 @@ import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { addUserRole } from '@/lib/supabaseStorage';
+import { accountCreationSchema } from '@/lib/validation';
 
 interface AccountCreationDialogProps {
   isOpen: boolean;
@@ -46,8 +47,16 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
   };
 
   const handleCreateAccount = async () => {
-    if (!email.trim() || !password) {
-      toast.error('E-Mail und Passwort sind erforderlich');
+    // Validate input with zod
+    const validation = accountCreationSchema.safeParse({
+      email: email.trim(),
+      password,
+      name: profileName
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 

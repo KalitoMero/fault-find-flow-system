@@ -9,6 +9,8 @@ import { UserPlus, Trash2, Shield } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { getProfiles, addUserRole, removeUserRole } from '@/lib/supabaseStorage';
+import { requireAdminOrThrow } from '@/lib/authz';
+import { accountCreationSchema } from '@/lib/validation';
 
 interface Profile {
   id: string;
@@ -41,8 +43,28 @@ const AdminManagement: React.FC = () => {
   };
 
   const handleCreateAdmin = async () => {
-    if (!newAdminEmail.trim() || !newAdminPassword || !newAdminName.trim()) {
-      toast.error('Bitte alle Felder ausfüllen');
+    try {
+      // Admin authorization check
+      await requireAdminOrThrow();
+
+      // Validate input with zod
+      const validation = accountCreationSchema.safeParse({
+        email: newAdminEmail,
+        password: newAdminPassword,
+        name: newAdminName
+      });
+
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+    } catch (error: any) {
+      if (error.message === 'forbidden') {
+        toast.error('Kein Zugriff. Nur Admins können diese Aktion ausführen.');
+        return;
+      }
+      toast.error('Fehler bei der Autorisierungsprüfung');
       return;
     }
 
@@ -84,6 +106,9 @@ const AdminManagement: React.FC = () => {
 
   const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
     try {
+      // Admin authorization check
+      await requireAdminOrThrow();
+
       if (isCurrentlyAdmin) {
         await removeUserRole(userId, 'admin');
         toast.success('Admin-Rechte entfernt');
@@ -92,7 +117,11 @@ const AdminManagement: React.FC = () => {
         toast.success('Admin-Rechte hinzugefügt');
       }
       loadProfiles();
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'forbidden') {
+        toast.error('Kein Zugriff. Nur Admins können diese Aktion ausführen.');
+        return;
+      }
       console.error('Fehler beim Ändern der Admin-Rechte:', error);
       toast.error('Fehler beim Ändern der Admin-Rechte');
     }
@@ -104,6 +133,9 @@ const AdminManagement: React.FC = () => {
     }
 
     try {
+      // Admin authorization check
+      await requireAdminOrThrow();
+
       const { error } = await supabase.auth.admin.deleteUser(userId);
       
       if (error) throw error;
@@ -111,6 +143,10 @@ const AdminManagement: React.FC = () => {
       toast.success('Account erfolgreich gelöscht');
       loadProfiles();
     } catch (error: any) {
+      if (error.message === 'forbidden') {
+        toast.error('Kein Zugriff. Nur Admins können diese Aktion ausführen.');
+        return;
+      }
       console.error('Fehler beim Löschen des Accounts:', error);
       toast.error('Fehler beim Löschen: ' + error.message);
     }
