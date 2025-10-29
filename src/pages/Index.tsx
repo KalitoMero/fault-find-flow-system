@@ -20,6 +20,7 @@ import AdminDashboard from '@/components/AdminDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Logo from '@/components/Logo';
+import TeamLeaderStatistics from '@/components/TeamLeaderStatistics';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { ErrorReport, getErrorReports, getErrorReportsForTeamLeader, getErrorReportStatistics, getErrorReportsForDeputy, isUserDeputy, searchErrorReportsByOrderNumber, deleteErrorReport } from '@/lib/storage';
@@ -426,6 +427,11 @@ const Index = () => {
             <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
               ← Zurück zur Startseite
             </Button>
+
+            {/* Admin: Teamleiter Statistiken */}
+            {profile.role === 'admin' && (
+              <TeamLeaderStatistics />
+            )}
 
             {/* Filter und Sortierung */}
             <Card>

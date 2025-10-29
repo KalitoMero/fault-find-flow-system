@@ -338,11 +338,14 @@ export const getTeamLeaderStatistics = async () => {
       const department = departments?.find(d => d.id === leader.department_id);
 
       return {
+        id: leader.id,
         username: leader.id,
         name: leader.name,
         department: department?.name || 'Unbekannte Abteilung',
         totalReports: reports.length,
-        pendingReports: reports.filter(r => r.approvalStatus === 'pending').length
+        pendingReports: reports.filter(r => r.approvalStatus === 'pending').length,
+        approvedReports: reports.filter(r => r.approvalStatus === 'approved').length,
+        rejectedReports: reports.filter(r => r.approvalStatus === 'rejected').length
       };
     })
   );
