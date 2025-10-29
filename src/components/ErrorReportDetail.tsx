@@ -45,15 +45,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = await getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-      const approverName = currentEmployee?.name || profile.name;
-      
-      await updateErrorReportStatus(report.id, 'approved', undefined, approverName);
+      await updateErrorReportStatus(report.id, 'approved', undefined, profile.id);
       toast.success('Fehlermeldung wurde freigegeben!');
       onStatusChange();
     } catch (error) {
+      console.error('Error approving report:', error);
       toast.error('Fehler beim Freigeben der Meldung');
     } finally {
       setIsSubmitting(false);
@@ -68,17 +64,13 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     
     setIsSubmitting(true);
     try {
-      // Find the current user's employee record to get their name
-      const employees = await getEmployees();
-      const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-      const rejectorName = currentEmployee?.name || profile.name;
-      
-      await updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
+      await updateErrorReportStatus(report.id, 'rejected', rejectionReason, profile.id);
       toast.success('Fehlermeldung wurde abgelehnt!');
       onStatusChange();
       setShowRejectionForm(false);
       setRejectionReason('');
     } catch (error) {
+      console.error('Error rejecting report:', error);
       toast.error('Fehler beim Ablehnen der Meldung');
     } finally {
       setIsSubmitting(false);
