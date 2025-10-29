@@ -120,11 +120,11 @@ const Index = () => {
     toast.success("Fehlermeldung erfolgreich erstellt!");
   };
 
-  const handleApprovalChange = () => {
+  const handleApprovalChange = async () => {
     loadData();
     // Aktualisiere selectedReport mit den neuesten Daten
     if (selectedReport) {
-      const updatedReports = getErrorReports();
+      const updatedReports = await getErrorReports();
       const updatedSelectedReport = updatedReports.find(r => r.id === selectedReport.id);
       if (updatedSelectedReport) {
         setSelectedReport(updatedSelectedReport);
@@ -190,9 +190,9 @@ const Index = () => {
     setRefreshDepartments(prev => !prev);
   };
 
-  const handleReportClick = (report: ErrorReport) => {
+  const handleReportClick = async (report: ErrorReport) => {
     // Immer die neueste Version der Meldung aus dem Storage holen
-    const latestReports = getErrorReports();
+    const latestReports = await getErrorReports();
     const latestReport = latestReports.find(r => r.id === report.id);
     
     if (!latestReport) {
@@ -387,11 +387,25 @@ const Index = () => {
               </Card>
             )}
 
+  const [shouldShowDeputy, setShouldShowDeputy] = React.useState(false);
+  
+  React.useEffect(() => {
+    const checkDeputy = async () => {
+      if (profile?.id) {
+        const hasRole = await hasUserRole(profile.id, 'teamleader');
+        setShouldShowDeputy(hasRole);
+      }
+    };
+    checkDeputy();
+  }, [profile?.id]);
+
+  // ... keep existing code
+
             {/* Deputy Selection with Error Boundary - nur anzeigen wenn berechtigt */}
             <ErrorBoundary>
               <DeputySelection 
                 currentUser={profile?.id || ''} 
-                shouldShow={shouldShowDeputySelection()}
+                shouldShow={shouldShowDeputy}
               />
             </ErrorBoundary>
             

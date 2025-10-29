@@ -5,8 +5,8 @@ const Logo: React.FC = () => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const updateLogo = () => {
-      setLogoUrl(getLogo());
+    const updateLogo = async () => {
+      setLogoUrl(await getLogo());
     };
 
     updateLogo();

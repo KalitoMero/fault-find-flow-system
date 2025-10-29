@@ -304,21 +304,22 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       if (matchingRow) {
         console.log('Matching row found (both numbers match):', matchingRow);
         
-        // Auto-fill department if available
-        if (departmentColumnName && matchingRow[departmentColumnName]) {
-          const departmentName = matchingRow[departmentColumnName];
-          console.log('Department found:', departmentName);
-          setExcelDepartment(departmentName);
-          
-          // Finde und setze den passenden Teamleiter
-          const teamLeader = findTeamLeaderForDepartment(departmentName);
-          setAssignedTeamLeader(teamLeader);
-          console.log('Assigned team leader:', teamLeader);
-        } else {
-          console.log('No department column or value found');
-          setExcelDepartment('');
-           setAssignedTeamLeader('System');
-         }
+          // Auto-fill department if available
+          if (departmentColumnName && matchingRow[departmentColumnName]) {
+            const departmentName = matchingRow[departmentColumnName];
+            console.log('Department found:', departmentName);
+            setExcelDepartment(departmentName);
+            
+            // Finde und setze den passenden Teamleiter
+            findTeamLeaderForDepartment(departmentName).then(teamLeader => {
+              setAssignedTeamLeader(teamLeader);
+              console.log('Assigned team leader:', teamLeader);
+            });
+          } else {
+            console.log('No department column or value found');
+            setExcelDepartment('');
+            setAssignedTeamLeader('System');
+          }
          
          // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile, inklusive Artikelnummer
          const additionalExcelData: Record<string, any> = {};
@@ -492,7 +493,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setIsSubmitting(true);
     
     try {
-      const reportId = generateErrorReportId();
+      const reportId = await generateErrorReportId();
       const report = {
         id: reportId,
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
@@ -551,7 +552,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
     try {
       const report = {
-        id: generateErrorReportId(),
+        id: await generateErrorReportId(),
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
@@ -572,7 +573,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
-      saveErrorReport(report);
+      await saveErrorReport(report);
       onReportCreated();
       onClose();
       

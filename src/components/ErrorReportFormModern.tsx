@@ -264,7 +264,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
 
       const report = {
-        id: generateErrorReportId(),
+        id: await generateErrorReportId(),
         orderNumber,
         afoNumber: afoNumber || undefined,
         defectiveQuantity: parseInt(defectiveQuantity),
@@ -281,7 +281,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
-      saveErrorReport(report);
+      await saveErrorReport(report);
       
       setShowReview(false);
       setShowSuccess(true);

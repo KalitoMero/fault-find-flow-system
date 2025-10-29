@@ -52,10 +52,10 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     setIsSubmitting(true);
     try {
       // Save changes and approve in one step
-      const allReports = getErrorReports();
+      const allReports = await getErrorReports();
+      const employees = await getEmployees();
       const updatedReports = allReports.map(r => {
         if (r.id === report.id) {
-          const employees = getEmployees();
           const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
           const approverName = currentEmployee?.name || profile.name;
           
@@ -100,10 +100,10 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     setIsSubmitting(true);
     try {
       // Save changes and reject in one step
-      const allReports = getErrorReports();
+      const allReports = await getErrorReports();
+      const employees = await getEmployees();
       const updatedReports = allReports.map(r => {
         if (r.id === report.id) {
-          const employees = getEmployees();
           const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
           const rejectorName = currentEmployee?.name || profile.name;
           
@@ -145,7 +145,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
 
     try {
       // Load all reports and update the corresponding one
-      const allReports = getErrorReports();
+      const allReports = await getErrorReports();
       const updatedReports = allReports.map(r => {
         if (r.id === report.id) {
           return {
@@ -178,10 +178,10 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     }
   };
 
-  const getRelatedReports = () => {
+  const getRelatedReports = async () => {
     if (!report.additionalExcelData?.Artikelnummer) return [];
     
-    const allReports = getErrorReports();
+    const allReports = await getErrorReports();
     const relatedReports = allReports.filter(r => 
       String(r.id) !== String(report.id) && 
       r.additionalExcelData?.Artikelnummer === report.additionalExcelData.Artikelnummer
@@ -193,8 +193,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     return relatedReports;
   };
 
-  const handleShowRelatedReports = () => {
-    const related = getRelatedReports();
+  const handleShowRelatedReports = async () => {
+    const related = await getRelatedReports();
     if (related.length === 0) {
       toast.success('Es gibt keine anderen Fehlermeldungen mit dieser Artikelnummer.');
       return;
@@ -238,7 +238,17 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   };
 
   // Hole den Namen des Freigabenden/Ablehnenden
-  const employees = getEmployees();
+  const [employees, setEmployees] = React.useState<any[]>([]);
+  const [machines, setMachines] = React.useState<any[]>([]);
+  
+  React.useEffect(() => {
+    const loadData = async () => {
+      setEmployees(await getEmployees());
+      setMachines(await getMachines());
+    };
+    loadData();
+  }, []);
+  
   const getEmployeeName = (username: string) => {
     const employee = employees.find(emp => emp.account?.username === username);
     return employee ? employee.name : username;
@@ -248,7 +258,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
 
   // Hole den richtigen Feststellort-Namen
-  const machines = getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
 
@@ -510,12 +519,22 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                     Klicken Sie auf eine Fehlermeldung, um sie zu öffnen.
                   </DialogDescription>
                 </DialogHeader>
+  const [relatedReports, setRelatedReports] = React.useState<ErrorReport[]>([]);
+
+  React.useEffect(() => {
+    const loadRelated = async () => {
+      const related = await getRelatedReports();
+      setRelatedReports(related);
+    };
+    loadRelated();
+  }, [report.id]);
+
+  // ... keep existing code
+
                 <div className="mt-4">
-                  {(() => {
-                    const relatedReports = getRelatedReports();
-                    return relatedReports.length > 0 ? (
-                      <div className="space-y-3">
-                        {relatedReports.map((relatedReport) => (
+                  {relatedReports.length > 0 ? (
+                    <div className="space-y-3">
+                      {relatedReports.map((relatedReport) => (
                           <div 
                             key={relatedReport.id} 
                             className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
