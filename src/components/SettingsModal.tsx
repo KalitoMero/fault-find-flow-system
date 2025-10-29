@@ -78,11 +78,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     }
   }, [employees, selectedDepartmentFilter]);
 
-  const loadData = () => {
-    setDepartments(getDepartments());
-    setEmployees(getEmployees());
-    setMachines(getMachines());
-    setCurrentLogo(getLogo());
+  const loadData = async () => {
+    setDepartments(await getDepartments());
+    setEmployees(await getEmployees());
+    setMachines(await getMachines());
+    setCurrentLogo(await getLogo());
   };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,7 +492,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
 
           <TabsContent value="export" className="space-y-4">
-            <ExportSection reports={getErrorReports()} />
+            <ExportSection reports={[]} />
           </TabsContent>
 
           <TabsContent value="company" className="space-y-4">

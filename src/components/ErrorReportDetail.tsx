@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
-import { ErrorReport, updateErrorReportStatus, getErrorReports } from '@/lib/storage';
+import { ErrorReport, updateErrorReportStatus, getErrorReports, deleteErrorReport } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { printErrorReport } from '@/lib/printUtils';
@@ -35,11 +35,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     setIsSubmitting(true);
     try {
       // Find the current user's employee record to get their name
-      const employees = getEmployees();
+      const employees = await getEmployees();
       const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
       const approverName = currentEmployee?.name || profile.name;
       
-      updateErrorReportStatus(report.id, 'approved', undefined, approverName);
+      await updateErrorReportStatus(report.id, 'approved', undefined, approverName);
       toast.success('Fehlermeldung wurde freigegeben!');
       onStatusChange();
     } catch (error) {
@@ -83,12 +83,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
     setIsDeleting(true);
     try {
-      // Lade alle Berichte und entferne den entsprechenden
-      const allReports = getErrorReports();
-      const updatedReports = allReports.filter(r => r.id !== report.id);
-      
-      // Speichere die gefilterte Liste zurück
-      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      // Delete the report from Supabase
+      await deleteErrorReport(report.id);
       
       toast.success('Fehlermeldung wurde erfolgreich gelöscht!');
       
@@ -173,7 +169,17 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   };
 
   // Hole den Namen des Freigabenden/Ablehnenden
-  const employees = getEmployees();
+  const [employees, setEmployees] = React.useState<any[]>([]);
+  const [machines, setMachines] = React.useState<any[]>([]);
+  
+  React.useEffect(() => {
+    const loadData = async () => {
+      setEmployees(await getEmployees());
+      setMachines(await getMachines());
+    };
+    loadData();
+  }, []);
+  
   const getEmployeeName = (username: string) => {
     const employee = employees.find(emp => emp.account?.username === username);
     return employee ? employee.name : username;
@@ -183,7 +189,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
 
   // Hole den richtigen Feststellort-Namen
-  const machines = getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
   

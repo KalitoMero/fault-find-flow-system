@@ -112,17 +112,21 @@ const ExcelUploadSettings: React.FC = () => {
   const [selectedSheet, setSelectedSheet] = useState('');
 
   useEffect(() => {
-    const settings = getExcelSettings();
-    if (settings) {
-      setOrderNumberColumn(settings.orderNumberColumn);
-      setAfoNumberColumn(settings.afoNumberColumn);
-      setArticleNumberColumn(settings.articleNumberColumn || '');
-      setArticleDescriptionColumn(settings.articleDescriptionColumn || '');
-      setDepartmentColumn(settings.departmentColumn || '');
-      setAdditionalColumns(settings.additionalColumns);
-      setFileName(settings.fileName || '');
-      setRowCount(settings.rowCount || 0);
-    }
+    const loadSettings = async () => {
+      const settings = await getExcelSettings();
+      if (settings) {
+        setOrderNumberColumn(settings.orderNumberColumn);
+        setAfoNumberColumn(settings.afoNumberColumn);
+        setArticleNumberColumn(settings.articleNumberColumn || '');
+        setArticleDescriptionColumn(settings.articleDescriptionColumn || '');
+        setDepartmentColumn(settings.departmentColumn || '');
+        setAdditionalColumns(settings.additionalColumns);
+        setFileName(settings.fileName || '');
+        setRowCount(settings.rowCount || 0);
+      }
+    };
+    
+    loadSettings();
     
     // Load existing Excel data
     const loadExcelData = async () => {

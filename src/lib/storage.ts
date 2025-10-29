@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 export interface ErrorReport {
   id: string;
   orderNumber: string;
@@ -5,7 +7,7 @@ export interface ErrorReport {
   machine: string;
   defectiveQuantity: number;
   totalDefectiveQuantity: number;
-  quantityType?: string; // Added for quantity type selection
+  quantityType?: string;
   detectionLocation?: string;
   problemDescription: string;
   errorCause: string;
@@ -30,276 +32,307 @@ export interface ErrorReport {
   additionalInfo?: string;
 }
 
-import { getEmployees, getDepartments } from './settingsStorage';
-
-export const getErrorReports = (): ErrorReport[] => {
-  const stored = localStorage.getItem('production_error_reports');
-  return stored ? JSON.parse(stored) : [];
+// Helper: Convert snake_case to camelCase
+const toCamelCase = (dbReport: any): ErrorReport => {
+  return {
+    id: dbReport.id,
+    orderNumber: dbReport.order_number,
+    afoNumber: dbReport.afo_number,
+    machine: dbReport.machine_id || '',
+    defectiveQuantity: dbReport.defective_quantity,
+    totalDefectiveQuantity: dbReport.total_defective_quantity,
+    quantityType: dbReport.quantity_type,
+    detectionLocation: dbReport.detection_location,
+    problemDescription: dbReport.problem_description,
+    errorCause: dbReport.error_cause,
+    correctiveAction: dbReport.corrective_action,
+    creator: dbReport.creator_name,
+    personalNumber: dbReport.personal_number,
+    createdAt: dbReport.created_at,
+    approvalStatus: dbReport.approval_status,
+    rejectionReason: dbReport.rejection_reason,
+    assignedTeamLeader: dbReport.assigned_team_leader_id || '',
+    approvedBy: dbReport.approved_by_id,
+    approvedAt: dbReport.approved_at,
+    rejectedBy: dbReport.rejected_by_id,
+    rejectedAt: dbReport.rejected_at,
+    excelDepartment: dbReport.department_id,
+    additionalInfo: dbReport.additional_info,
+    additionalExcelData: dbReport.additional_excel_data
+  };
 };
 
-export const saveErrorReport = (report: ErrorReport) => {
-  const reports = getErrorReports();
-  reports.push(report);
-  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+// Helper: Convert camelCase to snake_case
+const toSnakeCase = (report: Partial<ErrorReport>): any => {
+  return {
+    id: report.id,
+    order_number: report.orderNumber,
+    afo_number: report.afoNumber,
+    machine_id: report.machine,
+    defective_quantity: report.defectiveQuantity,
+    total_defective_quantity: report.totalDefectiveQuantity,
+    quantity_type: report.quantityType,
+    detection_location: report.detectionLocation,
+    problem_description: report.problemDescription,
+    error_cause: report.errorCause,
+    corrective_action: report.correctiveAction,
+    creator_id: (supabase.auth.getUser as any)?.id || '',
+    creator_name: report.creator,
+    personal_number: report.personalNumber,
+    approval_status: report.approvalStatus,
+    rejection_reason: report.rejectionReason,
+    assigned_team_leader_id: report.assignedTeamLeader,
+    approved_by_id: report.approvedBy,
+    approved_at: report.approvedAt,
+    rejected_by_id: report.rejectedBy,
+    rejected_at: report.rejectedAt,
+    department_id: report.excelDepartment,
+    additional_info: report.additionalInfo
+  };
 };
 
-export const deleteErrorReport = (reportId: string) => {
-  const reports = getErrorReports().filter(report => report.id !== reportId);
-  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+export const getErrorReports = async (): Promise<ErrorReport[]> => {
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(toCamelCase);
 };
 
-export const updateErrorReportStatus = (
+export const saveErrorReport = async (report: ErrorReport): Promise<void> => {
+  const dbReport = toSnakeCase(report);
+  const { error } = await supabase
+    .from('error_reports')
+    .insert([dbReport]);
+
+  if (error) throw error;
+};
+
+export const deleteErrorReport = async (reportId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('error_reports')
+    .delete()
+    .eq('id', reportId);
+
+  if (error) throw error;
+};
+
+export const updateErrorReportStatus = async (
   reportId: string,
   status: 'pending' | 'approved' | 'rejected',
   rejectionReason?: string,
   approvedBy?: string
-) => {
-  const reports = getErrorReports().map(report => {
-    if (report.id === reportId) {
-      const updatedReport = { 
-        ...report, 
-        approvalStatus: status, 
-        rejectionReason: rejectionReason 
-      };
-      if (status === 'approved') {
-        updatedReport.approvedBy = approvedBy || report.assignedTeamLeader;
-        updatedReport.approvedAt = new Date().toISOString();
-      } else if (status === 'rejected') {
-        updatedReport.rejectedBy = approvedBy || report.assignedTeamLeader;
-        updatedReport.rejectedAt = new Date().toISOString();
-      }
-      return updatedReport;
-    }
-    return report;
-  });
-  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+): Promise<void> => {
+  const updateData: any = {
+    approval_status: status,
+    rejection_reason: rejectionReason
+  };
+
+  if (status === 'approved') {
+    updateData.approved_by_id = approvedBy;
+    updateData.approved_at = new Date().toISOString();
+  } else if (status === 'rejected') {
+    updateData.rejected_by_id = approvedBy;
+    updateData.rejected_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase
+    .from('error_reports')
+    .update(updateData)
+    .eq('id', reportId);
+
+  if (error) throw error;
 };
 
-export const updateErrorReport = (reportId: string, updatedReport: ErrorReport) => {
-  const reports = getErrorReports().map(report => {
-    if (report.id === reportId) {
-      return updatedReport;
-    }
-    return report;
-  });
-  localStorage.setItem('production_error_reports', JSON.stringify(reports));
+export const updateErrorReport = async (reportId: string, updatedReport: ErrorReport): Promise<void> => {
+  const dbReport = toSnakeCase(updatedReport);
+  const { error } = await supabase
+    .from('error_reports')
+    .update(dbReport)
+    .eq('id', reportId);
+
+  if (error) throw error;
 };
 
-export const getErrorReportById = (reportId: string): ErrorReport | undefined => {
-  const reports = getErrorReports();
-  return reports.find(report => report.id === reportId);
+export const getErrorReportById = async (reportId: string): Promise<ErrorReport | undefined> => {
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toCamelCase(data) : undefined;
 };
 
-export const getErrorReportByOrderNumber = (orderNumber: string): ErrorReport | undefined => {
-  const reports = getErrorReports();
-  return reports.find(report => report.orderNumber === orderNumber);
+export const getErrorReportByOrderNumber = async (orderNumber: string): Promise<ErrorReport | undefined> => {
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .eq('order_number', orderNumber)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toCamelCase(data) : undefined;
 };
 
-// Remove the old generateAccessNumber function and replace with this comment
-// Access numbers are no longer used - order numbers are used instead
+export const generateErrorReportId = async (): Promise<string> => {
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('id')
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-export const generateErrorReportId = (): string => {
-  const existingReports = getErrorReports();
-  
-  if (existingReports.length === 0) {
+  if (error) throw error;
+
+  if (!data || data.length === 0) {
     return "1";
   }
-  
-  // Find the highest existing ID number
-  const existingIds = existingReports
-    .map(report => parseInt(report.id))
-    .filter(id => !isNaN(id))
-    .sort((a, b) => b - a);
-  
+
+  const existingIds = data
+    .map((report: any) => parseInt(report.id))
+    .filter((id: number) => !isNaN(id))
+    .sort((a: number, b: number) => b - a);
+
   const highestId = existingIds.length > 0 ? existingIds[0] : 0;
-  
   return (highestId + 1).toString();
 };
 
-export const getErrorReportStatistics = () => {
-  const reports = getErrorReports();
-  const total = reports.length;
-  const pending = reports.filter(report => report.approvalStatus === 'pending').length;
-  const approved = reports.filter(report => report.approvalStatus === 'approved').length;
-  const rejected = reports.filter(report => report.approvalStatus === 'rejected').length;
-
+export const getErrorReportStatistics = async () => {
+  const reports = await getErrorReports();
   return {
-    total,
-    pending,
-    approved,
-    rejected
+    total: reports.length,
+    pending: reports.filter(r => r.approvalStatus === 'pending').length,
+    approved: reports.filter(r => r.approvalStatus === 'approved').length,
+    rejected: reports.filter(r => r.approvalStatus === 'rejected').length
   };
 };
 
-export const getErrorReportsForTeamLeader = (username: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  const employees = getEmployees();
-  
-  // Finde den aktuellen Teamleiter
-  const currentTeamLeader = employees.find(emp => 
-    emp.isTeamLeader && emp.account?.username === username
-  );
-  
-  if (!currentTeamLeader) {
-    return [];
-  }
-  
-  // Prüfe, ob eine Vertretung aktiv ist
-  const deputyId = localStorage.getItem(`deputy_${username}`);
-  let deputyUsername = null;
-  
-  if (deputyId) {
-    const deputy = employees.find(emp => emp.id === deputyId);
-    deputyUsername = deputy?.account?.username;
-  }
-  
-  // Filtere Meldungen, die diesem Teamleiter oder seiner Vertretung zugewiesen sind
-  return reports.filter(report => {
-    // Meldungen die direkt dem Teamleiter zugewiesen sind
-    if (report.assignedTeamLeader === username) {
-      return true;
-    }
-    
-    // Meldungen die der Vertretung zugewiesen sind (falls Vertretung aktiv)
-    if (deputyUsername && report.assignedTeamLeader === deputyUsername) {
-      return true;
-    }
-    
-    return false;
-  });
+export const getErrorReportsForTeamLeader = async (userId: string): Promise<ErrorReport[]> => {
+  // Check for active deputy assignments
+  const { data: deputyAssignments } = await supabase
+    .from('deputy_assignments')
+    .select('deputy_id')
+    .eq('team_leader_id', userId)
+    .eq('is_active', true);
+
+  const deputyIds = deputyAssignments?.map(d => d.deputy_id) || [];
+
+  // Get reports assigned to team leader or their deputies
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .or(`assigned_team_leader_id.eq.${userId}${deputyIds.length > 0 ? `,assigned_team_leader_id.in.(${deputyIds.join(',')})` : ''}`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(toCamelCase);
 };
 
-// Erweiterte Funktion für Vertretungs-Zugriff mit Zeitfilter
-export const getErrorReportsForDeputy = (deputyUsername: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  const employees = getEmployees();
-  
-  // Finde alle Teamleiter, die diese Person als Vertretung haben
-  const teamLeadersWithThisDeputy = employees.filter(emp => {
-    if (!emp.isTeamLeader || !emp.account?.username) return false;
-    
-    const deputyId = localStorage.getItem(`deputy_${emp.account.username}`);
-    if (!deputyId) return false;
-    
-    const deputy = employees.find(d => d.id === deputyId);
-    return deputy?.account?.username === deputyUsername;
-  });
-  
-  // Sammle alle Meldungen der Teamleiter, für die diese Person Vertretung ist
-  const teamLeaderUsernames = teamLeadersWithThisDeputy.map(tl => tl.account!.username);
-  
-  if (teamLeaderUsernames.length === 0) {
-    return [];
-  }
-  
-  // Ermittle den frühesten Zeitpunkt der Vertretungsernennung
-  let earliestAssignmentTime: Date | null = null;
-  
-  teamLeaderUsernames.forEach(teamLeaderUsername => {
-    const assignmentTimeStr = localStorage.getItem(`deputy_assignment_time_${teamLeaderUsername}`);
-    if (assignmentTimeStr) {
-      const assignmentTime = new Date(assignmentTimeStr);
-      if (!earliestAssignmentTime || assignmentTime < earliestAssignmentTime) {
-        earliestAssignmentTime = assignmentTime;
-      }
-    }
-  });
-  
-  return reports.filter(report => {
-    // Muss einem der Teamleiter zugewiesen sein, für die diese Person Vertretung ist
-    if (!teamLeaderUsernames.includes(report.assignedTeamLeader)) {
-      return false;
-    }
-    
-    const reportCreatedAt = new Date(report.createdAt);
-    
-    // Zeige Meldungen die:
-    // 1. Nach der Vertretungsernennung erstellt wurden ODER
-    // 2. Noch zur Prüfung anstehen (pending) ODER
-    // 3. Von dieser Vertretung freigegeben/abgelehnt wurden (auch wenn sie älter sind)
-    if (earliestAssignmentTime) {
-      return reportCreatedAt >= earliestAssignmentTime || 
-             report.approvalStatus === 'pending' ||
-             report.approvedBy === getEmployeeNameByUsername(deputyUsername);
-    } else {
-      // Fallback: nur pending-Meldungen und von Vertretung bearbeitete wenn kein Ernennungszeitpunkt gefunden
-      return report.approvalStatus === 'pending' ||
-             report.approvedBy === getEmployeeNameByUsername(deputyUsername);
-    }
-  });
+export const getErrorReportsForDeputy = async (deputyUserId: string): Promise<ErrorReport[]> => {
+  // Get all team leaders this user is deputy for
+  const { data: assignments, error: assignError } = await supabase
+    .from('deputy_assignments')
+    .select('team_leader_id, assigned_at')
+    .eq('deputy_id', deputyUserId)
+    .eq('is_active', true);
+
+  if (assignError) throw assignError;
+  if (!assignments || assignments.length === 0) return [];
+
+  const teamLeaderIds = assignments.map(a => a.team_leader_id);
+  const earliestAssignment = new Date(Math.min(...assignments.map(a => new Date(a.assigned_at).getTime())));
+
+  // Get reports for those team leaders
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .in('assigned_team_leader_id', teamLeaderIds)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Filter by assignment time and approval status
+  return (data || [])
+    .filter((report: any) => {
+      const reportDate = new Date(report.created_at);
+      return reportDate >= earliestAssignment || 
+             report.approval_status === 'pending' ||
+             report.approved_by_id === deputyUserId;
+    })
+    .map(toCamelCase);
 };
 
-// Hilfsfunktion um Mitarbeiternamen anhand des Benutzernamens zu finden
-const getEmployeeNameByUsername = (username: string): string | undefined => {
-  const employees = getEmployees();
-  const employee = employees.find(emp => emp.account?.username === username);
-  return employee?.name;
+export const isUserDeputy = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('deputy_assignments')
+    .select('id')
+    .eq('deputy_id', userId)
+    .eq('is_active', true)
+    .limit(1);
+
+  if (error) return false;
+  return (data?.length || 0) > 0;
 };
 
-// Hilfsfunktion um zu prüfen ob ein Benutzer als Vertretung eingetragen ist
-export const isUserDeputy = (username: string): boolean => {
-  const employees = getEmployees();
-  
-  // Durchsuche alle Teamleiter und prüfe ob dieser Benutzer als Vertretung eingetragen ist
-  const teamLeaders = employees.filter(emp => emp.isTeamLeader && emp.account?.username);
-  
-  for (const teamLeader of teamLeaders) {
-    const deputyId = localStorage.getItem(`deputy_${teamLeader.account!.username}`);
-    if (deputyId) {
-      const deputy = employees.find(emp => emp.id === deputyId);
-      if (deputy?.account?.username === username) {
-        return true;
-      }
-    }
-  }
-  
-  return false;
+export const searchErrorReportsByOrderNumber = async (searchTerm: string): Promise<ErrorReport[]> => {
+  const { data, error } = await supabase
+    .from('error_reports')
+    .select('*')
+    .ilike('order_number', `%${searchTerm}%`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(toCamelCase);
 };
 
-export const searchErrorReportsByOrderNumber = (searchTerm: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  return reports.filter(report => 
-    report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-};
-
-export const searchErrorReportsByArticleNumber = (searchTerm: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  return reports.filter(report => 
+export const searchErrorReportsByArticleNumber = async (searchTerm: string): Promise<ErrorReport[]> => {
+  const reports = await getErrorReports();
+  return reports.filter(report =>
     report.additionalExcelData?.Artikelnummer?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 };
 
-export const searchErrorReportsByArticleDescription = (searchTerm: string): ErrorReport[] => {
-  const reports = getErrorReports();
-  return reports.filter(report => 
+export const searchErrorReportsByArticleDescription = async (searchTerm: string): Promise<ErrorReport[]> => {
+  const reports = await getErrorReports();
+  return reports.filter(report =>
     report.additionalExcelData?.Artikelbezeichnung?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 };
 
-// Admin Dashboard - Teamleiter Statistiken
-export const getTeamLeaderStatistics = () => {
-  const reports = getErrorReports();
-  const employees = getEmployees();
-  const departments = getDepartments();
-  
-  // Finde alle Teamleiter mit Accounts
-  const teamLeaders = employees.filter(emp => emp.isTeamLeader && emp.account?.username);
-  
-  return teamLeaders.map(leader => {
-    const username = leader.account!.username;
-    const department = departments.find(d => d.id === leader.departmentId);
-    
-    // Finde alle Meldungen die diesem Teamleiter zugewiesen sind
-    const assignedReports = reports.filter(report => report.assignedTeamLeader === username);
-    const pendingReports = assignedReports.filter(report => report.approvalStatus === 'pending');
-    
-    return {
-      username,
-      name: leader.name,
-      department: department?.name || 'Unbekannte Abteilung',
-      totalReports: assignedReports.length,
-      pendingReports: pendingReports.length
-    };
-  });
+export const getTeamLeaderStatistics = async () => {
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, department_id');
+
+  const { data: roles } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'teamleader');
+
+  const { data: departments } = await supabase
+    .from('departments')
+    .select('*');
+
+  const teamLeaderIds = roles?.map(r => r.user_id) || [];
+  const teamLeaders = profiles?.filter(p => teamLeaderIds.includes(p.id)) || [];
+
+  const statistics = await Promise.all(
+    teamLeaders.map(async (leader: any) => {
+      const reports = await getErrorReportsForTeamLeader(leader.id);
+      const department = departments?.find(d => d.id === leader.department_id);
+
+      return {
+        username: leader.id,
+        name: leader.name,
+        department: department?.name || 'Unbekannte Abteilung',
+        totalReports: reports.length,
+        pendingReports: reports.filter(r => r.approvalStatus === 'pending').length
+      };
+    })
+  );
+
+  return statistics;
 };

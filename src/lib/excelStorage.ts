@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 interface ExcelColumn {
   name: string;
   column: string;
@@ -12,7 +14,6 @@ interface ExcelSettings {
   additionalColumns: ExcelColumn[];
   fileName?: string;
   rowCount?: number;
-  // New fields for easier data lookup
   orderColumnName?: string;
   afoColumnName?: string;
   articleColumnName?: string;
@@ -25,118 +26,116 @@ interface ExcelData {
   settings: ExcelSettings;
 }
 
-const EXCEL_STORAGE_KEY = 'errorReportExcelData';
-const EXCEL_SETTINGS_KEY = 'errorReportExcelSettings';
-const DB_NAME = 'ErrorReportDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'excelData';
-
-// Initialize IndexedDB
-const initDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-  });
-};
-
 export const saveExcelData = async (data: any[]): Promise<void> => {
   try {
-    const dataString = JSON.stringify(data);
-    
-    // Try localStorage first for smaller data
-    if (dataString.length < 4 * 1024 * 1024) { // 4MB threshold
-      localStorage.setItem(EXCEL_STORAGE_KEY, dataString);
-      console.log('Excel data saved to localStorage');
-      return;
+    // Clear existing data first
+    await supabase.from('excel_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // Insert new data in batches (Supabase has a limit)
+    const batchSize = 1000;
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize).map(row => ({
+        row_data: row
+      }));
+
+      const { error } = await supabase
+        .from('excel_data')
+        .insert(batch);
+
+      if (error) throw error;
     }
-    
-    // Use IndexedDB for larger data
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    
-    await new Promise<void>((resolve, reject) => {
-      const request = store.put(data, EXCEL_STORAGE_KEY);
-      request.onsuccess = () => {
-        console.log('Excel data saved to IndexedDB');
-        resolve();
-      };
-      request.onerror = () => reject(request.error);
-    });
-    
-    // Clear localStorage if data was moved to IndexedDB
-    localStorage.removeItem(EXCEL_STORAGE_KEY);
-    
+
+    console.log('Excel data saved to Supabase');
   } catch (error) {
     console.error('Error saving Excel data:', error);
     throw error;
   }
 };
 
-export const saveExcelSettings = (settings: ExcelSettings): void => {
-  localStorage.setItem(EXCEL_SETTINGS_KEY, JSON.stringify(settings));
+export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> => {
+  try {
+    // Clear existing settings first
+    await supabase.from('excel_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // Insert new settings
+    const { error } = await supabase
+      .from('excel_settings')
+      .insert({
+        order_number_column: settings.orderNumberColumn,
+        afo_number_column: settings.afoNumberColumn,
+        article_number_column: settings.articleNumberColumn,
+        article_description_column: settings.articleDescriptionColumn,
+        department_column: settings.departmentColumn,
+        additional_columns: settings.additionalColumns,
+        file_name: settings.fileName,
+        row_count: settings.rowCount
+      });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error saving Excel settings:', error);
+    throw error;
+  }
 };
 
 export const getExcelData = async (): Promise<ExcelData | null> => {
   try {
-    const settings = localStorage.getItem(EXCEL_SETTINGS_KEY);
+    const settings = await getExcelSettings();
     if (!settings) {
       return null;
     }
-    
-    // Try localStorage first
-    const localData = localStorage.getItem(EXCEL_STORAGE_KEY);
-    if (localData) {
-      return {
-        data: JSON.parse(localData),
-        settings: JSON.parse(settings)
-      };
+
+    const { data, error } = await supabase
+      .from('excel_data')
+      .select('row_data')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return null;
     }
-    
-    // Try IndexedDB if not in localStorage
-    try {
-      const db = await initDB();
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      const data = await new Promise<any[]>((resolve, reject) => {
-        const request = store.get(EXCEL_STORAGE_KEY);
-        request.onsuccess = () => {
-          resolve(request.result || null);
-        };
-        request.onerror = () => reject(request.error);
-      });
-      
-      if (data) {
-        return {
-          data,
-          settings: JSON.parse(settings)
-        };
-      }
-    } catch (dbError) {
-      console.warn('IndexedDB not available, falling back to localStorage only');
-    }
-    
-    return null;
+
+    return {
+      data: data.map((row: any) => row.row_data),
+      settings
+    };
   } catch (error) {
     console.error('Error loading Excel data:', error);
     return null;
   }
 };
 
-export const getExcelSettings = (): ExcelSettings | null => {
+export const getExcelSettings = async (): Promise<ExcelSettings | null> => {
   try {
-    const settings = localStorage.getItem(EXCEL_SETTINGS_KEY);
-    return settings ? JSON.parse(settings) : null;
+    const { data, error } = await supabase
+      .from('excel_settings')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      orderNumberColumn: data.order_number_column,
+      afoNumberColumn: data.afo_number_column,
+      articleNumberColumn: data.article_number_column,
+      articleDescriptionColumn: data.article_description_column,
+      departmentColumn: data.department_column,
+      additionalColumns: data.additional_columns || [],
+      fileName: data.file_name,
+      rowCount: data.row_count,
+      orderColumnName: data.order_number_column,
+      afoColumnName: data.afo_number_column,
+      articleColumnName: data.article_number_column,
+      articleDescriptionColumnName: data.article_description_column,
+      departmentColumnName: data.department_column
+    };
   } catch (error) {
     console.error('Error loading Excel settings:', error);
     return null;
@@ -144,21 +143,11 @@ export const getExcelSettings = (): ExcelSettings | null => {
 };
 
 export const clearExcelData = async (): Promise<void> => {
-  localStorage.removeItem(EXCEL_STORAGE_KEY);
-  localStorage.removeItem(EXCEL_SETTINGS_KEY);
-  
-  // Also clear IndexedDB
   try {
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    
-    await new Promise<void>((resolve, reject) => {
-      const request = store.delete(EXCEL_STORAGE_KEY);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    await supabase.from('excel_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('excel_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   } catch (error) {
-    console.warn('Could not clear IndexedDB data:', error);
+    console.error('Error clearing Excel data:', error);
+    throw error;
   }
 };

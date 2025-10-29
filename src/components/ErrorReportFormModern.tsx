@@ -176,10 +176,10 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     loadDepartmentsData();
   }, [refreshDepartments]);
 
-  const loadDepartmentsData = () => {
-    setDepartments(getDepartments());
-    setEmployees(getEmployees());
-    setMachines(getMachines());
+  const loadDepartmentsData = async () => {
+    setDepartments(await getDepartments());
+    setEmployees(await getEmployees());
+    setMachines(await getMachines());
   };
 
   useEffect(() => {

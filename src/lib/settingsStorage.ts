@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 export interface Employee {
   id: string;
   name: string;
@@ -21,66 +23,165 @@ export interface Machine {
   name: string;
 }
 
-export const getDepartments = (): Department[] => {
-  const stored = localStorage.getItem('departments');
-  return stored ? JSON.parse(stored) : [];
+// Departments
+export const getDepartments = async (): Promise<Department[]> => {
+  const { data, error } = await supabase
+    .from('departments')
+    .select('*')
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const saveDepartment = (department: Department) => {
-  const departments = getDepartments();
-  const existingIndex = departments.findIndex(d => d.id === department.id);
-  
-  if (existingIndex >= 0) {
-    departments[existingIndex] = department;
-  } else {
-    departments.push(department);
+export const saveDepartment = async (department: Department): Promise<void> => {
+  const { error } = await supabase
+    .from('departments')
+    .upsert({ id: department.id, name: department.name });
+
+  if (error) throw error;
+};
+
+export const deleteDepartment = async (departmentId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('departments')
+    .delete()
+    .eq('id', departmentId);
+
+  if (error) throw error;
+};
+
+// Employees (mapped from profiles + user_roles)
+export const getEmployees = async (): Promise<Employee[]> => {
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('name');
+
+  if (profileError) throw profileError;
+
+  const { data: roles, error: roleError } = await supabase
+    .from('user_roles')
+    .select('user_id, role');
+
+  if (roleError) throw roleError;
+
+  // Get auth users for email/username
+  const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
+
+  return (profiles || []).map((profile: any) => {
+    const userRoles = (roles || []).filter((r: any) => r.user_id === profile.id);
+    const authUser = users?.find((u: any) => u.id === profile.id);
+
+    return {
+      id: profile.id,
+      name: profile.name,
+      departmentId: profile.department_id || '',
+      isTeamLeader: userRoles.some((r: any) => r.role === 'teamleader'),
+      isAdmin: userRoles.some((r: any) => r.role === 'admin'),
+      account: authUser ? {
+        username: authUser.email?.split('@')[0] || '',
+        email: authUser.email || '',
+        password: '********'
+      } : undefined
+    };
+  });
+};
+
+export const saveEmployee = async (employee: Employee): Promise<void> => {
+  // Update profile
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert({
+      id: employee.id,
+      name: employee.name,
+      department_id: employee.departmentId,
+      personal_number: employee.account?.username
+    });
+
+  if (profileError) throw profileError;
+
+  // Update roles
+  const { error: deleteRolesError } = await supabase
+    .from('user_roles')
+    .delete()
+    .eq('user_id', employee.id);
+
+  if (deleteRolesError) throw deleteRolesError;
+
+  const rolesToInsert: any[] = [];
+  if (employee.isAdmin) rolesToInsert.push({ user_id: employee.id, role: 'admin' });
+  if (employee.isTeamLeader) rolesToInsert.push({ user_id: employee.id, role: 'teamleader' });
+  if (!employee.isAdmin && !employee.isTeamLeader) {
+    rolesToInsert.push({ user_id: employee.id, role: 'employee' });
   }
-  
-  localStorage.setItem('departments', JSON.stringify(departments));
-};
 
-export const deleteDepartment = (departmentId: string) => {
-  const departments = getDepartments().filter(d => d.id !== departmentId);
-  localStorage.setItem('departments', JSON.stringify(departments));
-  
-  // Also remove employees from this department
-  const employees = getEmployees().filter(e => e.departmentId !== departmentId);
-  localStorage.setItem('employees', JSON.stringify(employees));
-};
+  if (rolesToInsert.length > 0) {
+    const { error: insertRolesError } = await supabase
+      .from('user_roles')
+      .insert(rolesToInsert);
 
-export const getEmployees = (): Employee[] => {
-  const stored = localStorage.getItem('employees');
-  return stored ? JSON.parse(stored) : [];
-};
-
-export const saveEmployee = (employee: Employee) => {
-  const employees = getEmployees();
-  const existingIndex = employees.findIndex(e => e.id === employee.id);
-  
-  if (existingIndex >= 0) {
-    employees[existingIndex] = employee;
-  } else {
-    employees.push(employee);
+    if (insertRolesError) throw insertRolesError;
   }
-  
-  localStorage.setItem('employees', JSON.stringify(employees));
 };
 
-export const deleteEmployee = (employeeId: string) => {
-  const employees = getEmployees().filter(e => e.id !== employeeId);
-  localStorage.setItem('employees', JSON.stringify(employees));
+export const deleteEmployee = async (employeeId: string): Promise<void> => {
+  // Delete roles first
+  await supabase
+    .from('user_roles')
+    .delete()
+    .eq('user_id', employeeId);
+
+  // Delete profile
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', employeeId);
+
+  if (error) throw error;
 };
 
-export const getEmployeesByDepartment = (departmentId: string): Employee[] => {
-  return getEmployees().filter(e => e.departmentId === departmentId);
+export const getEmployeesByDepartment = async (departmentId: string): Promise<Employee[]> => {
+  const allEmployees = await getEmployees();
+  return allEmployees.filter(e => e.departmentId === departmentId);
 };
 
-export const getTeamLeadersByDepartment = (departmentId: string): Employee[] => {
-  return getEmployees().filter(e => e.departmentId === departmentId && e.isTeamLeader);
+export const getTeamLeadersByDepartment = async (departmentId: string): Promise<Employee[]> => {
+  const allEmployees = await getEmployees();
+  return allEmployees.filter(e => e.departmentId === departmentId && e.isTeamLeader);
 };
 
+// Machines
+export const getMachines = async (): Promise<Machine[]> => {
+  const { data, error } = await supabase
+    .from('machines')
+    .select('*')
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const saveMachine = async (machine: Machine): Promise<void> => {
+  const { error } = await supabase
+    .from('machines')
+    .upsert({ id: machine.id, name: machine.name });
+
+  if (error) throw error;
+};
+
+export const deleteMachine = async (machineId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('machines')
+    .delete()
+    .eq('id', machineId);
+
+  if (error) throw error;
+};
+
+// Utility functions
 export const generateId = () => {
-  return Math.random().toString(36).substr(2, 9);
+  return crypto.randomUUID();
 };
 
 export const generatePassword = () => {
@@ -92,41 +193,31 @@ export const generatePassword = () => {
   return result;
 };
 
-export const getMachines = (): Machine[] => {
-  const stored = localStorage.getItem('production_machines');
-  return stored ? JSON.parse(stored) : [];
-};
-
-export const saveMachine = (machine: Machine) => {
-  const machines = getMachines();
-  const existingIndex = machines.findIndex(m => m.id === machine.id);
-  
-  if (existingIndex >= 0) {
-    machines[existingIndex] = machine;
-  } else {
-    machines.push(machine);
-  }
-  
-  localStorage.setItem('production_machines', JSON.stringify(machines));
-};
-
-export const deleteMachine = (machineId: string) => {
-  const machines = getMachines().filter(m => m.id !== machineId);
-  localStorage.setItem('production_machines', JSON.stringify(machines));
-};
-
-// Settings password management and admin initialization functions have been removed.
-// Authentication is now handled via Supabase. Use src/lib/authz.ts for admin checks.
-
 // Logo management
-export const getLogo = (): string | null => {
-  return localStorage.getItem('app_logo');
+export const getLogo = async (): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'logo')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.value || null;
 };
 
-export const setLogo = (logoDataUrl: string) => {
-  localStorage.setItem('app_logo', logoDataUrl);
+export const setLogo = async (logoDataUrl: string): Promise<void> => {
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert({ key: 'logo', value: logoDataUrl });
+
+  if (error) throw error;
 };
 
-export const removeLogo = () => {
-  localStorage.removeItem('app_logo');
+export const removeLogo = async (): Promise<void> => {
+  const { error } = await supabase
+    .from('app_settings')
+    .delete()
+    .eq('key', 'logo');
+
+  if (error) throw error;
 };

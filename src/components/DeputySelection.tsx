@@ -24,9 +24,9 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
     }
   }, [currentUser, shouldShow]);
 
-  const loadDeputies = () => {
+  const loadDeputies = async () => {
     try {
-      const employees = getEmployees();
+      const employees = await getEmployees();
       const currentEmployee = employees.find(emp => 
         emp.account?.username === currentUser || emp.name === currentUser
       );

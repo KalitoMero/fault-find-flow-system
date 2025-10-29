@@ -138,7 +138,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   }, []);
 
   useEffect(() => {
-    setEmployees(getEmployees());
+    const loadEmployees = async () => {
+      const emps = await getEmployees();
+      setEmployees(emps);
+    };
+    loadEmployees();
     loadN8nSettings();
     
     // Listen for N8N settings changes
@@ -200,9 +204,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   }, [currentStep, fields]);
 
   // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
-  const findTeamLeaderForDepartment = (departmentName: string): string => {
-    const employees = getEmployees();
-    const departments = getDepartments();
+  const findTeamLeaderForDepartment = async (departmentName: string): Promise<string> => {
+    const employees = await getEmployees();
+    const departments = await getDepartments();
     
     // Finde die Abteilung basierend auf dem Namen
     const department = departments.find(d => d.name === departmentName);
