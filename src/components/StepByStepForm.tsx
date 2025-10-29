@@ -567,10 +567,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setIsSubmitting(true);
 
     try {
+      const problemDesc = fields.find(f => f.id === 'problemDescription')?.value || '';
+      const correctiveAct = fields.find(f => f.id === 'correctiveAction')?.value || '';
+      
+      // Validate problem description length (minimum 10 characters as per RLS policy)
+      if (problemDesc.trim().length < 10) {
+        toast.error('Problembeschreibung muss mindestens 10 Zeichen lang sein');
+        setIsSubmitting(false);
+        return;
+      }
+      
       const report = {
         id: await generateErrorReportId(),
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
-        afoNumber: fields.find(f => f.id === 'afoNumber')?.value || undefined,
+        afoNumber: fields.find(f => f.id === 'afoNumber')?.value || '',
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
@@ -578,9 +588,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
         machine: undefined,
         detectionLocation: fields.find(f => f.id === 'detectionLocation')?.value || undefined,
-        problemDescription: fields.find(f => f.id === 'problemDescription')?.value || '',
-        errorCause: fields.find(f => f.id === 'problemDescription')?.value || '',
-        correctiveAction: fields.find(f => f.id === 'correctiveAction')?.value || '',
+        problemDescription: problemDesc,
+        errorCause: problemDesc, // Use same as problem description for now
+        correctiveAction: correctiveAct || problemDesc, // Use problem desc as fallback
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: assignedTeamLeader,
