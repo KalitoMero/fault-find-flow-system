@@ -763,9 +763,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                    {excelDepartment && (
+                    {excelDepartmentName && (
                       <div>
-                        <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartment}</span>
+                        <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartmentName}</span>
                       </div>
                     )}
                     {assignedTeamLeader !== 'System' && (
