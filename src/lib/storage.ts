@@ -63,12 +63,15 @@ const toCamelCase = (dbReport: any): ErrorReport => {
 };
 
 // Helper: Convert camelCase to snake_case
-const toSnakeCase = (report: Partial<ErrorReport>): any => {
+const toSnakeCase = async (report: Partial<ErrorReport>): Promise<any> => {
+  // Get current user ID
+  const { data: { user } } = await supabase.auth.getUser();
+  
   return {
     id: report.id,
     order_number: report.orderNumber,
     afo_number: report.afoNumber,
-    machine_id: report.machine,
+    machine_id: report.machine || null,
     defective_quantity: report.defectiveQuantity,
     total_defective_quantity: report.totalDefectiveQuantity,
     quantity_type: report.quantityType,
@@ -76,17 +79,21 @@ const toSnakeCase = (report: Partial<ErrorReport>): any => {
     problem_description: report.problemDescription,
     error_cause: report.errorCause,
     corrective_action: report.correctiveAction,
-    creator_id: (supabase.auth.getUser as any)?.id || '',
+    creator_id: user?.id || null,
     creator_name: report.creator,
     personal_number: report.personalNumber,
     approval_status: report.approvalStatus,
     rejection_reason: report.rejectionReason,
-    assigned_team_leader_id: report.assignedTeamLeader,
-    approved_by_id: report.approvedBy,
+    // assigned_team_leader_id should be a UUID or null
+    assigned_team_leader_id: (report.assignedTeamLeader && report.assignedTeamLeader !== 'System') 
+      ? report.assignedTeamLeader 
+      : null,
+    approved_by_id: report.approvedBy || null,
     approved_at: report.approvedAt,
-    rejected_by_id: report.rejectedBy,
+    rejected_by_id: report.rejectedBy || null,
     rejected_at: report.rejectedAt,
-    department_id: report.excelDepartment,
+    // department_id should be a UUID or null
+    department_id: report.excelDepartment || null,
     additional_info: report.additionalInfo
   };
 };
@@ -102,12 +109,15 @@ export const getErrorReports = async (): Promise<ErrorReport[]> => {
 };
 
 export const saveErrorReport = async (report: ErrorReport): Promise<void> => {
-  const dbReport = toSnakeCase(report);
+  const dbReport = await toSnakeCase(report);
   const { error } = await supabase
     .from('error_reports')
     .insert([dbReport]);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error saving report:', error);
+    throw error;
+  }
 };
 
 export const deleteErrorReport = async (reportId: string): Promise<void> => {
@@ -147,13 +157,16 @@ export const updateErrorReportStatus = async (
 };
 
 export const updateErrorReport = async (reportId: string, updatedReport: ErrorReport): Promise<void> => {
-  const dbReport = toSnakeCase(updatedReport);
+  const dbReport = await toSnakeCase(updatedReport);
   const { error } = await supabase
     .from('error_reports')
     .update(dbReport)
     .eq('id', reportId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error updating report:', error);
+    throw error;
+  }
 };
 
 export const getErrorReportById = async (reportId: string): Promise<ErrorReport | undefined> => {
