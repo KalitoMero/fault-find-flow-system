@@ -63,10 +63,36 @@ const Index = () => {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  const loadData = () => {
-    // Temporarily load all reports
-    // TODO: Filter by user role and load from Supabase
-    setErrorReports([]);
+  const loadData = async () => {
+    try {
+      if (profile && (profile.role === 'teamleader' || profile.role === 'admin')) {
+        let reports: ErrorReport[] = [];
+        
+        if (profile.role === 'admin') {
+          reports = await getErrorReports();
+        } else if (profile.role === 'teamleader') {
+          reports = await getErrorReportsForTeamLeader(profile.id);
+          
+          // Check if user is also a deputy
+          const isDeputy = await isUserDeputy(profile.id);
+          if (isDeputy) {
+            const deputyReports = await getErrorReportsForDeputy(profile.id);
+            // Merge and remove duplicates
+            const allReports = [...reports, ...deputyReports];
+            reports = allReports.filter((report, index, self) =>
+              index === self.findIndex((r) => r.id === report.id)
+            );
+          }
+        }
+        
+        setErrorReports(reports);
+      } else {
+        setErrorReports([]);
+      }
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      setErrorReports([]);
+    }
   };
 
   useEffect(() => {
@@ -392,6 +418,31 @@ const Index = () => {
               ← Zurück zur Startseite
             </Button>
             <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
+          </div>
+        ) : selectedTab === 'dashboard' && isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'admin') ? (
+          // Teamleiter/Admin Dashboard
+          <div className="space-y-4">
+            <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
+              ← Zurück zur Startseite
+            </Button>
+            <ApprovalDashboard 
+              reports={errorReports.map(report => ({
+                id: report.id,
+                order_number: report.orderNumber,
+                afo_number: report.afoNumber,
+                machine_id: report.machine,
+                defective_quantity: report.defectiveQuantity,
+                total_defective_quantity: report.totalDefectiveQuantity,
+                quantity_type: report.quantityType,
+                problem_description: report.problemDescription,
+                corrective_action: report.correctiveAction,
+                creator_name: report.creator,
+                personal_number: report.personalNumber,
+                created_at: report.createdAt,
+                approval_status: report.approvalStatus as 'pending' | 'approved' | 'rejected'
+              }))}
+              onApprovalChange={handleApprovalChange}
+            />
           </div>
         ) : (
           // Start screen mit runden Buttons
