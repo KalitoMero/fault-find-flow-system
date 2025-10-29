@@ -14,8 +14,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
-  login: (email: string, password: string) => Promise<{ error: any }>;
-  signup: (email: string, password: string, name: string, personalNumber?: string) => Promise<{ error: any }>;
+  login: (username: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -97,7 +96,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
+    // Convert username to email format for authentication
+    const email = `${username.toLowerCase()}@app.internal`;
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -105,22 +107,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signup = async (email: string, password: string, name: string, personalNumber?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          name,
-          personal_number: personalNumber,
-        }
-      }
-    });
-    return { error };
-  };
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -133,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       profile,
       login,
-      signup,
       logout,
       isAuthenticated: !!user && !!profile,
       loading
