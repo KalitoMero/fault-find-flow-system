@@ -4,7 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, Users } from 'lucide-react';
-import { getEmployees, getTeamLeadersByDepartment, Employee } from '@/lib/settingsStorage';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Employee {
+  id: string;
+  name: string;
+  departmentId: string;
+}
 
 interface DeputySelectionProps {
   currentUser: string;
@@ -26,24 +32,32 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
 
   const loadDeputies = async () => {
     try {
-      const employees = await getEmployees();
-      const currentEmployee = employees.find(emp => 
-        emp.account?.username === currentUser || emp.name === currentUser
-      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('id, name, department_id')
+        .eq('id', user.id)
+        .single();
       
-      if (currentEmployee) {
-        console.log('DeputySelection: Current employee found:', currentEmployee.name);
-        setCurrentUserDepartment(currentEmployee.departmentId);
-        // Get employees from the same department who have accounts (excluding current user)
-        const deputies = employees.filter(emp => 
-          emp.departmentId === currentEmployee.departmentId &&
-          emp.id !== currentEmployee.id &&
-          emp.account && // Nur Mitarbeiter mit Account
-          emp.account.username && // Username muss vorhanden sein
-          emp.account.password   // Passwort muss vorhanden sein
-        );
-        console.log('DeputySelection: Available deputies:', deputies.length);
-        setAvailableDeputies(deputies);
+      if (currentProfile) {
+        console.log('DeputySelection: Current employee found:', currentProfile.name);
+        setCurrentUserDepartment(currentProfile.department_id);
+        
+        // Get other employees from the same department with user roles
+        const { data: deputies } = await supabase
+          .from('profiles')
+          .select('id, name, department_id')
+          .eq('department_id', currentProfile.department_id)
+          .neq('id', user.id);
+        
+        console.log('DeputySelection: Available deputies:', deputies?.length || 0);
+        setAvailableDeputies(deputies?.map(d => ({
+          id: d.id,
+          name: d.name,
+          departmentId: d.department_id
+        })) || []);
       }
     } catch (error) {
       console.error('DeputySelection: Error loading deputies:', error);
@@ -51,12 +65,21 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
     }
   };
 
-  const loadSelectedDeputy = () => {
+  const loadSelectedDeputy = async () => {
     try {
-      const savedDeputy = localStorage.getItem(`deputy_${currentUser}`);
-      if (savedDeputy && savedDeputy !== '') {
-        console.log('DeputySelection: Loaded saved deputy:', savedDeputy);
-        setSelectedDeputy(savedDeputy);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: assignment } = await supabase
+        .from('deputy_assignments')
+        .select('deputy_id')
+        .eq('team_leader_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (assignment?.deputy_id) {
+        console.log('DeputySelection: Loaded saved deputy:', assignment.deputy_id);
+        setSelectedDeputy(assignment.deputy_id);
       } else {
         setSelectedDeputy('none');
       }
@@ -66,17 +89,38 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
     }
   };
 
-  const handleDeputyChange = (deputyId: string) => {
+  const handleDeputyChange = async (deputyId: string) => {
     console.log('DeputySelection: Deputy changed to:', deputyId);
     setSelectedDeputy(deputyId);
-    if (deputyId && deputyId !== 'none') {
-      // Speichere den Zeitpunkt der Vertretungsernennung
-      const deputyAssignmentTime = new Date().toISOString();
-      localStorage.setItem(`deputy_${currentUser}`, deputyId);
-      localStorage.setItem(`deputy_assignment_time_${currentUser}`, deputyAssignmentTime);
-    } else {
-      localStorage.removeItem(`deputy_${currentUser}`);
-      localStorage.removeItem(`deputy_assignment_time_${currentUser}`);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (deputyId && deputyId !== 'none') {
+        // Deactivate old assignments
+        await supabase
+          .from('deputy_assignments')
+          .update({ is_active: false })
+          .eq('team_leader_id', user.id);
+        
+        // Create new assignment
+        await supabase
+          .from('deputy_assignments')
+          .insert({
+            team_leader_id: user.id,
+            deputy_id: deputyId,
+            is_active: true
+          });
+      } else {
+        // Deactivate all assignments
+        await supabase
+          .from('deputy_assignments')
+          .update({ is_active: false })
+          .eq('team_leader_id', user.id);
+      }
+    } catch (error) {
+      console.error('DeputySelection: Error updating deputy:', error);
     }
   };
 
@@ -125,7 +169,7 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
               <SelectItem value="none">Keine Vertretung</SelectItem>
               {availableDeputies.map((deputy) => (
                 <SelectItem key={deputy.id} value={deputy.id}>
-                  {deputy.name} ({deputy.account?.username})
+                  {deputy.name}
                 </SelectItem>
               ))}
             </SelectContent>

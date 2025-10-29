@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Webhook, Settings, TestTube } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
 
 interface N8nWebhookSettingsProps {
   onSettingsChange: (enabled: boolean, url: string) => void;
@@ -16,40 +17,89 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
   const [isEnabled, setIsEnabled] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
-  // Load settings from localStorage on component mount
+  // Load settings from Supabase on component mount
   useEffect(() => {
-    const savedUrl = localStorage.getItem('n8n_webhook_url') || '';
-    const savedEnabled = localStorage.getItem('n8n_enabled') === 'true';
+    const loadSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: settings } = await supabase
+          .from('n8n_settings')
+          .select('webhook_url, is_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        const url = settings?.webhook_url || '';
+        const enabled = settings?.is_enabled || false;
+        
+        setWebhookUrl(url);
+        setIsEnabled(enabled);
+        onSettingsChange(enabled, url);
+        console.log('🔧 N8N Settings loaded:', { enabled, url });
+      } catch (error) {
+        console.error('Error loading N8N settings:', error);
+      }
+    };
     
-    setWebhookUrl(savedUrl);
-    setIsEnabled(savedEnabled);
-    onSettingsChange(savedEnabled, savedUrl);
-    console.log('🔧 N8N Settings loaded:', { enabled: savedEnabled, url: savedUrl });
+    loadSettings();
   }, [onSettingsChange]);
 
-  const handleUrlChange = (value: string) => {
+  const handleUrlChange = async (value: string) => {
     setWebhookUrl(value);
-    localStorage.setItem('n8n_webhook_url', value);
     onSettingsChange(isEnabled, value);
     
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-    console.log('🔧 N8N URL updated:', value);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('n8n_settings')
+        .upsert({
+          user_id: user.id,
+          webhook_url: value,
+          is_enabled: isEnabled
+        }, {
+          onConflict: 'user_id'
+        });
+      
+      window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
+      console.log('🔧 N8N URL updated:', value);
+    } catch (error) {
+      console.error('Error saving N8N URL:', error);
+      toast.error('Fehler beim Speichern der URL');
+    }
   };
 
-  const handleEnabledChange = (enabled: boolean) => {
+  const handleEnabledChange = async (enabled: boolean) => {
     setIsEnabled(enabled);
-    localStorage.setItem('n8n_enabled', enabled.toString());
     onSettingsChange(enabled, webhookUrl);
     
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-    console.log('🔧 N8N enabled state changed:', enabled);
-    
-    if (enabled && !webhookUrl.trim()) {
-      toast.warning('Bitte geben Sie eine N8N Webhook URL ein');
-    } else if (enabled && webhookUrl.trim()) {
-      toast.success('N8N Integration aktiviert');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('n8n_settings')
+        .upsert({
+          user_id: user.id,
+          webhook_url: webhookUrl,
+          is_enabled: enabled
+        }, {
+          onConflict: 'user_id'
+        });
+      
+      window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
+      console.log('🔧 N8N enabled state changed:', enabled);
+      
+      if (enabled && !webhookUrl.trim()) {
+        toast.warning('Bitte geben Sie eine N8N Webhook URL ein');
+      } else if (enabled && webhookUrl.trim()) {
+        toast.success('N8N Integration aktiviert');
+      }
+    } catch (error) {
+      console.error('Error saving N8N enabled state:', error);
+      toast.error('Fehler beim Speichern der Einstellung');
     }
   };
 
