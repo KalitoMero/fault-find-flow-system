@@ -92,7 +92,7 @@ serve(async (req) => {
       case 'create': {
         const { name, departmentId, email, password, personalNumber, isTeamLeader, isAdmin } = data;
 
-        // Create auth user
+        // Create auth user (handle_new_user trigger will create the profile automatically)
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email,
           password,
@@ -103,15 +103,14 @@ serve(async (req) => {
         if (authError) throw authError;
         if (!authData.user) throw new Error('User creation failed');
 
-        // Create profile
+        // Update profile with department and personal number (profile already exists from trigger)
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
-          .insert({
-            id: authData.user.id,
-            name,
+          .update({
             department_id: departmentId,
             personal_number: personalNumber
-          });
+          })
+          .eq('id', authData.user.id);
 
         if (profileError) throw profileError;
 
