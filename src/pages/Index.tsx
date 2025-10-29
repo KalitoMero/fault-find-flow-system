@@ -36,7 +36,12 @@ const Index = () => {
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber'>('orderNumber');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showStepForm, setShowStepForm] = useState(false);
   const [shouldShowDeputy, setShouldShowDeputy] = useState(false);
   const { profile, logout, isAuthenticated, loading } = useAuth();
@@ -110,10 +115,37 @@ const Index = () => {
     );
   }
 
-  // Sort reports by date (newest first)
-  const filteredReports = errorReports.sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  // Filter and sort reports based on search term, status, and sort preferences
+  const filteredReports = errorReports
+    .filter(report => {
+      let matchesSearch = searchTerm === '';
+      
+      if (searchTerm !== '') {
+        if (searchType === 'orderNumber') {
+          matchesSearch = report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        } else if (searchType === 'articleNumber') {
+          // Search in Excel data for article number
+          const additionalData = report.additionalExcelData || {};
+          const articleNumber = additionalData['Artikelnummer'] || '';
+          matchesSearch = articleNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+      }
+      
+      const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'date') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === 'orderNumber') {
+        comparison = a.orderNumber.localeCompare(b.orderNumber);
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   const handleCreateReport = () => {
     setShowStepForm(true);
@@ -278,6 +310,15 @@ const Index = () => {
     return isUserDeputy(profile.id);
   };
 
+  const handleToggleSort = (newSortBy: 'date' | 'orderNumber') => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('desc');
+    }
+  };
+
 
   // Calculate pending reports count for team leaders
   const pendingReportsCount = errorReports.filter(report => report.approvalStatus === 'pending').length;
@@ -385,8 +426,75 @@ const Index = () => {
             <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
               ← Zurück zur Startseite
             </Button>
+
+            {/* Filter und Sortierung */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Filter & Sortierung</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Suchleiste */}
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder={searchType === 'orderNumber' ? 'Nach Auftragsnummer suchen...' : 'Nach Artikelnummer suchen...'}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Select value={searchType} onValueChange={(value: 'orderNumber' | 'articleNumber') => setSearchType(value)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="orderNumber">Auftragsnummer</SelectItem>
+                      <SelectItem value="articleNumber">Artikelnummer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Filter und Sortierung */}
+                <div className="flex gap-4">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Status filtern" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Status</SelectItem>
+                      <SelectItem value="pending">Zur Prüfung</SelectItem>
+                      <SelectItem value="approved">Freigegeben</SelectItem>
+                      <SelectItem value="rejected">Abgelehnt</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => handleToggleSort('date')}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                    Datum {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => handleToggleSort('orderNumber')}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                    Auftragsnr. {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </Button>
+
+                  <Badge variant="secondary" className="ml-auto self-center">
+                    {filteredReports.length} Meldung(en)
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
             <ApprovalDashboard 
-              reports={errorReports.map(report => ({
+              reports={filteredReports.map(report => ({
                 id: report.id,
                 order_number: report.orderNumber,
                 afo_number: report.afoNumber,
