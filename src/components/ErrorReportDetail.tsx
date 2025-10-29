@@ -27,7 +27,18 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
+  const [relatedReports, setRelatedReports] = useState<ErrorReport[]>([]);
   const { isAuthenticated, profile } = useAuth();
+
+  React.useEffect(() => {
+    const loadRelated = async () => {
+      if (showRelatedDialog && report.additionalExcelData?.Artikelnummer) {
+        const related = await getRelatedReports();
+        setRelatedReports(related);
+      }
+    };
+    loadRelated();
+  }, [showRelatedDialog]);
 
   const handleApprove = async () => {
     if (!isAuthenticated || !profile) return;
@@ -58,11 +69,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     setIsSubmitting(true);
     try {
       // Find the current user's employee record to get their name
-      const employees = getEmployees();
+      const employees = await getEmployees();
       const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
       const rejectorName = currentEmployee?.name || profile.name;
       
-      updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
+      await updateErrorReportStatus(report.id, 'rejected', rejectionReason, rejectorName);
       toast.success('Fehlermeldung wurde abgelehnt!');
       onStatusChange();
       setShowRejectionForm(false);
@@ -109,10 +120,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     printErrorReport(report);
   };
 
-  const getRelatedReports = () => {
+  const getRelatedReports = async () => {
     if (!report.additionalExcelData?.Artikelnummer) return [];
     
-    const allReports = getErrorReports();
+    const allReports = await getErrorReports();
     const relatedReports = allReports.filter(r => 
       String(r.id) !== String(report.id) && 
       r.additionalExcelData?.Artikelnummer === report.additionalExcelData.Artikelnummer
@@ -124,12 +135,13 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     return relatedReports;
   };
 
-  const handleShowRelatedReports = () => {
-    const related = getRelatedReports();
+  const handleShowRelatedReports = async () => {
+    const related = await getRelatedReports();
     if (related.length === 0) {
       toast.success('Es gibt keine anderen Fehlermeldungen mit dieser Artikelnummer.');
       return;
     }
+    setRelatedReports(related);
     console.log('Opening related reports dialog');
     setShowRelatedDialog(true);
   };
@@ -493,11 +505,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
-                  {(() => {
-                    const relatedReports = getRelatedReports();
-                    return relatedReports.length > 0 ? (
-                      <div className="space-y-3">
-                        {relatedReports.map((relatedReport) => (
+                  {relatedReports.length > 0 ? (
+                    <div className="space-y-3">
+                      {relatedReports.map((relatedReport) => (
                           <div 
                             key={relatedReport.id} 
                             className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
@@ -529,15 +539,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                                 )}
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-gray-600 text-center py-8">
-                        Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
-                      </div>
-                    );
-                  })()}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 text-center py-8">
+                      Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>

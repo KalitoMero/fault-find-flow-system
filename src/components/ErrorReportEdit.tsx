@@ -31,7 +31,18 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRelatedReports, setShowRelatedReports] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
+  const [relatedReports, setRelatedReports] = useState<ErrorReport[]>([]);
   const { isAuthenticated, profile } = useAuth();
+
+  React.useEffect(() => {
+    const loadRelated = async () => {
+      if (showRelatedDialog) {
+        const related = await getRelatedReports();
+        setRelatedReports(related);
+      }
+    };
+    loadRelated();
+  }, [showRelatedDialog]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -519,18 +530,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                     Klicken Sie auf eine Fehlermeldung, um sie zu öffnen.
                   </DialogDescription>
                 </DialogHeader>
-  const [relatedReports, setRelatedReports] = React.useState<ErrorReport[]>([]);
-
-  React.useEffect(() => {
-    const loadRelated = async () => {
-      const related = await getRelatedReports();
-      setRelatedReports(related);
-    };
-    loadRelated();
-  }, [report.id]);
-
-  // ... keep existing code
-
                 <div className="mt-4">
                   {relatedReports.length > 0 ? (
                     <div className="space-y-3">
@@ -568,13 +567,12 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                             </div>
                           </div>
                         ))}
-                      </div>
-                    ) : (
-                      <div className="text-gray-600 text-center py-8">
-                        Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
-                      </div>
-                    );
-                  })()}
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 text-center py-8">
+                      Keine weiteren Fehlermeldungen mit dieser Artikelnummer gefunden.
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>

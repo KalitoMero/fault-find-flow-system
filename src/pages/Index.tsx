@@ -43,7 +43,18 @@ const Index = () => {
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showStepForm, setShowStepForm] = useState(false);
+  const [shouldShowDeputy, setShouldShowDeputy] = useState(false);
   const { profile, logout, isAuthenticated, loading } = useAuth();
+
+  React.useEffect(() => {
+    const checkDeputy = async () => {
+      if (profile?.id) {
+        const hasRole = await isUserDeputy(profile.id);
+        setShouldShowDeputy(hasRole);
+      }
+    };
+    checkDeputy();
+  }, [profile?.id]);
 
   // Redirect to auth page if not authenticated
   useEffect(() => {
@@ -386,20 +397,6 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
-
-  const [shouldShowDeputy, setShouldShowDeputy] = React.useState(false);
-  
-  React.useEffect(() => {
-    const checkDeputy = async () => {
-      if (profile?.id) {
-        const hasRole = await hasUserRole(profile.id, 'teamleader');
-        setShouldShowDeputy(hasRole);
-      }
-    };
-    checkDeputy();
-  }, [profile?.id]);
-
-  // ... keep existing code
 
             {/* Deputy Selection with Error Boundary - nur anzeigen wenn berechtigt */}
             <ErrorBoundary>
