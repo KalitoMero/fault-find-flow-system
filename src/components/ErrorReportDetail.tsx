@@ -28,11 +28,12 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
   const [relatedReports, setRelatedReports] = useState<ErrorReport[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedProblemDescription, setEditedProblemDescription] = useState(report.problemDescription);
-  const [editedErrorCause, setEditedErrorCause] = useState(report.errorCause);
   const [editedCorrectiveAction, setEditedCorrectiveAction] = useState(report.correctiveAction);
   const { isAuthenticated, profile } = useAuth();
+
+  const hasChanges = editedProblemDescription !== report.problemDescription || 
+                     editedCorrectiveAction !== report.correctiveAction;
 
   React.useEffect(() => {
     const loadRelated = async () => {
@@ -106,39 +107,19 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     }
   };
 
-  const handleEdit = () => {
-    if (onEdit) {
-      onEdit(report);
-    }
-  };
-
-  const handleStartEditing = () => {
-    setIsEditing(true);
-    setEditedProblemDescription(report.problemDescription);
-    setEditedErrorCause(report.errorCause);
-    setEditedCorrectiveAction(report.correctiveAction);
-  };
-
-  const handleCancelEditing = () => {
-    setIsEditing(false);
-    setEditedProblemDescription(report.problemDescription);
-    setEditedErrorCause(report.errorCause);
-    setEditedCorrectiveAction(report.correctiveAction);
-  };
-
   const handleSaveChanges = async () => {
+    if (!hasChanges) return;
+    
     setIsSubmitting(true);
     try {
       const updatedReport: ErrorReport = {
         ...report,
         problemDescription: editedProblemDescription,
-        errorCause: editedErrorCause,
         correctiveAction: editedCorrectiveAction
       };
       
       await updateErrorReport(report.id, updatedReport);
       toast.success('Änderungen wurden gespeichert!');
-      setIsEditing(false);
       onStatusChange(); // Refresh the report
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -271,40 +252,6 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {/* Edit/Save Buttons für nicht freigegebene Meldungen */}
-                {report.approvalStatus !== 'approved' && (
-                  <>
-                    {!isEditing ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleStartEditing}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Bearbeiten
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleSaveChanges}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? 'Speichert...' : 'Speichern'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCancelEditing}
-                          disabled={isSubmitting}
-                        >
-                          Abbrechen
-                        </Button>
-                      </>
-                    )}
-                  </>
-                )}
                 {isAuthenticated && (
                   <Button
                     variant="destructive"
@@ -457,7 +404,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-              {isEditing ? (
+              {report.approvalStatus !== 'approved' ? (
                 <Textarea
                   value={editedProblemDescription}
                   onChange={(e) => setEditedProblemDescription(e.target.value)}
@@ -474,26 +421,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             <Separator />
 
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Fehlerursache</h3>
-              {isEditing ? (
-                <Textarea
-                  value={editedErrorCause}
-                  onChange={(e) => setEditedErrorCause(e.target.value)}
-                  className="min-h-[100px]"
-                  placeholder="Fehlerursache eingeben..."
-                />
-              ) : (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-gray-800">{report.errorCause}</p>
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
-              {isEditing ? (
+              {report.approvalStatus !== 'approved' ? (
                 <Textarea
                   value={editedCorrectiveAction}
                   onChange={(e) => setEditedCorrectiveAction(e.target.value)}
@@ -506,6 +435,18 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 </div>
               )}
             </div>
+
+            {/* Speichern Button nur wenn Änderungen vorhanden und nicht freigegeben */}
+            {report.approvalStatus !== 'approved' && hasChanges && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Speichert...' : 'Änderungen speichern'}
+                </Button>
+              </div>
+            )}
 
             {/* Button für verwandte Fehlermeldungen - für alle Benutzer bei allen Meldungen */}
             {report.additionalExcelData?.Artikelnummer && (
