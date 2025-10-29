@@ -369,10 +369,6 @@ const Index = () => {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
         {isAuthenticated && profile ? (
-          profile.role === 'admin' ? (
-            // Admin Dashboard
-            <AdminDashboard currentUser={profile.id} />
-          ) : (
           <div className="space-y-6">
             {/* Status-Anzeige für Teamleiter */}
             {profile.role === 'teamleader' && pendingReportsCount > 0 && (
@@ -580,7 +576,6 @@ const Index = () => {
               </CardContent>
             </Card>
             </div>
-          )
         ) : selectedTab === 'new-report' ? (
           // Neue Meldung Formular
           <div className="space-y-4">
