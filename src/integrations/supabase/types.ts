@@ -210,16 +210,19 @@ export type Database = {
           created_at: string | null
           id: string
           row_data: Json
+          row_index: number | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           row_data: Json
+          row_index?: number | null
         }
         Update: {
           created_at?: string | null
           id?: string
           row_data?: Json
+          row_index?: number | null
         }
         Relationships: []
       }

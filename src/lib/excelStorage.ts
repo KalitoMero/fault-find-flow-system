@@ -32,10 +32,12 @@ export const saveExcelData = async (data: any[]): Promise<void> => {
     await supabase.from('excel_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     // Insert new data in batches (Supabase has a limit)
+    // Include row_index to preserve original order
     const batchSize = 1000;
     for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize).map(row => ({
-        row_data: row
+      const batch = data.slice(i, i + batchSize).map((row, index) => ({
+        row_data: row,
+        row_index: i + index // Preserve original order
       }));
 
       const { error } = await supabase
@@ -45,7 +47,7 @@ export const saveExcelData = async (data: any[]): Promise<void> => {
       if (error) throw error;
     }
 
-    console.log('Excel data saved to Supabase');
+    console.log('Excel data saved to Supabase with preserved order');
   } catch (error) {
     console.error('Error saving Excel data:', error);
     throw error;
@@ -88,7 +90,7 @@ export const getExcelData = async (): Promise<ExcelData | null> => {
     const { data, error } = await supabase
       .from('excel_data')
       .select('row_data')
-      .order('created_at', { ascending: true });
+      .order('row_index', { ascending: true }); // Sort by row_index to preserve order
 
     if (error) throw error;
 
