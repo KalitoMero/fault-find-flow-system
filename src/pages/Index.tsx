@@ -510,6 +510,13 @@ const Index = () => {
                 approval_status: report.approvalStatus as 'pending' | 'approved' | 'rejected'
               }))}
               onApprovalChange={handleApprovalChange}
+              onReportClick={(report) => {
+                // Convert back to ErrorReport format and open detail view
+                const fullReport = filteredReports.find(r => r.id === report.id);
+                if (fullReport) {
+                  handleReportClick(fullReport);
+                }
+              }}
             />
           </div>
         ) : (
