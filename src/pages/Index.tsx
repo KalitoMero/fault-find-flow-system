@@ -36,12 +36,7 @@ const Index = () => {
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
   const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber'>('orderNumber');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showStepForm, setShowStepForm] = useState(false);
   const [shouldShowDeputy, setShouldShowDeputy] = useState(false);
   const { profile, logout, isAuthenticated, loading } = useAuth();
@@ -115,37 +110,10 @@ const Index = () => {
     );
   }
 
-  // Filter and sort reports based on search term, status, and sort preferences
-  const filteredReports = errorReports
-    .filter(report => {
-      let matchesSearch = searchTerm === '';
-      
-      if (searchTerm !== '') {
-        if (searchType === 'orderNumber') {
-          matchesSearch = report.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
-        } else if (searchType === 'articleNumber') {
-          // Search in Excel data for article number
-          const additionalData = report.additionalExcelData || {};
-          const articleNumber = additionalData['Artikelnummer'] || '';
-          matchesSearch = articleNumber.toLowerCase().includes(searchTerm.toLowerCase());
-        }
-      }
-      
-      const matchesStatus = statusFilter === 'all' || report.approvalStatus === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortBy === 'date') {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === 'orderNumber') {
-        comparison = a.orderNumber.localeCompare(b.orderNumber);
-      }
-      
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+  // Sort reports by date (newest first)
+  const filteredReports = errorReports.sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   const handleCreateReport = () => {
     setShowStepForm(true);
@@ -310,14 +278,6 @@ const Index = () => {
     return isUserDeputy(profile.id);
   };
 
-  const handleToggleSort = (newSortBy: 'date' | 'orderNumber') => {
-    if (sortBy === newSortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder('desc');
-    }
-  };
 
   // Calculate pending reports count for team leaders
   const pendingReportsCount = errorReports.filter(report => report.approvalStatus === 'pending').length;
