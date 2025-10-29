@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, User, Calendar, Save, Search } from 'lucide-react';
-import { ErrorReport, getErrorReports, updateErrorReportStatus } from '@/lib/storage';
+import { ErrorReport, getErrorReports, updateErrorReport } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
@@ -62,34 +62,26 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
 
     setIsSubmitting(true);
     try {
-      // Save changes and approve in one step
-      const allReports = await getErrorReports();
-      const employees = await getEmployees();
-      const updatedReports = allReports.map(r => {
-        if (r.id === report.id) {
-          const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-          const approverName = currentEmployee?.name || profile.name;
-          
-          return {
-            ...r,
-            problemDescription: formData.problemDescription,
-            correctiveAction: formData.correctiveAction,
-            defectiveQuantity: formData.defectiveQuantity,
-            approvalStatus: 'approved' as const,
-            approvedBy: approverName,
-            approvedAt: new Date().toISOString(),
-            rejectionReason: undefined,
-            rejectedBy: undefined,
-            rejectedAt: undefined,
-          };
-        }
-        return r;
-      });
-
-      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      // First update the report content
+      const updatedReport: ErrorReport = {
+        ...report,
+        problemDescription: formData.problemDescription,
+        correctiveAction: formData.correctiveAction,
+        defectiveQuantity: formData.defectiveQuantity,
+        approvalStatus: 'approved',
+        approvedBy: profile.id,
+        approvedAt: new Date().toISOString(),
+        rejectionReason: undefined,
+        rejectedBy: undefined,
+        rejectedAt: undefined
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      
       toast.success('Fehlermeldung wurde gespeichert und freigegeben!');
       onSave();
     } catch (error) {
+      console.error('Fehler beim Freigeben:', error);
       toast.error('Fehler beim Freigeben der Meldung');
     } finally {
       setIsSubmitting(false);
@@ -110,36 +102,28 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     
     setIsSubmitting(true);
     try {
-      // Save changes and reject in one step
-      const allReports = await getErrorReports();
-      const employees = await getEmployees();
-      const updatedReports = allReports.map(r => {
-        if (r.id === report.id) {
-          const currentEmployee = employees.find(emp => emp.account?.username === profile.id);
-          const rejectorName = currentEmployee?.name || profile.name;
-          
-          return {
-            ...r,
-            problemDescription: formData.problemDescription,
-            correctiveAction: formData.correctiveAction,
-            defectiveQuantity: formData.defectiveQuantity,
-            approvalStatus: 'rejected' as const,
-            rejectionReason: rejectionReason,
-            rejectedBy: rejectorName,
-            rejectedAt: new Date().toISOString(),
-            approvedBy: undefined,
-            approvedAt: undefined,
-          };
-        }
-        return r;
-      });
-
-      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      // Update the report with changes and rejection status
+      const updatedReport: ErrorReport = {
+        ...report,
+        problemDescription: formData.problemDescription,
+        correctiveAction: formData.correctiveAction,
+        defectiveQuantity: formData.defectiveQuantity,
+        approvalStatus: 'rejected',
+        rejectionReason: rejectionReason,
+        rejectedBy: profile.id,
+        rejectedAt: new Date().toISOString(),
+        approvedBy: undefined,
+        approvedAt: undefined
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      
       toast.success('Fehlermeldung wurde gespeichert und abgelehnt!');
       onSave();
       setShowRejectionForm(false);
       setRejectionReason('');
     } catch (error) {
+      console.error('Fehler beim Ablehnen:', error);
       toast.error('Fehler beim Ablehnen der Meldung');
     } finally {
       setIsSubmitting(false);
@@ -155,26 +139,19 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     setIsSubmitting(true);
 
     try {
-      // Load all reports and update the corresponding one
-      const allReports = await getErrorReports();
-      const updatedReports = allReports.map(r => {
-        if (r.id === report.id) {
-          return {
-            ...r,
-            problemDescription: formData.problemDescription,
-            correctiveAction: formData.correctiveAction,
-            defectiveQuantity: formData.defectiveQuantity,
-            approvalStatus: 'pending' as const, // Reset status to pending if it was rejected
-            rejectionReason: undefined, // Remove rejection reason
-            rejectedBy: undefined, // Clear rejected by
-            rejectedAt: undefined, // Clear rejected at
-          };
-        }
-        return r;
-      });
-
-      // Save all reports back
-      localStorage.setItem('production_error_reports', JSON.stringify(updatedReports));
+      // Update the report and reset status to pending if it was rejected
+      const updatedReport: ErrorReport = {
+        ...report,
+        problemDescription: formData.problemDescription,
+        correctiveAction: formData.correctiveAction,
+        defectiveQuantity: formData.defectiveQuantity,
+        approvalStatus: 'pending',
+        rejectionReason: undefined,
+        rejectedBy: undefined,
+        rejectedAt: undefined
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
       
       toast.success(report.approvalStatus === 'rejected' 
         ? "Fehlermeldung erfolgreich aktualisiert und zur erneuten Prüfung eingereicht!"
