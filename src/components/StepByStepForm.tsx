@@ -15,6 +15,7 @@ import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 interface StepByStepFormProps {
   onReportCreated: () => void;
@@ -127,11 +128,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   ]);
 
   // Load N8N settings on component mount
-  const loadN8nSettings = useCallback(() => {
+  const loadN8nSettings = useCallback(async () => {
     try {
-      const url = localStorage.getItem('n8n_webhook_url') || '';
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: settings } = await supabase
+        .from('n8n_settings')
+        .select('webhook_url, is_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const url = settings?.webhook_url || '';
       setN8nWebhookUrl(url);
-      console.log(`✅ N8N integration ACTIVATED (always on)`);
+      console.log('✅ StepByStepForm - N8N integration ACTIVATED, URL loaded:', url);
     } catch (error) {
       console.error('❌ StepByStepForm - Error loading N8N settings:', error);
     }
@@ -146,23 +156,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     loadN8nSettings();
     
     // Listen for N8N settings changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'n8n_enabled' || e.key === 'n8n_webhook_url') {
-        console.log('📡 StepByStepForm - Storage change detected:', e.key, e.newValue);
-        loadN8nSettings();
-      }
-    };
-    
     const handleN8nSettingsUpdate = () => {
       console.log('📡 StepByStepForm - N8N settings update event received');
       loadN8nSettings();
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
     };
   }, [loadN8nSettings]);

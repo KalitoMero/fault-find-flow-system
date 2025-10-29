@@ -29,6 +29,7 @@ import AudioRecorderN8n from './AudioRecorderN8n';
 import SimpleCombobox from './SimpleCombobox';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 interface ErrorReportFormModernProps {
   onReportCreated: () => void;
@@ -140,34 +141,41 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   ];
 
   // Load N8N webhook settings and listen for changes
-  const loadN8nSettings = useCallback(() => {
-    const n8nUrl = localStorage.getItem('n8n_webhook_url') || '';
-    setUseN8nWebhook(true); // Always use N8N
-    setN8nWebhookUrl(n8nUrl);
+  const loadN8nSettings = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: settings } = await supabase
+        .from('n8n_settings')
+        .select('webhook_url, is_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const url = settings?.webhook_url || '';
+      const enabled = settings?.is_enabled ?? true;
+      
+      setUseN8nWebhook(enabled);
+      setN8nWebhookUrl(url);
+      console.log('🔧 ErrorReportFormModern - N8N Settings loaded:', { enabled, url });
+    } catch (error) {
+      console.error('❌ ErrorReportFormModern - Error loading N8N settings:', error);
+    }
   }, []);
 
   useEffect(() => {
     loadN8nSettings();
 
-    // Listen for storage changes (when settings are updated in other components)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'n8n_webhook_url') {
-        setTimeout(loadN8nSettings, 100);
-      }
-    };
-
     // Listen for custom events (for same-tab updates)
     const handleN8nSettingsUpdate = () => {
-      console.log('🔄 Custom N8N settings update event received');
+      console.log('🔄 ErrorReportFormModern - N8N settings update event received');
       loadN8nSettings();
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('n8nSettingsUpdated', handleN8nSettingsUpdate);
+    window.addEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('n8nSettingsUpdated', handleN8nSettingsUpdate);
+      window.removeEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
     };
   }, [loadN8nSettings]);
 
