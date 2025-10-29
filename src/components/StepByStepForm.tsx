@@ -55,9 +55,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
   // Helper function to get team leader display name
-  const getTeamLeaderDisplayName = (username: string): string => {
-    const employee = employees.find(emp => emp.account?.username === username);
-    return employee ? employee.name : username;
+  const getTeamLeaderDisplayName = (teamLeaderId: string): string => {
+    const employee = employees.find(emp => emp.id === teamLeaderId);
+    return employee ? employee.name : teamLeaderId;
   };
 
   const [fields, setFields] = useState<FormField[]>([
