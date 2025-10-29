@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
-import { ErrorReport, updateErrorReportStatus, getErrorReports, deleteErrorReport } from '@/lib/storage';
+import { ErrorReport, updateErrorReportStatus, getErrorReports, deleteErrorReport, updateErrorReport } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { printErrorReport } from '@/lib/printUtils';
@@ -28,6 +28,10 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
   const [relatedReports, setRelatedReports] = useState<ErrorReport[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProblemDescription, setEditedProblemDescription] = useState(report.problemDescription);
+  const [editedErrorCause, setEditedErrorCause] = useState(report.errorCause);
+  const [editedCorrectiveAction, setEditedCorrectiveAction] = useState(report.correctiveAction);
   const { isAuthenticated, profile } = useAuth();
 
   React.useEffect(() => {
@@ -105,6 +109,42 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const handleEdit = () => {
     if (onEdit) {
       onEdit(report);
+    }
+  };
+
+  const handleStartEditing = () => {
+    setIsEditing(true);
+    setEditedProblemDescription(report.problemDescription);
+    setEditedErrorCause(report.errorCause);
+    setEditedCorrectiveAction(report.correctiveAction);
+  };
+
+  const handleCancelEditing = () => {
+    setIsEditing(false);
+    setEditedProblemDescription(report.problemDescription);
+    setEditedErrorCause(report.errorCause);
+    setEditedCorrectiveAction(report.correctiveAction);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSubmitting(true);
+    try {
+      const updatedReport: ErrorReport = {
+        ...report,
+        problemDescription: editedProblemDescription,
+        errorCause: editedErrorCause,
+        correctiveAction: editedCorrectiveAction
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      toast.success('Änderungen wurden gespeichert!');
+      setIsEditing(false);
+      onStatusChange(); // Refresh the report
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast.error('Fehler beim Speichern der Änderungen');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -231,16 +271,39 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {/* Edit Button nur für abgelehnte Meldungen */}
-                {report.approvalStatus === 'rejected' && onEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEdit}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Bearbeiten
-                  </Button>
+                {/* Edit/Save Buttons für nicht freigegebene Meldungen */}
+                {report.approvalStatus !== 'approved' && (
+                  <>
+                    {!isEditing ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleStartEditing}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Bearbeiten
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleSaveChanges}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Speichert...' : 'Speichern'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelEditing}
+                          disabled={isSubmitting}
+                        >
+                          Abbrechen
+                        </Button>
+                      </>
+                    )}
+                  </>
                 )}
                 {isAuthenticated && (
                   <Button
@@ -394,18 +457,54 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-800">{report.problemDescription}</p>
-              </div>
+              {isEditing ? (
+                <Textarea
+                  value={editedProblemDescription}
+                  onChange={(e) => setEditedProblemDescription(e.target.value)}
+                  className="min-h-[100px]"
+                  placeholder="Problembeschreibung eingeben..."
+                />
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-gray-800">{report.problemDescription}</p>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Fehlerursache</h3>
+              {isEditing ? (
+                <Textarea
+                  value={editedErrorCause}
+                  onChange={(e) => setEditedErrorCause(e.target.value)}
+                  className="min-h-[100px]"
+                  placeholder="Fehlerursache eingeben..."
+                />
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-gray-800">{report.errorCause}</p>
+                </div>
+              )}
             </div>
 
             <Separator />
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-800">{report.correctiveAction}</p>
-              </div>
+              {isEditing ? (
+                <Textarea
+                  value={editedCorrectiveAction}
+                  onChange={(e) => setEditedCorrectiveAction(e.target.value)}
+                  className="min-h-[100px]"
+                  placeholder="Korrekturmaßnahme eingeben..."
+                />
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-gray-800">{report.correctiveAction}</p>
+                </div>
+              )}
             </div>
 
             {/* Button für verwandte Fehlermeldungen - für alle Benutzer bei allen Meldungen */}
