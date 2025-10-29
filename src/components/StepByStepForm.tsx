@@ -220,12 +220,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     const teamLeader = employees.find(emp => 
       emp.isTeamLeader && 
       emp.departmentId === department.id && 
-      emp.account?.username
+      emp.id
     );
     
-    if (teamLeader && teamLeader.account?.username) {
-      console.log('Team leader found for department', departmentName, ':', teamLeader.account.username);
-      return teamLeader.account.username;
+    if (teamLeader && teamLeader.id) {
+      console.log('Team leader found for department', departmentName, ':', teamLeader.id);
+      return teamLeader.id;
     }
     
     console.log('No team leader found for department:', departmentName);
@@ -309,7 +309,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           if (departmentColumnName && matchingRow[departmentColumnName]) {
             const departmentName = matchingRow[departmentColumnName];
             console.log('Department found:', departmentName);
-            setExcelDepartment(departmentName);
+            
+            // Finde die Department-UUID statt des Namens zu speichern
+            getDepartments().then(departments => {
+              const department = departments.find(d => d.name === departmentName);
+              if (department) {
+                setExcelDepartment(department.id);
+                console.log('Department ID set:', department.id);
+              } else {
+                setExcelDepartment('');
+                console.log('No matching department UUID found for:', departmentName);
+              }
+            });
             
             // Finde und setze den passenden Teamleiter
             findTeamLeaderForDepartment(departmentName).then(teamLeader => {
