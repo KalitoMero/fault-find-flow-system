@@ -183,11 +183,14 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   // Hole den Namen des Freigabenden/Ablehnenden
   const [employees, setEmployees] = React.useState<any[]>([]);
   const [machines, setMachines] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
   
   React.useEffect(() => {
     const loadData = async () => {
+      const { getDepartments } = await import('@/lib/settingsStorage');
       setEmployees(await getEmployees());
       setMachines(await getMachines());
+      setDepartments(await getDepartments());
     };
     loadData();
   }, []);
@@ -358,7 +361,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">Abteilung:</span>
-                  <span className="font-medium">{report.excelDepartment || 'Nicht angegeben'}</span>
+                  <span className="font-medium">
+                    {report.excelDepartment 
+                      ? (departments.find(d => d.id === report.excelDepartment)?.name || report.excelDepartment)
+                      : 'Nicht angegeben'}
+                  </span>
                 </div>
               </div>
             </div>

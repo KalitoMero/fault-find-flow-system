@@ -46,6 +46,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [showKeypad, setShowKeypad] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [excelDepartment, setExcelDepartment] = useState<string>('');
+  const [excelDepartmentName, setExcelDepartmentName] = useState<string>('');
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
@@ -315,9 +316,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               const department = departments.find(d => d.name === departmentName);
               if (department) {
                 setExcelDepartment(department.id);
+                setExcelDepartmentName(department.name);
                 console.log('Department ID set:', department.id);
               } else {
                 setExcelDepartment('');
+                setExcelDepartmentName('');
                 console.log('No matching department UUID found for:', departmentName);
               }
             });
@@ -330,6 +333,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           } else {
             console.log('No department column or value found');
             setExcelDepartment('');
+            setExcelDepartmentName('');
             setAssignedTeamLeader('System');
           }
          
@@ -654,12 +658,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               ))}
 
               {/* Excel data if available */}
-              {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+              {(excelDepartmentName || Object.keys(additionalExcelData).length > 0) && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-800 mb-2">Excel-Daten</h4>
                   <div className="space-y-1 text-sm">
-                    {excelDepartment && (
-                      <div><span className="text-blue-600">Abteilung:</span> {excelDepartment}</div>
+                    {excelDepartmentName && (
+                      <div><span className="text-blue-600">Abteilung:</span> {excelDepartmentName}</div>
                     )}
                     {assignedTeamLeader !== 'System' && (
                       <div><span className="text-blue-600">Teamleiter:</span> {getTeamLeaderDisplayName(assignedTeamLeader)}</div>
