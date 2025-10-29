@@ -110,11 +110,12 @@ serve(async (req) => {
         if (!authData.user) throw new Error('Benutzer konnte nicht erstellt werden');
 
         // Update profile with department and personal number (profile already exists from trigger)
+        // Convert empty strings to null for UUID fields
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .update({
-            department_id: departmentId,
-            personal_number: personalNumber
+            department_id: departmentId || null,
+            personal_number: personalNumber || null
           })
           .eq('id', authData.user.id);
 
@@ -144,13 +145,13 @@ serve(async (req) => {
       case 'update': {
         const { id, name, departmentId, personalNumber, isTeamLeader, isAdmin } = data;
 
-        // Update profile
+        // Update profile - convert empty strings to null for UUID fields
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .update({
             name,
-            department_id: departmentId,
-            personal_number: personalNumber
+            department_id: departmentId || null,
+            personal_number: personalNumber || null
           })
           .eq('id', id);
 
