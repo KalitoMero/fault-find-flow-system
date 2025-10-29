@@ -368,7 +368,7 @@ const Index = () => {
 
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hauptinhalt */}
-        {isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'employee') ? (
+        {isAuthenticated && profile && profile.role === 'teamleader' ? (
           <div className="space-y-6">
             {/* Status-Anzeige für Teamleiter */}
             {profile.role === 'teamleader' && pendingReportsCount > 0 && (
