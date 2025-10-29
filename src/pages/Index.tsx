@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown } from 'lucide-react';
+import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown, LayoutDashboard } from 'lucide-react';
 import ErrorReportFormModern from '@/components/ErrorReportFormModern';
 import StepByStepForm from '@/components/StepByStepForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
@@ -348,6 +348,12 @@ const Index = () => {
             <Badge variant="default">
               {profile.role === 'admin' ? 'Administrator' : profile.role === 'teamleader' ? 'Teamleiter' : 'Mitarbeiter'}: {profile.name}
             </Badge>
+            {(profile.role === 'teamleader' || profile.role === 'admin') && (
+              <Button variant="outline" onClick={() => setSelectedTab('dashboard')}>
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            )}
             <Button variant="outline" onClick={handleSettingsClick}>
               <Settings className="h-4 w-4" />
             </Button>
