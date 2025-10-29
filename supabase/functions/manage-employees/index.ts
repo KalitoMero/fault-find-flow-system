@@ -100,8 +100,14 @@ serve(async (req) => {
           user_metadata: { name }
         });
 
-        if (authError) throw authError;
-        if (!authData.user) throw new Error('User creation failed');
+        if (authError) {
+          // Provide user-friendly error messages
+          if (authError.message.includes('already been registered')) {
+            throw new Error('Diese E-Mail-Adresse ist bereits registriert');
+          }
+          throw new Error(authError.message);
+        }
+        if (!authData.user) throw new Error('Benutzer konnte nicht erstellt werden');
 
         // Update profile with department and personal number (profile already exists from trigger)
         const { error: profileError } = await supabaseAdmin

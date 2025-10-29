@@ -155,14 +155,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Prompt for account creation
-    const email = prompt('E-Mail-Adresse für den neuen Mitarbeiter:');
+    // Prompt for account creation with better validation
+    const email = prompt('E-Mail-Adresse für den neuen Mitarbeiter:\n(z.B. mitarbeiter@firma.de)');
     if (!email || !email.trim()) {
       toast.error('E-Mail-Adresse ist erforderlich');
       return;
     }
 
-    const password = prompt('Passwort für den neuen Mitarbeiter:');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+      return;
+    }
+
+    const password = prompt('Passwort für den neuen Mitarbeiter:\n(mindestens 6 Zeichen)');
     if (!password || password.length < 6) {
       toast.error('Passwort muss mindestens 6 Zeichen lang sein');
       return;
@@ -184,7 +191,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       toast.success('Mitarbeiter erfolgreich erstellt');
     } catch (error: any) {
       console.error('Error creating employee:', error);
-      toast.error('Fehler beim Erstellen des Mitarbeiters: ' + error.message);
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Unbekannter Fehler';
+      toast.error(errorMessage);
     }
   };
 
