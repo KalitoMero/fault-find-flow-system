@@ -168,7 +168,6 @@ const Index = () => {
         setSelectedReport(updatedSelectedReport);
       }
     }
-    toast.success("Freigabestatus aktualisiert!");
   };
 
   const handleViewRelatedReport = (report: ErrorReport) => {
