@@ -144,7 +144,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     toast.success('Abteilung gelöscht');
   };
 
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!newEmployeeName.trim()) {
       toast.error('Bitte geben Sie einen Mitarbeiternamen ein');
       return;
@@ -155,24 +155,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const newEmployee: Employee = {
-      id: generateId(),
-      name: newEmployeeName.trim(),
-      departmentId: selectedDepartmentForEmployee,
-      isTeamLeader: false
-    };
+    // Prompt for account creation
+    const email = prompt('E-Mail-Adresse für den neuen Mitarbeiter:');
+    if (!email || !email.trim()) {
+      toast.error('E-Mail-Adresse ist erforderlich');
+      return;
+    }
 
-    saveEmployee(newEmployee);
-    setNewEmployeeName('');
-    setSelectedDepartmentForEmployee('');
-    loadData();
-    toast.success('Mitarbeiter erfolgreich erstellt');
+    const password = prompt('Passwort für den neuen Mitarbeiter:');
+    if (!password || password.length < 6) {
+      toast.error('Passwort muss mindestens 6 Zeichen lang sein');
+      return;
+    }
+
+    try {
+      await (await import('@/lib/employeeManagement')).createEmployee({
+        name: newEmployeeName.trim(),
+        departmentId: selectedDepartmentForEmployee,
+        email: email.trim(),
+        password: password,
+        isTeamLeader: false,
+        isAdmin: false
+      });
+
+      setNewEmployeeName('');
+      setSelectedDepartmentForEmployee('');
+      loadData();
+      toast.success('Mitarbeiter erfolgreich erstellt');
+    } catch (error: any) {
+      console.error('Error creating employee:', error);
+      toast.error('Fehler beim Erstellen des Mitarbeiters: ' + error.message);
+    }
   };
 
-  const handleDeleteEmployee = (employeeId: string) => {
-    deleteEmployee(employeeId);
-    loadData();
-    toast.success('Mitarbeiter gelöscht');
+  const handleDeleteEmployee = async (employeeId: string) => {
+    try {
+      await deleteEmployee(employeeId);
+      loadData();
+      toast.success('Mitarbeiter gelöscht');
+    } catch (error: any) {
+      console.error('Error deleting employee:', error);
+      toast.error('Fehler beim Löschen des Mitarbeiters: ' + error.message);
+    }
   };
 
   const handleAddMachine = () => {
@@ -198,13 +222,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     toast.success('Feststellort gelöscht');
   };
 
-  const handleTeamLeaderChange = (employeeId: string, isTeamLeader: boolean) => {
+  const handleTeamLeaderChange = async (employeeId: string, isTeamLeader: boolean) => {
     const employee = employees.find(e => e.id === employeeId);
     if (employee) {
-      const updatedEmployee = { ...employee, isTeamLeader };
-      saveEmployee(updatedEmployee);
-      loadData();
-      toast.success(`Teamleiter-Status für ${employee.name} ${isTeamLeader ? 'aktiviert' : 'deaktiviert'}`);
+      try {
+        const updatedEmployee = { ...employee, isTeamLeader };
+        await saveEmployee(updatedEmployee);
+        loadData();
+        toast.success(`Teamleiter-Status für ${employee.name} ${isTeamLeader ? 'aktiviert' : 'deaktiviert'}`);
+      } catch (error: any) {
+        console.error('Error updating employee:', error);
+        toast.error('Fehler beim Aktualisieren: ' + error.message);
+      }
     }
   };
 
