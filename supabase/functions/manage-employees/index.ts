@@ -43,7 +43,25 @@ serve(async (req) => {
       .select('role')
       .eq('user_id', user.id);
 
-    if (rolesError || !roles?.some(r => r.role === 'admin')) {
+    console.log('User ID:', user.id);
+    console.log('Roles query error:', rolesError);
+    console.log('Roles data:', JSON.stringify(roles));
+
+    if (rolesError) {
+      console.error('Error fetching roles:', rolesError);
+      throw new Error('Error checking user permissions: ' + rolesError.message);
+    }
+
+    if (!roles || roles.length === 0) {
+      console.error('No roles found for user:', user.id);
+      throw new Error('Forbidden: No roles assigned to user');
+    }
+
+    const isAdmin = roles.some(r => r.role === 'admin');
+    console.log('Is admin:', isAdmin);
+
+    if (!isAdmin) {
+      console.error('User is not admin. Roles:', roles.map(r => r.role).join(', '));
       throw new Error('Forbidden: Admin access required');
     }
 
