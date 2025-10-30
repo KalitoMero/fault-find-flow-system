@@ -26,6 +26,23 @@ interface ExcelSearchResult {
 let globalExcelCache: ExcelCacheData | null = null;
 let globalCachePromise: Promise<ExcelCacheData | null> | null = null;
 let globalIsLoading = false;
+let cacheListeners: Array<() => void> = [];
+
+// Global function to refresh cache and notify all listeners
+export const refreshGlobalExcelCache = async () => {
+  console.log('🔄 Global Excel cache refresh triggered');
+  globalExcelCache = null;
+  globalCachePromise = null;
+  
+  // Reload cache
+  globalCachePromise = getExcelData();
+  globalExcelCache = await globalCachePromise;
+  globalCachePromise = null;
+  
+  // Notify all listeners
+  cacheListeners.forEach(listener => listener());
+  console.log('✅ Global Excel cache refreshed, notified', cacheListeners.length, 'listeners');
+};
 
 export const useExcelCache = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -182,6 +199,17 @@ export const useExcelCache = () => {
     } else if (globalExcelCache) {
       setIsReady(true);
     }
+    
+    // Register listener for global cache updates
+    const listener = () => {
+      console.log('📡 Cache update received');
+      setIsReady(!!globalExcelCache);
+    };
+    cacheListeners.push(listener);
+    
+    return () => {
+      cacheListeners = cacheListeners.filter(l => l !== listener);
+    };
   }, [loadCache]);
 
   return {
