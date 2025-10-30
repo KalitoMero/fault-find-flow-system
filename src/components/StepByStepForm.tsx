@@ -207,30 +207,39 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
   const findTeamLeaderForDepartment = async (departmentName: string): Promise<string> => {
-    const employees = await getEmployees();
-    const departments = await getDepartments();
-    
-    // Finde die Abteilung basierend auf dem Namen
-    const department = departments.find(d => d.name === departmentName);
-    if (!department) {
-      console.log('No department found for name:', departmentName);
+    try {
+      const employees = await getEmployees();
+      const departments = await getDepartments();
+      
+      // Finde die Abteilung basierend auf dem Namen
+      const department = departments.find(d => d.name === departmentName);
+      if (!department) {
+        console.log('No department found for name:', departmentName);
+        return 'System';
+      }
+      
+      // Finde Teamleiter in dieser Abteilung
+      const teamLeader = employees.find(emp => 
+        emp.isTeamLeader && 
+        emp.departmentId === department.id && 
+        emp.id
+      );
+      
+      if (teamLeader && teamLeader.id) {
+        console.log('Team leader found for department', departmentName, ':', teamLeader.id);
+        return teamLeader.id;
+      }
+      
+      console.log('No team leader found for department:', departmentName);
       return 'System';
+    } catch (error) {
+      // If access is denied (e.g., team leader trying to access admin function), return System
+      if (error instanceof Error && error.message.includes('Forbidden')) {
+        console.log('Access denied to employee list, using System as default');
+        return 'System';
+      }
+      throw error;
     }
-    
-    // Finde Teamleiter in dieser Abteilung
-    const teamLeader = employees.find(emp => 
-      emp.isTeamLeader && 
-      emp.departmentId === department.id && 
-      emp.id
-    );
-    
-    if (teamLeader && teamLeader.id) {
-      console.log('Team leader found for department', departmentName, ':', teamLeader.id);
-      return teamLeader.id;
-    }
-    
-    console.log('No team leader found for department:', departmentName);
-    return 'System';
   };
 
   // Parse AFO from order number if it contains a dot (when moving to next step)
