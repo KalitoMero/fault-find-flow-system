@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
-import { getExcelData } from '@/lib/excelStorage';
+import { useExcelCache } from '@/hooks/useExcelCache';
 import { printErrorReport } from '@/lib/printUtils';
 import { generatePDF } from '@/lib/pdfUtils';
 import AudioRecorderSimple from './AudioRecorderSimple';
@@ -53,6 +53,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  
+  // Excel cache hook for fast lookups
+  const { searchExcelData, isReady: excelCacheReady } = useExcelCache();
 
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (teamLeaderId: string): string => {
@@ -260,125 +263,61 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   };
 
-  // Check Excel data for auto-completion
+  // Check Excel data for auto-completion (now uses cached data)
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
-    console.log('checkExcelData called with:', { orderNumber, afoNumber });
-    const excelData = await getExcelData();
-    if (excelData && excelData.data.length > 0) {
-      console.log('Excel data found:', excelData.data.length, 'rows');
-      console.log('Excel settings:', excelData.settings);
+    if (!afoNumber) {
+      console.log('No AFO number provided, skipping Excel check');
+      return;
+    }
+
+    console.log('🔍 Searching Excel cache for:', { orderNumber, afoNumber });
+    const startTime = performance.now();
+    
+    const result = await searchExcelData(orderNumber, afoNumber);
+    
+    const searchTime = Math.round(performance.now() - startTime);
+    console.log(`⚡ Excel search completed in ${searchTime}ms`);
+    
+    if (result) {
+      console.log('✅ Match found:', result);
       
-      // Convert column numbers to column names (headers)
-      const headers = Object.keys(excelData.data[0]);
-      console.log('Available headers:', headers);
+      // Set additional Excel data
+      setAdditionalExcelData(result.additionalData);
       
-      const orderColumnIndex = parseInt(excelData.settings.orderNumberColumn) - 1;
-      const afoColumnIndex = parseInt(excelData.settings.afoNumberColumn) - 1;
-      const articleColumnIndex = excelData.settings.articleNumberColumn ? parseInt(excelData.settings.articleNumberColumn) - 1 : null;
-      const articleDescriptionColumnIndex = excelData.settings.articleDescriptionColumn ? parseInt(excelData.settings.articleDescriptionColumn) - 1 : null;
-      const departmentColumnIndex = excelData.settings.departmentColumn ? parseInt(excelData.settings.departmentColumn) - 1 : null;
-      
-      const orderColumnName = headers[orderColumnIndex];
-      const afoColumnName = headers[afoColumnIndex];
-      const articleColumnName = articleColumnIndex !== null ? headers[articleColumnIndex] : null;
-      const articleDescriptionColumnName = articleDescriptionColumnIndex !== null ? headers[articleDescriptionColumnIndex] : null;
-      const departmentColumnName = departmentColumnIndex !== null ? headers[departmentColumnIndex] : null;
-      
-      console.log('Column mappings:', { orderColumnName, afoColumnName, articleColumnName, articleDescriptionColumnName, departmentColumnName });
-      console.log('Looking for order:', orderNumber, 'and AFO:', afoNumber);
-      
-      // Suche nach einer Zeile wo BEIDE Nummern übereinstimmen
-      const matchingRow = excelData.data.find(row => {
-        const orderValue = row[orderColumnName]?.toString().trim();
-        const afoValue = row[afoColumnName]?.toString().trim();
-        const orderMatch = orderValue === orderNumber.toString().trim();
-        const afoMatch = afoNumber && afoValue === afoNumber.toString().trim();
-        console.log('Checking row:', { 
-          orderValue, 
-          afoValue, 
-          orderMatch, 
-          afoMatch,
-          searchOrder: orderNumber.toString().trim(),
-          searchAfo: afoNumber?.toString().trim()
-        });
-        // Beide Nummern müssen übereinstimmen
-        return orderMatch && afoMatch;
-      });
-      
-      if (matchingRow) {
-        console.log('Matching row found (both numbers match):', matchingRow);
+      // Auto-fill department if available
+      if (result.department) {
+        console.log('Department found:', result.department);
         
-          // Auto-fill department if available
-          if (departmentColumnName && matchingRow[departmentColumnName]) {
-            const departmentName = matchingRow[departmentColumnName];
-            console.log('Department found:', departmentName);
-            
-            // Finde die Department-UUID statt des Namens zu speichern
-            getDepartments().then(departments => {
-              const department = departments.find(d => d.name === departmentName);
-              if (department) {
-                setExcelDepartment(department.id);
-                setExcelDepartmentName(department.name);
-                console.log('Department ID set:', department.id);
-              } else {
-                setExcelDepartment('');
-                setExcelDepartmentName('');
-                console.log('No matching department UUID found for:', departmentName);
-              }
-            });
-            
-            // Finde und setze den passenden Teamleiter
-            findTeamLeaderForDepartment(departmentName).then(teamLeader => {
-              setAssignedTeamLeader(teamLeader);
-              console.log('Assigned team leader:', teamLeader);
-            });
+        getDepartments().then(departments => {
+          const department = departments.find(d => d.name === result.department);
+          if (department) {
+            setExcelDepartment(department.id);
+            setExcelDepartmentName(department.name);
+            console.log('Department ID set:', department.id);
           } else {
-            console.log('No department column or value found');
             setExcelDepartment('');
             setExcelDepartmentName('');
-            setAssignedTeamLeader('System');
+            console.log('No matching department UUID found for:', result.department);
           }
-         
-         // Speichere alle zusätzlichen Excel-Spalten aus der passenden Zeile, inklusive Artikelnummer
-         const additionalExcelData: Record<string, any> = {};
-         
-          // Füge Artikelnummer als primäres Feld hinzu wenn verfügbar
-          if (articleColumnName && matchingRow[articleColumnName]) {
-            additionalExcelData.Artikelnummer = matchingRow[articleColumnName];
-          }
-          
-          // Füge Artikelbezeichnung als primäres Feld hinzu wenn verfügbar
-          if (articleDescriptionColumnName && matchingRow[articleDescriptionColumnName]) {
-            additionalExcelData.Artikelbezeichnung = matchingRow[articleDescriptionColumnName];
-          }
-          
-         excelData.settings.additionalColumns.forEach(col => {
-           const colIndex = parseInt(col.column) - 1;
-           const colName = headers[colIndex];
-           const value = matchingRow[colName];
-           
-           console.log('Processing additional column:', {
-             columnName: col.name,
-             columnIndex: col.column,
-             colIndex,
-             colName,
-             value,
-             availableKeys: Object.keys(matchingRow)
-           });
-           
-           if (value !== undefined && value !== null && value !== '') {
-             additionalExcelData[col.name] = value;
-           }
-         });
+        });
         
-        // Speichere die zusätzlichen Excel-Daten im State
-        setAdditionalExcelData(additionalExcelData);
-        console.log('Additional Excel data saved:', additionalExcelData);
+        // Find and set team leader
+        findTeamLeaderForDepartment(result.department).then(teamLeader => {
+          setAssignedTeamLeader(teamLeader);
+          console.log('Assigned team leader:', teamLeader);
+        });
       } else {
-        console.log('No matching row found where both order number and AFO match');
-        setExcelDepartment(''); // Reset if no match
+        console.log('No department found in Excel data');
+        setExcelDepartment('');
+        setExcelDepartmentName('');
         setAssignedTeamLeader('System');
       }
+    } else {
+      console.log('❌ No matching row found');
+      setExcelDepartment('');
+      setExcelDepartmentName('');
+      setAssignedTeamLeader('System');
+      setAdditionalExcelData({});
     }
   };
 
