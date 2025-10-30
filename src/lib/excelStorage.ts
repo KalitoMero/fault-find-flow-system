@@ -103,35 +103,45 @@ export const getExcelData = async (): Promise<ExcelData | null> => {
       return null;
     }
 
-    // Load all data in batches to avoid 1000 row limit
+    // Load all data in batches using row_index for reliable pagination
     let allData: any[] = [];
-    let start = 0;
+    let lastRowIndex = -1;
     const batchSize = 1000;
+    
+    console.log('Loading Excel data in batches...');
     
     while (true) {
       const { data, error } = await supabase
         .from('excel_data')
-        .select('row_data')
+        .select('row_data, row_index')
+        .gt('row_index', lastRowIndex)
         .order('row_index', { ascending: true })
-        .range(start, start + batchSize - 1);
+        .limit(batchSize);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading batch:', error);
+        throw error;
+      }
 
       if (!data || data.length === 0) {
+        console.log('No more data to load');
         break;
       }
 
+      console.log(`Loaded batch: ${data.length} rows (row_index ${data[0].row_index} - ${data[data.length - 1].row_index})`);
+      
       allData = allData.concat(data);
+      lastRowIndex = data[data.length - 1].row_index;
       
       // If we got less than batchSize rows, we've reached the end
       if (data.length < batchSize) {
+        console.log('Reached end of data');
         break;
       }
-
-      start += batchSize;
     }
 
     if (allData.length === 0) {
+      console.log('No Excel data found');
       return null;
     }
 
