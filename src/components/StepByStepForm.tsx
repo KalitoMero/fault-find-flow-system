@@ -278,16 +278,23 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return;
       }
 
-      // Call server-side search function
+      // Call server-side search function  
       const { data: result, error } = await supabase.rpc('search_excel_row', {
         p_order_number: orderNumber,
         p_afo_number: afoNumber,
-        p_order_column: settings.orderNumberColumn,
-        p_afo_column: settings.afoNumberColumn,
+        p_order_column: settings.orderNumberColumn,  // Now contains column name like "bab_nr"
+        p_afo_column: settings.afoNumberColumn,      // Now contains column name like "afo_nr"
         p_article_column: settings.articleNumberColumn || null,
         p_article_desc_column: settings.articleDescriptionColumn || null,
         p_department_column: settings.departmentColumn || null,
         p_additional_columns: JSON.parse(JSON.stringify(settings.additionalColumns || []))
+      });
+      
+      console.log('🔍 RPC search params:', {
+        order_col: settings.orderNumberColumn,
+        afo_col: settings.afoNumberColumn,
+        order_val: orderNumber,
+        afo_val: afoNumber
       });
 
       if (error) {

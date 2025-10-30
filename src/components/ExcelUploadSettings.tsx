@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
-import { saveExcelData, saveExcelSettings, getExcelSettings, getExcelData, clearExcelData } from '@/lib/excelStorage';
+import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } from '@/lib/excelStorage';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
 
@@ -127,19 +127,6 @@ const ExcelUploadSettings: React.FC = () => {
     };
     
     loadSettings();
-    
-    // Load existing Excel data
-    const loadExcelData = async () => {
-      const existingData = await getExcelData();
-      if (existingData) {
-        setExcelData(existingData.data);
-        // Extract columns from the first row
-        if (existingData.data.length > 0) {
-          setColumns(Object.keys(existingData.data[0]));
-        }
-      }
-    };
-    loadExcelData();
   }, []);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -477,31 +464,24 @@ const ExcelUploadSettings: React.FC = () => {
 
     // Save data first
     await saveExcelData(excelData);
-    
-    // Get the actual count from database after saving
-    const savedData = await getExcelData();
-    const actualRowCount = savedData?.data.length || excelData.length;
 
     const settings = {
-      orderNumberColumn,
-      afoNumberColumn,
-      articleNumberColumn: articleNumberColumn || undefined,
-      articleDescriptionColumn: articleDescriptionColumn || undefined,
-      departmentColumn: departmentColumn || undefined,
-      additionalColumns,
+      orderNumberColumn: orderColName,  // Store actual column NAME, not index
+      afoNumberColumn: afoColName,      // Store actual column NAME, not index
+      articleNumberColumn: articleColName || undefined,
+      articleDescriptionColumn: articleDescColName || undefined,
+      departmentColumn: deptColName || undefined,
+      additionalColumns: additionalColumns.map(col => ({
+        name: col.name,
+        column: columns[parseInt(col.column) - 1] // Convert index to column name
+      })),
       fileName,
-      rowCount: actualRowCount,
-      // Store actual column names for easier lookup
-      orderColumnName: orderColName,
-      afoColumnName: afoColName,
-      articleColumnName: articleColName,
-      articleDescriptionColumnName: articleDescColName,
-      departmentColumnName: deptColName
+      rowCount: excelData.length
     };
 
     await saveExcelSettings(settings);
 
-    toast.success(`✅ Einstellungen gespeichert! ${actualRowCount.toLocaleString('de-DE')} Zeilen in Datenbank.`);
+    toast.success(`✅ Einstellungen gespeichert! ${excelData.length.toLocaleString('de-DE')} Zeilen in Datenbank.`);
   };
 
   const handleClear = async () => {
