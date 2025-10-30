@@ -374,6 +374,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_excel_data: { Args: never; Returns: undefined }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       has_role:
         | {

@@ -28,19 +28,16 @@ interface ExcelData {
 
 export const saveExcelData = async (data: any[]): Promise<void> => {
   try {
-    // Clear existing data first - delete ALL rows
-    console.log('Deleting old Excel data...');
-    const { error: deleteError, count: deletedCount } = await supabase
-      .from('excel_data')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // Clear existing data first using fast TRUNCATE function
+    console.log('Clearing old Excel data...');
+    const { error: clearError } = await supabase.rpc('clear_excel_data');
 
-    if (deleteError) {
-      console.error('Error deleting old data:', deleteError);
-      throw new Error(`Fehler beim Löschen alter Daten: ${deleteError.message}`);
+    if (clearError) {
+      console.error('Error clearing old data:', clearError);
+      throw new Error(`Fehler beim Löschen alter Daten: ${clearError.message}`);
     }
     
-    console.log(`Deleted ${deletedCount || 'all'} old rows`);
+    console.log('✅ Old data cleared');
 
     // Insert new data in batches (Supabase has a limit)
     // Include row_index to preserve original order
@@ -72,18 +69,7 @@ export const saveExcelData = async (data: any[]): Promise<void> => {
 
 export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> => {
   try {
-    // Clear existing settings first
-    console.log('Deleting old Excel settings...');
-    const { error: deleteError } = await supabase
-      .from('excel_settings')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-
-    if (deleteError) {
-      console.error('Error deleting old settings:', deleteError);
-      throw new Error(`Fehler beim Löschen alter Einstellungen: ${deleteError.message}`);
-    }
-
+    // Settings are cleared by clear_excel_data() function, no need to clear again
     // Insert new settings
     const { error } = await supabase
       .from('excel_settings')
@@ -178,8 +164,8 @@ export const getExcelSettings = async (): Promise<ExcelSettings | null> => {
 
 export const clearExcelData = async (): Promise<void> => {
   try {
-    await supabase.from('excel_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('excel_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const { error } = await supabase.rpc('clear_excel_data');
+    if (error) throw error;
   } catch (error) {
     console.error('Error clearing Excel data:', error);
     throw error;
