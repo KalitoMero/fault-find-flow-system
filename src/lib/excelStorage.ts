@@ -28,8 +28,19 @@ interface ExcelData {
 
 export const saveExcelData = async (data: any[]): Promise<void> => {
   try {
-    // Clear existing data first
-    await supabase.from('excel_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // Clear existing data first - delete ALL rows
+    console.log('Deleting old Excel data...');
+    const { error: deleteError, count: deletedCount } = await supabase
+      .from('excel_data')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (deleteError) {
+      console.error('Error deleting old data:', deleteError);
+      throw new Error(`Fehler beim Löschen alter Daten: ${deleteError.message}`);
+    }
+    
+    console.log(`Deleted ${deletedCount || 'all'} old rows`);
 
     // Insert new data in batches (Supabase has a limit)
     // Include row_index to preserve original order
@@ -40,14 +51,19 @@ export const saveExcelData = async (data: any[]): Promise<void> => {
         row_index: i + index // Preserve original order
       }));
 
+      console.log(`Saving batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(data.length / batchSize)}...`);
+      
       const { error } = await supabase
         .from('excel_data')
         .insert(batch);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw new Error(`Fehler beim Speichern von Zeilen ${i}-${i + batch.length}: ${error.message}`);
+      }
     }
 
-    console.log('Excel data saved to Supabase with preserved order');
+    console.log(`✅ Excel data saved to Supabase: ${data.length} rows`);
   } catch (error) {
     console.error('Error saving Excel data:', error);
     throw error;
@@ -57,7 +73,16 @@ export const saveExcelData = async (data: any[]): Promise<void> => {
 export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> => {
   try {
     // Clear existing settings first
-    await supabase.from('excel_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    console.log('Deleting old Excel settings...');
+    const { error: deleteError } = await supabase
+      .from('excel_settings')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (deleteError) {
+      console.error('Error deleting old settings:', deleteError);
+      throw new Error(`Fehler beim Löschen alter Einstellungen: ${deleteError.message}`);
+    }
 
     // Insert new settings
     const { error } = await supabase
@@ -73,7 +98,12 @@ export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> 
         row_count: settings.rowCount
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting settings:', error);
+      throw new Error(`Fehler beim Speichern der Einstellungen: ${error.message}`);
+    }
+    
+    console.log('✅ Excel settings saved');
   } catch (error) {
     console.error('Error saving Excel settings:', error);
     throw error;
