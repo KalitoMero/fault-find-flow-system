@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin
+    // Get user roles for permission checking
     const { data: roles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -58,14 +58,17 @@ serve(async (req) => {
     }
 
     const isAdmin = roles.some(r => r.role === 'admin');
+    const isTeamLeader = roles.some(r => r.role === 'teamleader');
     console.log('Is admin:', isAdmin);
-
-    if (!isAdmin) {
-      console.error('User is not admin. Roles:', roles.map(r => r.role).join(', '));
-      throw new Error('Forbidden: Admin access required');
-    }
+    console.log('Is team leader:', isTeamLeader);
 
     const { action, data } = await req.json();
+
+    // Only admin can create, update, or delete
+    if (action !== 'list' && !isAdmin) {
+      console.error('User is not admin. Roles:', roles.map(r => r.role).join(', '));
+      throw new Error('Forbidden: Admin access required for this operation');
+    }
 
     switch (action) {
       case 'list': {
