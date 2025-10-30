@@ -275,14 +275,16 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const orderColumnIndex = parseInt(excelData.settings.orderNumberColumn) - 1;
       const afoColumnIndex = parseInt(excelData.settings.afoNumberColumn) - 1;
       const articleColumnIndex = excelData.settings.articleNumberColumn ? parseInt(excelData.settings.articleNumberColumn) - 1 : null;
+      const articleDescriptionColumnIndex = excelData.settings.articleDescriptionColumn ? parseInt(excelData.settings.articleDescriptionColumn) - 1 : null;
       const departmentColumnIndex = excelData.settings.departmentColumn ? parseInt(excelData.settings.departmentColumn) - 1 : null;
       
       const orderColumnName = headers[orderColumnIndex];
       const afoColumnName = headers[afoColumnIndex];
       const articleColumnName = articleColumnIndex !== null ? headers[articleColumnIndex] : null;
+      const articleDescriptionColumnName = articleDescriptionColumnIndex !== null ? headers[articleDescriptionColumnIndex] : null;
       const departmentColumnName = departmentColumnIndex !== null ? headers[departmentColumnIndex] : null;
       
-      console.log('Column mappings:', { orderColumnName, afoColumnName, articleColumnName, departmentColumnName });
+      console.log('Column mappings:', { orderColumnName, afoColumnName, articleColumnName, articleDescriptionColumnName, departmentColumnName });
       console.log('Looking for order:', orderNumber, 'and AFO:', afoNumber);
       
       // Suche nach einer Zeile wo BEIDE Nummern übereinstimmen
@@ -346,8 +348,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           }
           
           // Füge Artikelbezeichnung als primäres Feld hinzu wenn verfügbar
-          if (excelData.settings.articleDescriptionColumnName && matchingRow[excelData.settings.articleDescriptionColumnName]) {
-            additionalExcelData.Artikelbezeichnung = matchingRow[excelData.settings.articleDescriptionColumnName];
+          if (articleDescriptionColumnName && matchingRow[articleDescriptionColumnName]) {
+            additionalExcelData.Artikelbezeichnung = matchingRow[articleDescriptionColumnName];
           }
           
          excelData.settings.additionalColumns.forEach(col => {
