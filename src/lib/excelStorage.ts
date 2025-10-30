@@ -103,19 +103,42 @@ export const getExcelData = async (): Promise<ExcelData | null> => {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('excel_data')
-      .select('row_data')
-      .order('row_index', { ascending: true }); // Sort by row_index to preserve order
+    // Load all data in batches to avoid 1000 row limit
+    let allData: any[] = [];
+    let start = 0;
+    const batchSize = 1000;
+    
+    while (true) {
+      const { data, error } = await supabase
+        .from('excel_data')
+        .select('row_data')
+        .order('row_index', { ascending: true })
+        .range(start, start + batchSize - 1);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (!data || data.length === 0) {
+      if (!data || data.length === 0) {
+        break;
+      }
+
+      allData = allData.concat(data);
+      
+      // If we got less than batchSize rows, we've reached the end
+      if (data.length < batchSize) {
+        break;
+      }
+
+      start += batchSize;
+    }
+
+    if (allData.length === 0) {
       return null;
     }
 
+    console.log(`✅ Loaded ${allData.length} rows from database`);
+
     return {
-      data: data.map((row: any) => row.row_data),
+      data: allData.map((row: any) => row.row_data),
       settings
     };
   } catch (error) {
