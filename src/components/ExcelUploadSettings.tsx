@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, getExcelData, clearExcelData } from '@/lib/excelStorage';
-import { refreshGlobalExcelCache } from '@/hooks/useExcelCache';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
 
@@ -501,18 +500,12 @@ const ExcelUploadSettings: React.FC = () => {
     };
 
     await saveExcelSettings(settings);
-    
-    // Refresh the global Excel cache so all components get updated data
-    await refreshGlobalExcelCache();
 
     toast.success(`✅ Einstellungen gespeichert! ${actualRowCount.toLocaleString('de-DE')} Zeilen in Datenbank.`);
   };
 
   const handleClear = async () => {
     await clearExcelData();
-    
-    // Clear the global cache
-    await refreshGlobalExcelCache();
     
     setFile(null);
     setExcelData([]);

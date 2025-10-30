@@ -386,6 +386,19 @@ export type Database = {
           }
         | { Args: { target_role: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      search_excel_row: {
+        Args: {
+          p_additional_columns?: Json
+          p_afo_column: string
+          p_afo_number: string
+          p_article_column?: string
+          p_article_desc_column?: string
+          p_department_column?: string
+          p_order_column: string
+          p_order_number: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "teamleader" | "employee"

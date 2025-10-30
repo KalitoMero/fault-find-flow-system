@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
-import { useExcelCache } from '@/hooks/useExcelCache';
+import { getExcelSettings } from '@/lib/excelStorage';
 import { printErrorReport } from '@/lib/printUtils';
 import { generatePDF } from '@/lib/pdfUtils';
 import AudioRecorderSimple from './AudioRecorderSimple';
@@ -53,9 +53,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
-  
-  // Excel cache hook for fast lookups
-  const { searchExcelData, isReady: excelCacheReady } = useExcelCache();
 
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (teamLeaderId: string): string => {
@@ -263,57 +260,94 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   };
 
-  // Check Excel data for auto-completion (now uses cached data)
+  // Check Excel data using server-side search
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
     if (!afoNumber) {
       console.log('No AFO number provided, skipping Excel check');
       return;
     }
 
-    console.log('🔍 Searching Excel cache for:', { orderNumber, afoNumber });
+    console.log('🔍 Searching Excel database for:', { orderNumber, afoNumber });
     const startTime = performance.now();
     
-    const result = await searchExcelData(orderNumber, afoNumber);
-    
-    const searchTime = Math.round(performance.now() - startTime);
-    console.log(`⚡ Excel search completed in ${searchTime}ms`);
-    
-    if (result) {
-      console.log('✅ Match found:', result);
+    try {
+      // Get Excel settings first
+      const settings = await getExcelSettings();
+      if (!settings) {
+        console.log('⚠️ No Excel settings found');
+        return;
+      }
+
+      // Call server-side search function
+      const { data: result, error } = await supabase.rpc('search_excel_row', {
+        p_order_number: orderNumber,
+        p_afo_number: afoNumber,
+        p_order_column: settings.orderNumberColumn,
+        p_afo_column: settings.afoNumberColumn,
+        p_article_column: settings.articleNumberColumn || null,
+        p_article_desc_column: settings.articleDescriptionColumn || null,
+        p_department_column: settings.departmentColumn || null,
+        p_additional_columns: JSON.parse(JSON.stringify(settings.additionalColumns || []))
+      });
+
+      if (error) {
+        console.error('❌ Excel search error:', error);
+        return;
+      }
       
-      // Set additional Excel data
-      setAdditionalExcelData(result.additionalData);
+      const searchTime = Math.round(performance.now() - startTime);
+      console.log(`⚡ Excel search completed in ${searchTime}ms`);
       
-      // Auto-fill department if available
-      if (result.department) {
-        console.log('Department found:', result.department);
+      if (result) {
+        console.log('✅ Match found:', result);
         
-        getDepartments().then(departments => {
-          const department = departments.find(d => d.name === result.department);
-          if (department) {
-            setExcelDepartment(department.id);
-            setExcelDepartmentName(department.name);
-            console.log('Department ID set:', department.id);
-          } else {
-            setExcelDepartment('');
-            setExcelDepartmentName('');
-            console.log('No matching department UUID found for:', result.department);
-          }
-        });
+        // Type the result properly
+        const typedResult = result as unknown as {
+          row: Record<string, any>;
+          additionalData: Record<string, any>;
+          department?: string;
+        };
         
-        // Find and set team leader
-        findTeamLeaderForDepartment(result.department).then(teamLeader => {
-          setAssignedTeamLeader(teamLeader);
-          console.log('Assigned team leader:', teamLeader);
-        });
+        // Set additional Excel data
+        setAdditionalExcelData(typedResult.additionalData || {});
+        
+        // Auto-fill department if available
+        if (typedResult.department) {
+          console.log('Department found:', typedResult.department);
+          
+          getDepartments().then(departments => {
+            const department = departments.find(d => d.name === typedResult.department);
+            if (department) {
+              setExcelDepartment(department.id);
+              setExcelDepartmentName(department.name);
+              console.log('Department ID set:', department.id);
+            } else {
+              setExcelDepartment('');
+              setExcelDepartmentName('');
+              console.log('No matching department UUID found for:', typedResult.department);
+            }
+          });
+          
+          // Find and set team leader
+          findTeamLeaderForDepartment(typedResult.department).then(teamLeader => {
+            setAssignedTeamLeader(teamLeader);
+            console.log('Assigned team leader:', teamLeader);
+          });
+        } else {
+          console.log('No department found in Excel data');
+          setExcelDepartment('');
+          setExcelDepartmentName('');
+          setAssignedTeamLeader('System');
+        }
       } else {
-        console.log('No department found in Excel data');
+        console.log('❌ No matching row found');
         setExcelDepartment('');
         setExcelDepartmentName('');
         setAssignedTeamLeader('System');
+        setAdditionalExcelData({});
       }
-    } else {
-      console.log('❌ No matching row found');
+    } catch (error) {
+      console.error('❌ Excel search exception:', error);
       setExcelDepartment('');
       setExcelDepartmentName('');
       setAssignedTeamLeader('System');
