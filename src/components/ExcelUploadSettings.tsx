@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, X, Plus, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { Upload, X, Plus, FileSpreadsheet, Save, Trash2, Loader2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } from '@/lib/excelStorage';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
@@ -110,6 +111,8 @@ const ExcelUploadSettings: React.FC = () => {
   const [debugMode, setDebugMode] = useState(false);
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -462,26 +465,43 @@ const ExcelUploadSettings: React.FC = () => {
     console.log(`- AFO value: "${sampleRow[afoColName]}"`);
     console.log(`- Article value: "${articleColName ? sampleRow[articleColName] : 'Not configured'}"`);
 
-    // Save data first
-    await saveExcelData(excelData);
+    setIsUploading(true);
+    setUploadProgress(0);
 
-    const settings = {
-      orderNumberColumn: orderColName,  // Store actual column NAME, not index
-      afoNumberColumn: afoColName,      // Store actual column NAME, not index
-      articleNumberColumn: articleColName || undefined,
-      articleDescriptionColumn: articleDescColName || undefined,
-      departmentColumn: deptColName || undefined,
-      additionalColumns: additionalColumns.map(col => ({
-        name: col.name,
-        column: columns[parseInt(col.column) - 1] // Convert index to column name
-      })),
-      fileName,
-      rowCount: excelData.length
-    };
+    try {
+      // Simulate progress for data saving (0-50%)
+      setUploadProgress(10);
+      await saveExcelData(excelData);
+      setUploadProgress(50);
 
-    await saveExcelSettings(settings);
+      const settings = {
+        orderNumberColumn: orderColName,  // Store actual column NAME, not index
+        afoNumberColumn: afoColName,      // Store actual column NAME, not index
+        articleNumberColumn: articleColName || undefined,
+        articleDescriptionColumn: articleDescColName || undefined,
+        departmentColumn: deptColName || undefined,
+        additionalColumns: additionalColumns.map(col => ({
+          name: col.name,
+          column: columns[parseInt(col.column) - 1] // Convert index to column name
+        })),
+        fileName,
+        rowCount: excelData.length
+      };
 
-    toast.success(`✅ Einstellungen gespeichert! ${excelData.length.toLocaleString('de-DE')} Zeilen in Datenbank.`);
+      setUploadProgress(70);
+      await saveExcelSettings(settings);
+      setUploadProgress(100);
+
+      toast.success(`✅ Einstellungen gespeichert! ${excelData.length.toLocaleString('de-DE')} Zeilen in Datenbank.`);
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('❌ Fehler beim Speichern der Einstellungen');
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
   };
 
   const handleClear = async () => {
@@ -504,6 +524,23 @@ const ExcelUploadSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {isUploading && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="font-medium">Daten werden gespeichert...</span>
+                </div>
+                <span className="text-muted-foreground">{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -521,6 +558,7 @@ const ExcelUploadSettings: React.FC = () => {
                 accept=".csv,.xlsx,.xls"
                 onChange={handleFileUpload}
                 className="cursor-pointer"
+                disabled={isUploading}
               />
             </div>
             {(file || fileName) && (
@@ -830,11 +868,27 @@ const ExcelUploadSettings: React.FC = () => {
       )}
 
       <div className="flex gap-4">
-        <Button onClick={handleSave} disabled={!orderNumberColumn || !afoNumberColumn || excelData.length === 0}>
-          <Save className="h-4 w-4 mr-2" />
-          Einstellungen speichern
+        <Button 
+          onClick={handleSave} 
+          disabled={!orderNumberColumn || !afoNumberColumn || excelData.length === 0 || isUploading}
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Speichert...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Einstellungen speichern
+            </>
+          )}
         </Button>
-        <Button variant="outline" onClick={handleClear}>
+        <Button 
+          variant="outline" 
+          onClick={handleClear}
+          disabled={isUploading}
+        >
           <Trash2 className="h-4 w-4 mr-2" />
           Daten löschen
         </Button>
