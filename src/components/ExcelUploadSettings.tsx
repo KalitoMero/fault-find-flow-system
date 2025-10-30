@@ -475,6 +475,13 @@ const ExcelUploadSettings: React.FC = () => {
     console.log(`- AFO value: "${sampleRow[afoColName]}"`);
     console.log(`- Article value: "${articleColName ? sampleRow[articleColName] : 'Not configured'}"`);
 
+    // Save data first
+    await saveExcelData(excelData);
+    
+    // Get the actual count from database after saving
+    const savedData = await getExcelData();
+    const actualRowCount = savedData?.data.length || excelData.length;
+
     const settings = {
       orderNumberColumn,
       afoNumberColumn,
@@ -483,7 +490,7 @@ const ExcelUploadSettings: React.FC = () => {
       departmentColumn: departmentColumn || undefined,
       additionalColumns,
       fileName,
-      rowCount: excelData.length,
+      rowCount: actualRowCount,
       // Store actual column names for easier lookup
       orderColumnName: orderColName,
       afoColumnName: afoColName,
@@ -492,10 +499,9 @@ const ExcelUploadSettings: React.FC = () => {
       departmentColumnName: deptColName
     };
 
-    await saveExcelData(excelData);
-    saveExcelSettings(settings);
+    await saveExcelSettings(settings);
 
-    toast.success(`✅ Einstellungen gespeichert! ${excelData.length} Zeilen verfügbar.`);
+    toast.success(`✅ Einstellungen gespeichert! ${actualRowCount.toLocaleString('de-DE')} Zeilen in Datenbank.`);
   };
 
   const handleClear = async () => {
