@@ -289,6 +289,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const settings = await getExcelSettings();
       if (!settings) {
         console.log('⚠️ No Excel settings found');
+        setExcelDataFound(false);
+        setExcelDepartment('');
+        setExcelDepartmentName('');
+        setAssignedTeamLeader('System');
+        setAdditionalExcelData({});
         return;
       }
 
@@ -444,20 +449,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
     // After AFO field (step 1), check if Excel data was found
     if (currentStep === 1) {
-      setFields(prev => prev.map((field, index) => 
-        index === currentStep ? { ...field, completed: true } : field
-      ));
-
-      // If no Excel data found, we need department selection
+      // If no Excel data found, we need department selection first
       if (excelDataFound === false && !manualDepartment) {
-        // Don't proceed to next field, stay here and show department selection
-        // The department selection will be shown as an overlay
+        // Don't mark as completed and don't proceed
+        toast.error('Bitte wählen Sie eine Abteilung aus');
         return;
       }
       
-      // If Excel data was found or manual department was selected, continue normally
+      // Mark field as completed only when we can proceed
+      setFields(prev => prev.map((field, index) => 
+        index === currentStep ? { ...field, completed: true } : field
+      ));
+      
+      // If manual department was selected, set up team leader
       if (manualDepartment) {
-        // Find team leader for manually selected department
         const selectedDept = departments.find(d => d.id === manualDepartment);
         if (selectedDept) {
           findTeamLeaderForDepartment(selectedDept.name).then(teamLeader => {
