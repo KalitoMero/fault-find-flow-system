@@ -50,6 +50,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [assignedTeamLeader, setAssignedTeamLeader] = useState<string>('System');
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
+  const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
+  const [manualDepartment, setManualDepartment] = useState<string>('');
+  const [departments, setDepartments] = useState<any[]>([]);
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
@@ -152,6 +155,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     const loadEmployees = async () => {
       const emps = await getEmployees();
       setEmployees(emps);
+      const depts = await getDepartments();
+      setDepartments(depts);
     };
     loadEmployees();
     loadN8nSettings();
@@ -316,6 +321,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       if (result) {
         console.log('✅ Match found:', result);
+        setExcelDataFound(true);
         
         // Type the result properly
         const typedResult = result as unknown as {
@@ -357,6 +363,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         }
       } else {
         console.log('❌ No matching row found');
+        setExcelDataFound(false);
         setExcelDepartment('');
         setExcelDepartmentName('');
         setAssignedTeamLeader('System');
@@ -423,10 +430,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
     // Parse order number when leaving the order number field (step 0)
     if (currentStep === 0 && currentField.value.includes('.')) {
-      console.log('Parsing order number:', currentField.value); // Debug log
+      console.log('Parsing order number:', currentField.value);
       parseOrderNumber(currentField.value);
       
-      // Mark current field as completed
       setFields(prev => prev.map((field, index) => 
         index === currentStep ? { ...field, completed: true } : field
       ));
@@ -434,6 +440,33 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       // Skip directly to step 2 (defectiveQuantity) since AFO is auto-filled
       setCurrentStep(2);
       return;
+    }
+
+    // After AFO field (step 1), check if Excel data was found
+    if (currentStep === 1) {
+      setFields(prev => prev.map((field, index) => 
+        index === currentStep ? { ...field, completed: true } : field
+      ));
+
+      // If no Excel data found, we need department selection
+      if (excelDataFound === false && !manualDepartment) {
+        // Don't proceed to next field, stay here and show department selection
+        // The department selection will be shown as an overlay
+        return;
+      }
+      
+      // If Excel data was found or manual department was selected, continue normally
+      if (manualDepartment) {
+        // Find team leader for manually selected department
+        const selectedDept = departments.find(d => d.id === manualDepartment);
+        if (selectedDept) {
+          findTeamLeaderForDepartment(selectedDept.name).then(teamLeader => {
+            setAssignedTeamLeader(teamLeader);
+            setExcelDepartment(manualDepartment);
+            setExcelDepartmentName(selectedDept.name);
+          });
+        }
+      }
     }
 
     setFields(prev => prev.map((field, index) => 
@@ -451,7 +484,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     // Return to original step or go to next step
     if (originalStep > currentStep && originalStep < fields.length) {
       setCurrentStep(originalStep);
-      setOriginalStep(0); // Reset original step
+      setOriginalStep(0);
     } else if (currentStep < fields.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -659,12 +692,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               ))}
 
               {/* Excel data if available */}
-              {(excelDepartmentName || Object.keys(additionalExcelData).length > 0) && (
+              {(excelDepartmentName || Object.keys(additionalExcelData).length > 0 || manualDepartment) && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">Excel-Daten</h4>
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    {excelDepartmentName ? 'Excel-Daten' : 'Abteilungs-Informationen'}
+                  </h4>
                   <div className="space-y-1 text-sm">
-                    {excelDepartmentName && (
-                      <div><span className="text-blue-600">Abteilung:</span> {excelDepartmentName}</div>
+                    {(excelDepartmentName || manualDepartment) && (
+                      <div>
+                        <span className="text-blue-600">Abteilung:</span> {excelDepartmentName || departments.find(d => d.id === manualDepartment)?.name}
+                        {manualDepartment && !excelDepartmentName && (
+                          <span className="ml-2 text-xs text-yellow-600">(Manuell ausgewählt)</span>
+                        )}
+                      </div>
                     )}
                     {assignedTeamLeader !== 'System' && (
                       <div><span className="text-blue-600">Teamleiter:</span> {getTeamLeaderDisplayName(assignedTeamLeader)}</div>
@@ -751,12 +791,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           <CardContent className="p-4">
             <div className="space-y-3">
               {/* Excel Status Info */}
-              {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
+              {(excelDepartment || Object.keys(additionalExcelData).length > 0 || manualDepartment) && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                    {excelDepartmentName && (
+                    {(excelDepartmentName || manualDepartment) && (
                       <div>
-                        <span className="text-blue-600">Abteilung:</span> <span className="font-medium">{excelDepartmentName}</span>
+                        <span className="text-blue-600">Abteilung:</span> <span className="font-medium">
+                          {excelDepartmentName || departments.find(d => d.id === manualDepartment)?.name}
+                        </span>
+                        {manualDepartment && !excelDepartmentName && (
+                          <span className="ml-2 text-xs text-yellow-600">(Manuell ausgewählt)</span>
+                        )}
                       </div>
                     )}
                     {assignedTeamLeader !== 'System' && (
@@ -1027,6 +1072,35 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 </div>
               )}
             </div>
+
+            {/* Department Selection - Show when no Excel data found after AFO input */}
+            {currentStep === 1 && excelDataFound === false && !manualDepartment && (
+              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="text-center mb-4">
+                  <p className="text-yellow-800 font-medium">
+                    Keine Excel-Daten gefunden. Bitte wählen Sie eine Abteilung aus:
+                  </p>
+                </div>
+                <Select 
+                  value={manualDepartment} 
+                  onValueChange={(value) => {
+                    setManualDepartment(value);
+                    toast.success('Abteilung ausgewählt');
+                  }}
+                >
+                  <SelectTrigger className="text-center text-lg max-w-md h-12 mx-auto">
+                    <SelectValue placeholder="Abteilung wählen..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id} className="hover:bg-gray-100">
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex justify-center gap-4 pt-6">
               {isLastStep ? (
