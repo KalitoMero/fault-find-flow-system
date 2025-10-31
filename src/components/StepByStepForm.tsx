@@ -439,8 +439,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         index === currentStep ? { ...field, completed: true } : field
       ));
       
-      // Skip directly to step 2 (defectiveQuantity) since AFO is auto-filled
-      setCurrentStep(2);
+      // Go to step 1 (AFO) to allow department selection if needed
+      setCurrentStep(1);
       return;
     }
 
