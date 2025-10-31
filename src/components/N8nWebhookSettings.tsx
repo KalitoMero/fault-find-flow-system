@@ -17,17 +17,14 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
   const [isEnabled, setIsEnabled] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
-  // Load settings from Supabase on component mount
+  // Load global N8N settings from Supabase on component mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { data: settings } = await supabase
           .from('n8n_settings')
           .select('webhook_url, is_enabled')
-          .eq('user_id', user.id)
+          .is('user_id', null)
           .maybeSingle();
         
         const url = settings?.webhook_url || '';
@@ -36,7 +33,7 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
         setWebhookUrl(url);
         setIsEnabled(enabled);
         onSettingsChange(enabled, url);
-        console.log('🔧 N8N Settings loaded:', { enabled, url });
+        console.log('🔧 Global N8N Settings loaded:', { enabled, url });
       } catch (error) {
         console.error('Error loading N8N settings:', error);
       }
@@ -50,21 +47,35 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     onSettingsChange(isEnabled, value);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase
+      // Check if global settings exist
+      const { data: existing } = await supabase
         .from('n8n_settings')
-        .upsert({
-          user_id: user.id,
-          webhook_url: value,
-          is_enabled: isEnabled
-        }, {
-          onConflict: 'user_id'
-        });
+        .select('id')
+        .is('user_id', null)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing global settings
+        await supabase
+          .from('n8n_settings')
+          .update({
+            webhook_url: value,
+            is_enabled: isEnabled
+          })
+          .eq('id', existing.id);
+      } else {
+        // Insert new global settings
+        await supabase
+          .from('n8n_settings')
+          .insert({
+            user_id: null,
+            webhook_url: value,
+            is_enabled: isEnabled
+          });
+      }
       
       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-      console.log('🔧 N8N URL updated:', value);
+      console.log('🔧 Global N8N URL updated:', value);
     } catch (error) {
       console.error('Error saving N8N URL:', error);
       toast.error('Fehler beim Speichern der URL');
@@ -76,21 +87,35 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     onSettingsChange(enabled, webhookUrl);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase
+      // Check if global settings exist
+      const { data: existing } = await supabase
         .from('n8n_settings')
-        .upsert({
-          user_id: user.id,
-          webhook_url: webhookUrl,
-          is_enabled: enabled
-        }, {
-          onConflict: 'user_id'
-        });
+        .select('id')
+        .is('user_id', null)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing global settings
+        await supabase
+          .from('n8n_settings')
+          .update({
+            webhook_url: webhookUrl,
+            is_enabled: enabled
+          })
+          .eq('id', existing.id);
+      } else {
+        // Insert new global settings
+        await supabase
+          .from('n8n_settings')
+          .insert({
+            user_id: null,
+            webhook_url: webhookUrl,
+            is_enabled: enabled
+          });
+      }
       
       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-      console.log('🔧 N8N enabled state changed:', enabled);
+      console.log('🔧 Global N8N enabled state changed:', enabled);
       
       if (enabled && !webhookUrl.trim()) {
         toast.warning('Bitte geben Sie eine N8N Webhook URL ein');

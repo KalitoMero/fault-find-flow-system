@@ -140,16 +140,13 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     { id: 3, title: 'Beschreibung', icon: FileText, description: 'Problem & Lösung' }
   ];
 
-  // Load N8N webhook settings and listen for changes
+  // Load global N8N webhook settings and listen for changes
   const loadN8nSettings = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: settings } = await supabase
         .from('n8n_settings')
         .select('webhook_url, is_enabled')
-        .eq('user_id', user.id)
+        .is('user_id', null)
         .maybeSingle();
       
       const url = settings?.webhook_url || '';
@@ -157,7 +154,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       
       setUseN8nWebhook(enabled);
       setN8nWebhookUrl(url);
-      console.log('🔧 ErrorReportFormModern - N8N Settings loaded:', { enabled, url });
+      console.log('🔧 ErrorReportFormModern - Global N8N Settings loaded:', { enabled, url });
     } catch (error) {
       console.error('❌ ErrorReportFormModern - Error loading N8N settings:', error);
     }

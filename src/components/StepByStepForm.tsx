@@ -131,21 +131,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   ]);
 
-  // Load N8N settings on component mount
+  // Load global N8N settings on component mount
   const loadN8nSettings = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: settings } = await supabase
         .from('n8n_settings')
         .select('webhook_url, is_enabled')
-        .eq('user_id', user.id)
+        .is('user_id', null)
         .maybeSingle();
       
       const url = settings?.webhook_url || '';
       setN8nWebhookUrl(url);
-      console.log('✅ StepByStepForm - N8N integration ACTIVATED, URL loaded:', url);
+      console.log('✅ StepByStepForm - Global N8N integration ACTIVATED, URL loaded:', url);
     } catch (error) {
       console.error('❌ StepByStepForm - Error loading N8N settings:', error);
     }
