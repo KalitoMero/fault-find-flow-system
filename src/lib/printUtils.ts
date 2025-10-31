@@ -1,5 +1,6 @@
 import { ErrorReport } from './storage';
-import { getMachines, getEmployees } from './settingsStorage';
+import { getMachines } from './settingsStorage';
+import { supabase } from '@/integrations/supabase/client';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -18,219 +19,178 @@ export const printErrorReport = async (report: ErrorReport) => {
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
 
-  // Hole den Namen des Freigabenden/Ablehnenden
-  const employees = await getEmployees();
-  const getEmployeeName = (username: string) => {
-    const employee = employees.find(emp => emp.account?.username === username);
-    return employee ? employee.name : username;
-  };
+  // Hole die Namen des Freigabenden/Ablehnenden aus der Datenbank
+  let approvedByName = report.approvedBy;
+  let rejectedByName = report.rejectedBy;
 
-  const approvedByName = report.approvedBy ? getEmployeeName(report.approvedBy) : report.approvedBy;
-  const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
+  if (report.approvedBy) {
+    const { data: approvedByProfile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', report.approvedBy)
+      .single();
+    if (approvedByProfile) {
+      approvedByName = approvedByProfile.name;
+    }
+  }
 
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Bitte erlauben Sie Pop-ups für diese Seite');
-    return;
+  if (report.rejectedBy) {
+    const { data: rejectedByProfile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', report.rejectedBy)
+      .single();
+    if (rejectedByProfile) {
+      rejectedByName = rejectedByProfile.name;
+    }
   }
 
   // Build HTML content
   const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Fehlermeldung ${report.id}</title>
-      <style>
-        @media print {
-          @page {
-            margin: 2cm;
-          }
-          body {
-            margin: 0;
-          }
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
         }
-        
-        body {
-          font-family: Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 20px;
+        #print-content, #print-content * {
+          visibility: visible;
         }
-        
-        h1 {
-          text-align: center;
-          color: #1a237e;
-          border-bottom: 3px solid #1a237e;
-          padding-bottom: 15px;
-          margin-bottom: 10px;
-          font-size: 28px;
+        #print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
         }
-        
-        .report-number {
-          text-align: center;
-          font-size: 16px;
-          color: #666;
-          margin-bottom: 30px;
-        }
-        
-        .status-card {
-          margin-bottom: 25px;
-          padding: 20px;
-          border-radius: 8px;
-          border: 2px solid;
-          page-break-inside: avoid;
-        }
-        
-        .status-card.approved {
-          background-color: #d4edda;
-          border-color: #c3e6cb;
-        }
-        
-        .status-card.rejected {
-          background-color: #f8d7da;
-          border-color: #f5c6cb;
-        }
-        
-        .status-card.pending {
-          background-color: #fff3cd;
-          border-color: #ffeaa7;
-        }
-        
-        .status-card h3 {
-          margin: 0 0 15px 0;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .status-card.approved h3 {
-          color: #155724;
-        }
-        
-        .status-card.rejected h3 {
-          color: #721c24;
-        }
-        
-        .status-card.pending h3 {
-          color: #856404;
-        }
-        
-        .section {
-          margin-bottom: 25px;
-          page-break-inside: avoid;
-        }
-        
-        .section-title {
-          font-weight: bold;
-          font-size: 18px;
-          color: #1a237e;
-          margin-bottom: 15px;
-          padding-bottom: 5px;
-          border-bottom: 2px solid #ddd;
-        }
-        
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 15px;
-          margin-bottom: 15px;
-        }
-        
-        .info-item {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        
-        .info-label {
-          font-size: 12px;
-          color: #666;
-          font-weight: normal;
-        }
-        
-        .info-value {
-          font-weight: 600;
-          color: #333;
-          font-size: 14px;
-        }
-        
-        .text-content {
-          background-color: #f5f5f5;
-          padding: 15px;
-          border-radius: 6px;
-          margin-top: 10px;
-          white-space: pre-wrap;
-          line-height: 1.8;
-        }
-        
-        .status-badge {
-          display: inline-block;
-          padding: 6px 16px;
-          border-radius: 6px;
-          font-weight: bold;
-          font-size: 14px;
-        }
-        
-        .status-badge.pending {
-          background-color: #fff3cd;
-          color: #856404;
-        }
-        
-        .status-badge.approved {
-          background-color: #d4edda;
-          color: #155724;
-        }
-        
-        .status-badge.rejected {
-          background-color: #f8d7da;
-          color: #721c24;
-        }
-        
-        .additional-data {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-          margin-top: 10px;
-        }
-        
-        .separator {
-          border: 0;
-          border-top: 1px solid #ddd;
-          margin: 20px 0;
-        }
-        
-        @media screen {
-          .print-button {
-            background-color: #1a237e;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            display: block;
-            margin: 20px auto;
-            font-weight: 600;
-          }
-          
-          .print-button:hover {
-            background-color: #0d1642;
-          }
-        }
-        
-        @media print {
-          .print-button {
-            display: none;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <button class="print-button" onclick="window.print()">Drucken</button>
+      }
       
+      #print-content {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      #print-content h1 {
+        text-align: center;
+        color: #1a237e;
+        border-bottom: 3px solid #1a237e;
+        padding-bottom: 15px;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+      
+      #print-content .report-number {
+        text-align: center;
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 30px;
+      }
+      
+      #print-content .status-card {
+        margin-bottom: 25px;
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid;
+        page-break-inside: avoid;
+      }
+      
+      #print-content .status-card.approved {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      
+      #print-content .status-card.rejected {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      
+      #print-content .status-card.pending {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+      }
+      
+      #print-content .status-card h3 {
+        margin: 0 0 15px 0;
+        font-size: 18px;
+      }
+      
+      #print-content .status-card.approved h3 {
+        color: #155724;
+      }
+      
+      #print-content .status-card.rejected h3 {
+        color: #721c24;
+      }
+      
+      #print-content .status-card.pending h3 {
+        color: #856404;
+      }
+      
+      #print-content .section {
+        margin-bottom: 25px;
+        page-break-inside: avoid;
+      }
+      
+      #print-content .section-title {
+        font-weight: bold;
+        font-size: 18px;
+        color: #1a237e;
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #ddd;
+      }
+      
+      #print-content .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+      
+      #print-content .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      
+      #print-content .info-label {
+        font-size: 12px;
+        color: #666;
+        font-weight: normal;
+      }
+      
+      #print-content .info-value {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+      }
+      
+      #print-content .text-content {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        line-height: 1.8;
+      }
+      
+      #print-content .additional-data {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 10px;
+      }
+      
+      #print-content .separator {
+        border: 0;
+        border-top: 1px solid #ddd;
+        margin: 20px 0;
+      }
+    </style>
+    
+    <div id="print-content">
       <h1>Fehlermeldung</h1>
       <div class="report-number">Meldungsnummer: #${report.id}</div>
       
@@ -353,28 +313,30 @@ export const printErrorReport = async (report: ErrorReport) => {
       <hr class="separator" />
       
       <div class="section">
-        <div class="section-title">Fehlerursache</div>
-        <div class="text-content">${report.errorCause}</div>
-      </div>
-      
-      <hr class="separator" />
-      
-      <div class="section">
         <div class="section-title">Korrekturmaßnahme</div>
         <div class="text-content">${report.correctiveAction}</div>
       </div>
-      
-      <script>
-        // Auto-print after a short delay to ensure content is loaded
-        setTimeout(() => {
-          // Uncomment the line below to enable auto-print
-          // window.print();
-        }, 500);
-      </script>
-    </body>
-    </html>
+    </div>
   `;
 
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  // Create or get print container
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  // Insert HTML content
+  printContainer.innerHTML = htmlContent;
+
+  // Trigger print
+  window.print();
+
+  // Clean up after a short delay
+  setTimeout(() => {
+    if (printContainer) {
+      printContainer.innerHTML = '';
+    }
+  }, 1000);
 };
