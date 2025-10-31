@@ -449,8 +449,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
     // After AFO field (step 1), check if Excel data was found
     if (currentStep === 1) {
-      // If no Excel data found, we need department selection first
-      if (excelDataFound === false && !manualDepartment) {
+      // Check if department selection is needed:
+      // 1. No Excel data found at all, OR
+      // 2. Excel data found but no matching department in database
+      const needsDepartmentSelection = (excelDataFound === false || !excelDepartment) && !manualDepartment;
+      
+      if (needsDepartmentSelection) {
         // Don't mark as completed and don't proceed
         toast.error('Bitte wählen Sie eine Abteilung aus');
         return;
@@ -1078,12 +1082,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               )}
             </div>
 
-            {/* Department Selection - Show when no Excel data found after AFO input */}
-            {currentStep === 1 && excelDataFound === false && !manualDepartment && (
+            {/* Department Selection - Show when no department assigned */}
+            {currentStep === 1 && (excelDataFound === false || !excelDepartment) && !manualDepartment && (
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="text-center mb-4">
                   <p className="text-yellow-800 font-medium">
-                    Keine Excel-Daten gefunden. Bitte wählen Sie eine Abteilung aus:
+                    {excelDataFound === false 
+                      ? 'Keine Excel-Daten gefunden. Bitte wählen Sie eine Abteilung aus:'
+                      : 'Keine passende Abteilung gefunden. Bitte wählen Sie eine Abteilung aus:'}
                   </p>
                 </div>
                 <Select 
