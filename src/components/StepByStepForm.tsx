@@ -238,12 +238,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Removed parseOrderNumber - logic moved to handleNext
 
-  // Check Excel data using server-side search
-  const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
+  // Check Excel data using server-side search - returns true if data found with department
+  const checkExcelData = async (orderNumber: string, afoNumber?: string): Promise<boolean> => {
     if (!afoNumber) {
       console.log('No AFO number provided, skipping Excel check');
       setIsSearching(false);
-      return;
+      return false;
     }
 
     console.log('🔍 Searching Excel database for:', { orderNumber, afoNumber });
@@ -261,7 +261,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         setAssignedTeamLeader('System');
         setAdditionalExcelData({});
         setIsSearching(false);
-        return;
+        return false;
       }
 
       // Call server-side search function  
@@ -286,11 +286,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       if (error) {
         console.error('❌ Excel search error:', error);
         setIsSearching(false);
-        return;
+        return false;
       }
       
       const searchTime = Math.round(performance.now() - startTime);
       console.log(`⚡ Excel search completed in ${searchTime}ms`);
+      
+      let foundWithDepartment = false;
       
       if (result) {
         console.log('✅ Match found:', result);
@@ -310,24 +312,23 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         if (typedResult.department) {
           console.log('Department found:', typedResult.department);
           
-          getDepartments().then(departments => {
-            const department = departments.find(d => d.name === typedResult.department);
-            if (department) {
-              setExcelDepartment(department.id);
-              setExcelDepartmentName(department.name);
-              console.log('Department ID set:', department.id);
-            } else {
-              setExcelDepartment('');
-              setExcelDepartmentName('');
-              console.log('No matching department UUID found for:', typedResult.department);
-            }
-          });
-          
-          // Find and set team leader
-          findTeamLeaderForDepartment(typedResult.department).then(teamLeader => {
+          const departments = await getDepartments();
+          const department = departments.find(d => d.name === typedResult.department);
+          if (department) {
+            setExcelDepartment(department.id);
+            setExcelDepartmentName(department.name);
+            console.log('Department ID set:', department.id);
+            foundWithDepartment = true;
+            
+            // Find and set team leader
+            const teamLeader = await findTeamLeaderForDepartment(typedResult.department);
             setAssignedTeamLeader(teamLeader);
             console.log('Assigned team leader:', teamLeader);
-          });
+          } else {
+            setExcelDepartment('');
+            setExcelDepartmentName('');
+            console.log('No matching department UUID found for:', typedResult.department);
+          }
         } else {
           console.log('No department found in Excel data');
           setExcelDepartment('');
@@ -342,6 +343,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         setAssignedTeamLeader('System');
         setAdditionalExcelData({});
       }
+      
+      setIsSearching(false);
+      return foundWithDepartment;
     } catch (error) {
       console.error('❌ Excel search exception:', error);
       setExcelDataFound(false);
@@ -349,8 +353,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       setExcelDepartmentName('');
       setAssignedTeamLeader('System');
       setAdditionalExcelData({});
-    } finally {
       setIsSearching(false);
+      return false;
     }
   };
 
@@ -406,22 +410,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return field;
       }));
       
-      // Wait for Excel search to complete
-      await checkExcelData(orderPart, afoPart);
+      // Wait for Excel search to complete and get result
+      const foundWithDepartment = await checkExcelData(orderPart, afoPart);
       
-      // Check the result and decide where to go
-      // We need to use a callback to ensure we have the latest state
-      setTimeout(() => {
-        if (excelDataFound === true && excelDepartment) {
-          // Data found and department set - skip to step 2 (defectiveQuantity)
-          console.log('Excel data found, skipping to defectiveQuantity');
-          setCurrentStep(2);
-        } else {
-          // Data not found or no department - go to AFO step for manual department selection
-          console.log('Excel data not found, going to AFO step for department selection');
-          setCurrentStep(1);
-        }
-      }, 100);
+      // Decide where to go based on the result
+      if (foundWithDepartment) {
+        // Data found and department set - skip to step 2 (defectiveQuantity)
+        console.log('✅ Excel data found with department, skipping to defectiveQuantity');
+        setCurrentStep(2);
+      } else {
+        // Data not found or no department - go to AFO step for manual department selection
+        console.log('⚠️ Excel data not found or no department, going to AFO step for department selection');
+        setCurrentStep(1);
+      }
       return;
     }
 
