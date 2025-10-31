@@ -53,6 +53,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
   const [manualDepartment, setManualDepartment] = useState<string>('');
   const [departments, setDepartments] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
@@ -171,16 +172,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     };
   }, [loadN8nSettings]);
 
-  // useEffect für Excel-Überprüfung wenn AFO-Nummer sich ändert
-  useEffect(() => {
-    const orderField = fields.find(f => f.id === 'orderNumber');
-    const afoField = fields.find(f => f.id === 'afoNumber');
-    
-    if (orderField?.value && afoField?.value) {
-      console.log('useEffect triggered: checking Excel data for', orderField.value, afoField.value);
-      setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
-    }
-  }, [fields.find(f => f.id === 'afoNumber')?.value]);
+  // Removed automatic Excel check on AFO change - now only on order number parsing
 
   // Auto-focus input field when step changes
   useEffect(() => {
@@ -244,41 +236,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   };
 
-  // Parse AFO from order number if it contains a dot (when moving to next step)
-  const parseOrderNumber = (orderNum: string) => {
-    console.log('parseOrderNumber called with:', orderNum);
-    const dotIndex = orderNum.indexOf('.');
-    if (dotIndex !== -1) {
-      const orderPart = orderNum.substring(0, dotIndex);
-      const afoPart = orderNum.substring(dotIndex + 1);
-      console.log('Parsed order:', orderPart, 'AFO:', afoPart);
-      
-      setFields(prev => prev.map(field => {
-        if (field.id === 'orderNumber') {
-          return { ...field, value: orderPart };
-        }
-        if (field.id === 'afoNumber') {
-          return { ...field, value: afoPart, completed: true };
-        }
-        return field;
-      }));
-      
-      // Excel-Überprüfung nach dem Parsen mit Delay
-      setTimeout(() => {
-        console.log('Triggering Excel check after parseOrderNumber');
-        checkExcelData(orderPart, afoPart);
-      }, 200);
-    }
-  };
+  // Removed parseOrderNumber - logic moved to handleNext
 
   // Check Excel data using server-side search
   const checkExcelData = async (orderNumber: string, afoNumber?: string) => {
     if (!afoNumber) {
       console.log('No AFO number provided, skipping Excel check');
+      setIsSearching(false);
       return;
     }
 
     console.log('🔍 Searching Excel database for:', { orderNumber, afoNumber });
+    setIsSearching(true);
     const startTime = performance.now();
     
     try {
@@ -291,6 +260,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         setExcelDepartmentName('');
         setAssignedTeamLeader('System');
         setAdditionalExcelData({});
+        setIsSearching(false);
         return;
       }
 
@@ -315,6 +285,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
       if (error) {
         console.error('❌ Excel search error:', error);
+        setIsSearching(false);
         return;
       }
       
@@ -373,10 +344,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       }
     } catch (error) {
       console.error('❌ Excel search exception:', error);
+      setExcelDataFound(false);
       setExcelDepartment('');
       setExcelDepartmentName('');
       setAssignedTeamLeader('System');
       setAdditionalExcelData({});
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -404,26 +378,10 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       }
       return field;
     }));
-    
-    // Check Excel data when order number or AFO is updated (but not during parsing)
-    if (fieldId === 'orderNumber' || fieldId === 'afoNumber') {
-      const orderField = fields.find(f => f.id === 'orderNumber');
-      const afoField = fields.find(f => f.id === 'afoNumber');
-      
-      const orderNumber = fieldId === 'orderNumber' ? value : orderField?.value || '';
-      const afoNumber = fieldId === 'afoNumber' ? value : afoField?.value || '';
-      
-      console.log('Field update check:', { fieldId, orderNumber, afoNumber });
-      
-      // Nur prüfen wenn BEIDE Nummern vorhanden sind
-      if (orderNumber && afoNumber) {
-        console.log('Both numbers present, triggering Excel check');
-        setTimeout(() => checkExcelData(orderNumber, afoNumber), 100);
-      }
-    }
-  }, [fields]);
+    // Excel check is now only done on order number parsing with "."
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const currentField = fields[currentStep];
     if (currentField.required && !currentField.value) {
       toast.error(`${currentField.label} ist ein Pflichtfeld`);
@@ -433,14 +391,37 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     // Parse order number when leaving the order number field (step 0)
     if (currentStep === 0 && currentField.value.includes('.')) {
       console.log('Parsing order number:', currentField.value);
-      parseOrderNumber(currentField.value);
+      const dotIndex = currentField.value.indexOf('.');
+      const orderPart = currentField.value.substring(0, dotIndex);
+      const afoPart = currentField.value.substring(dotIndex + 1);
       
-      setFields(prev => prev.map((field, index) => 
-        index === currentStep ? { ...field, completed: true } : field
-      ));
+      // Update fields immediately
+      setFields(prev => prev.map(field => {
+        if (field.id === 'orderNumber') {
+          return { ...field, value: orderPart, completed: true };
+        }
+        if (field.id === 'afoNumber') {
+          return { ...field, value: afoPart, completed: true };
+        }
+        return field;
+      }));
       
-      // Go to step 1 (AFO) to allow department selection if needed
-      setCurrentStep(1);
+      // Wait for Excel search to complete
+      await checkExcelData(orderPart, afoPart);
+      
+      // Check the result and decide where to go
+      // We need to use a callback to ensure we have the latest state
+      setTimeout(() => {
+        if (excelDataFound === true && excelDepartment) {
+          // Data found and department set - skip to step 2 (defectiveQuantity)
+          console.log('Excel data found, skipping to defectiveQuantity');
+          setCurrentStep(2);
+        } else {
+          // Data not found or no department - go to AFO step for manual department selection
+          console.log('Excel data not found, going to AFO step for department selection');
+          setCurrentStep(1);
+        }
+      }, 100);
       return;
     }
 
@@ -479,10 +460,10 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       index === currentStep ? { ...field, completed: true } : field
     ));
 
-    // Excel-Überprüfung beim Weiterklicken wenn beide Nummern vorhanden sind
+    // Excel check is now only done on order number parsing with "."
     const orderField = fields.find(f => f.id === 'orderNumber');
     const afoField = fields.find(f => f.id === 'afoNumber');
-    if (orderField?.value && afoField?.value) {
+    if (false && orderField?.value && afoField?.value) {
       console.log('handleNext: triggering Excel check');
       setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
     }
@@ -956,6 +937,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       placeholder={currentField.placeholder}
                       rows={8}
                       className="text-center text-lg flex-1"
+                      disabled={isSearching && currentStep === 0}
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
                       <div className="flex flex-col gap-0.5 self-start -mt-2">
@@ -1039,6 +1021,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     className="text-center text-xl max-w-md h-14"
                     pattern="[0-9]*"
                     inputMode="numeric"
+                    disabled={isSearching && currentStep === 0}
                   />
                   
                   {/* Touch Keypad for quantity input */}
@@ -1065,6 +1048,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     placeholder={currentField.placeholder}
                     className="text-center text-xl max-w-md h-14"
                     pattern={currentField.id === 'orderNumber' ? '[0-9.]*' : '[0-9]*'}
+                    disabled={isSearching && currentStep === 0}
                     inputMode={currentField.id === 'orderNumber' ? 'decimal' : 'numeric'}
                   />
                   
@@ -1139,8 +1123,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   onClick={handleNext}
                   className="px-8 py-3 text-lg"
                   size="lg"
+                  disabled={isSearching}
                 >
-                  Weiter
+                  {isSearching ? 'Suche läuft...' : 'Weiter'}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               )}
