@@ -524,12 +524,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const reportId = await generateErrorReportId();
       const problemDesc = fields.find(f => f.id === 'problemDescription')?.value || '';
       const correctiveAct = fields.find(f => f.id === 'correctiveAction')?.value || '';
+      const personalNum = fields.find(f => f.id === 'personalNumber')?.value || '';
+      
+      // Validate that personal number is not empty (required field)
+      if (!personalNum.trim()) {
+        toast.error('Personalnummer ist erforderlich');
+        setIsSubmitting(false);
+        return;
+      }
       
       const report = {
         id: reportId,
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || '',
-        personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
+        personalNumber: personalNum,
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
@@ -537,7 +545,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         errorCause: problemDesc,
         correctiveAction: correctiveAct,
         machine: undefined,
-        creator: fields.find(f => f.id === 'personalNumber')?.value || '',
+        creator: personalNum,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader,
@@ -592,6 +600,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return;
       }
       
+      const personalNum = fields.find(f => f.id === 'personalNumber')?.value || '';
+      
+      // Validate that personal number is not empty (required field)
+      if (!personalNum.trim()) {
+        toast.error('Personalnummer ist erforderlich');
+        setIsSubmitting(false);
+        return;
+      }
+      
       const report = {
         id: await generateErrorReportId(),
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
@@ -599,8 +616,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
-        creator: fields.find(f => f.id === 'personalNumber')?.value || '',
-        personalNumber: fields.find(f => f.id === 'personalNumber')?.value || '',
+        creator: personalNum,
+        personalNumber: personalNum,
         machine: undefined,
         detectionLocation: fields.find(f => f.id === 'detectionLocation')?.value || undefined,
         problemDescription: problemDesc,
