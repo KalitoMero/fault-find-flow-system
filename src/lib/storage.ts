@@ -193,60 +193,39 @@ export const getErrorReportByOrderNumber = async (orderNumber: string): Promise<
 };
 
 export const generateErrorReportId = async (): Promise<string> => {
-  // Use database-generated numeric IDs with proper locking
-  let attempts = 0;
-  const maxAttempts = 5;
-  
-  while (attempts < maxAttempts) {
-    try {
-      const { data, error } = await supabase
-        .from('error_reports')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(10); // Get more records to ensure we find the highest numeric ID
+  try {
+    const { data, error } = await supabase
+      .from('error_reports')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(20); // Get more records to ensure we find the highest numeric ID
 
-      if (error) throw error;
-
-      // Find the highest numeric ID
-      let highestId = 0;
-      if (data && data.length > 0) {
-        const numericIds = data
-          .map((report: any) => parseInt(report.id))
-          .filter((id: number) => !isNaN(id))
-          .sort((a: number, b: number) => b - a);
-        
-        if (numericIds.length > 0) {
-          highestId = numericIds[0];
-        }
-      }
-
-      const newId = (highestId + 1).toString();
-      
-      // Try to insert with this ID to verify it doesn't exist
-      const { error: checkError } = await supabase
-        .from('error_reports')
-        .select('id')
-        .eq('id', newId)
-        .maybeSingle();
-      
-      if (checkError) {
-        // If there's an error, the ID likely doesn't exist, so we can use it
-        return newId;
-      }
-      
-      // If no error, try again with next attempt
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // Exponential backoff
-    } catch (err) {
-      attempts++;
-      if (attempts >= maxAttempts) {
-        throw new Error('Fehler beim Generieren der Berichts-ID nach mehreren Versuchen');
-      }
-      await new Promise(resolve => setTimeout(resolve, 100 * attempts));
+    if (error) {
+      console.error('Error fetching report IDs:', error);
+      throw error;
     }
+
+    // Find the highest numeric ID
+    let highestId = 0;
+    if (data && data.length > 0) {
+      const numericIds = data
+        .map((report: any) => parseInt(report.id))
+        .filter((id: number) => !isNaN(id))
+        .sort((a: number, b: number) => b - a);
+      
+      if (numericIds.length > 0) {
+        highestId = numericIds[0];
+      }
+    }
+
+    const newId = (highestId + 1).toString();
+    console.log('Generated new ID:', newId, 'from highest:', highestId);
+    
+    return newId;
+  } catch (err) {
+    console.error('Error in generateErrorReportId:', err);
+    throw new Error('Fehler beim Generieren der Berichts-ID: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
   }
-  
-  throw new Error('Fehler beim Generieren der Berichts-ID');
 };
 
 export const getErrorReportStatistics = async () => {
