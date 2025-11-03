@@ -46,6 +46,7 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showStepForm, setShowStepForm] = useState(false);
   const [shouldShowDeputy, setShouldShowDeputy] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const { profile, logout, isAuthenticated, loading } = useAuth();
 
   React.useEffect(() => {
@@ -424,9 +425,20 @@ const Index = () => {
         ) : selectedTab === 'dashboard' && isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'admin') ? (
           // Teamleiter/Admin Dashboard
           <div className="space-y-4">
-            <Button variant="outline" onClick={handleBackToOverview} className="mb-4">
-              ← Zurück zur Startseite
-            </Button>
+            <div className="flex items-center justify-between mb-4">
+              <Button variant="outline" onClick={handleBackToOverview}>
+                ← Zurück zur Startseite
+              </Button>
+              <Button variant="default" onClick={() => setShowExport(!showExport)}>
+                <Download className="h-4 w-4 mr-2" />
+                {showExport ? 'Export schließen' : 'Excel Export'}
+              </Button>
+            </div>
+
+            {/* Excel Export Section */}
+            {showExport && (
+              <ExportSection reports={filteredReports} />
+            )}
 
             {/* Admin: Teamleiter Statistiken */}
             {profile.role === 'admin' && (
