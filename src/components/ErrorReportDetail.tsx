@@ -19,9 +19,10 @@ interface ErrorReportDetailProps {
   onEdit?: (report: ErrorReport) => void;
   onViewReport?: (report: ErrorReport) => void;
   backButtonText?: string;
+  hideDeleteButton?: boolean;
 }
 
-const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewReport, backButtonText = "Zurück zur Übersicht" }: ErrorReportDetailProps) => {
+const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewReport, backButtonText = "Zurück zur Übersicht", hideDeleteButton = false }: ErrorReportDetailProps) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -271,7 +272,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {isAuthenticated && (
+                {isAuthenticated && !hideDeleteButton && (
                   <Button
                     variant="destructive"
                     size="sm"

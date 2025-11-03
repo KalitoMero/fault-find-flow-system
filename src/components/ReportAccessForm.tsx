@@ -98,6 +98,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
         onBack={handleBackFromDetail}
         onStatusChange={() => {}}
         backButtonText="Zurück zur Liste"
+        hideDeleteButton={true}
       />
     );
   }
