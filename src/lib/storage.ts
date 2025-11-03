@@ -94,7 +94,8 @@ const toSnakeCase = async (report: Partial<ErrorReport>): Promise<any> => {
     rejected_at: report.rejectedAt,
     // department_id should be a UUID or null
     department_id: report.excelDepartment || null,
-    additional_info: report.additionalInfo
+    additional_info: report.additionalInfo,
+    additional_excel_data: report.additionalExcelData || null
   };
 };
 

@@ -108,6 +108,7 @@ export type Database = {
       }
       error_reports: {
         Row: {
+          additional_excel_data: Json | null
           additional_info: string | null
           afo_number: string
           approval_status: string | null
@@ -135,6 +136,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          additional_excel_data?: Json | null
           additional_info?: string | null
           afo_number: string
           approval_status?: string | null
@@ -162,6 +164,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          additional_excel_data?: Json | null
           additional_info?: string | null
           afo_number?: string
           approval_status?: string | null
