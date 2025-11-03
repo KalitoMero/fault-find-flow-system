@@ -522,6 +522,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     
     try {
       const reportId = await generateErrorReportId();
+      const problemDesc = fields.find(f => f.id === 'problemDescription')?.value || '';
+      const correctiveAct = fields.find(f => f.id === 'correctiveAction')?.value || '';
+      
       const report = {
         id: reportId,
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
@@ -530,17 +533,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
-        problemDescription: fields.find(f => f.id === 'problemDescription')?.value || '',
-        errorCause: fields.find(f => f.id === 'problemDescription')?.value || '',
-        correctiveAction: fields.find(f => f.id === 'correctiveAction')?.value || '',
-        machine: 'Standard',
-        creator: 'System',
+        problemDescription: problemDesc,
+        errorCause: problemDesc,
+        correctiveAction: correctiveAct,
+        machine: undefined,
+        creator: fields.find(f => f.id === 'personalNumber')?.value || '',
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader,
         excelDepartment,
-        additionalExcelData,
-        audioFiles
+        additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
+        audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
       
       console.log('Saving report:', report);
