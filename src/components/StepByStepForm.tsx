@@ -526,9 +526,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const correctiveAct = fields.find(f => f.id === 'correctiveAction')?.value || '';
       const personalNum = fields.find(f => f.id === 'personalNumber')?.value || '';
       
-      // Validate that personal number is not empty (required field)
-      if (!personalNum.trim()) {
-        toast.error('Personalnummer ist erforderlich');
+      // Validate that personal number meets requirements (min 2 characters as per RLS policy)
+      if (!personalNum.trim() || personalNum.trim().length < 2) {
+        toast.error('Personalnummer muss mindestens 2 Zeichen haben');
         setIsSubmitting(false);
         return;
       }
@@ -566,7 +566,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       toast.success('Fehlermeldung erstellt und PDF wird heruntergeladen!');
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
-      toast.error('Fehler beim Speichern der Fehlermeldung');
+      const errorMessage = error instanceof Error ? error.message : 'Fehler beim Speichern der Fehlermeldung';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -602,9 +603,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       const personalNum = fields.find(f => f.id === 'personalNumber')?.value || '';
       
-      // Validate that personal number is not empty (required field)
-      if (!personalNum.trim()) {
-        toast.error('Personalnummer ist erforderlich');
+      // Validate that personal number meets requirements (min 2 characters as per RLS policy)
+      if (!personalNum.trim() || personalNum.trim().length < 2) {
+        toast.error('Personalnummer muss mindestens 2 Zeichen haben');
         setIsSubmitting(false);
         return;
       }
@@ -638,7 +639,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       toast.success('Fehlermeldung erfolgreich erstellt!');
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
-      toast.error('Fehler beim Speichern der Fehlermeldung');
+      const errorMessage = error instanceof Error ? error.message : 'Fehler beim Speichern der Fehlermeldung';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
