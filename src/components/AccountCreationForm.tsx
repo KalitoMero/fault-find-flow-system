@@ -85,7 +85,7 @@ const AccountCreationForm: React.FC<AccountCreationFormProps> = ({ onAccountCrea
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
+        password: password.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {

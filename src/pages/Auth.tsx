@@ -26,7 +26,7 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const { error } = await login(username, password);
+    const { error } = await login(username.trim(), password.trim());
     
     if (error) {
       toast.error('Login fehlgeschlagen', {

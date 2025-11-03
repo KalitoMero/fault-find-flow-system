@@ -65,7 +65,7 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
-        password: password,
+        password: password.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {

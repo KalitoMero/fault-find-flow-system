@@ -22,7 +22,7 @@ const LoginForm = ({ onBack }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      const success = await login(username, password);
+      const success = await login(username.trim(), password.trim());
       if (success) {
         toast.success("Erfolgreich angemeldet!");
       } else {
