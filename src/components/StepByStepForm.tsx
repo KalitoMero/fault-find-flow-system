@@ -602,7 +602,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         detectionLocation: fields.find(f => f.id === 'detectionLocation')?.value || undefined,
         problemDescription: problemDesc,
         errorCause: problemDesc, // Use same as problem description for now
-        correctiveAction: correctiveAct || problemDesc, // Use problem desc as fallback
+        correctiveAction: correctiveAct || '', // Leave empty if not provided
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: assignedTeamLeader,
