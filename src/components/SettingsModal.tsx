@@ -59,6 +59,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [currentLogo, setCurrentLogo] = useState<string | null>(null);
   const [n8nWebhookEnabled, setN8nWebhookEnabled] = useState(false);
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  const [errorReports, setErrorReports] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +84,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setEmployees(await getEmployees());
     setMachines(await getMachines());
     setCurrentLogo(await getLogo());
+    
+    // Load error reports for export
+    try {
+      const reports = await getErrorReports();
+      setErrorReports(reports);
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      setErrorReports([]);
+    }
   };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -530,7 +540,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
 
           <TabsContent value="export" className="space-y-4">
-            <ExportSection reports={[]} />
+            <ExportSection reports={errorReports} />
           </TabsContent>
 
           <TabsContent value="company" className="space-y-4">
