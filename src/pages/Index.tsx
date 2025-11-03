@@ -425,7 +425,7 @@ const Index = () => {
         ) : selectedTab === 'dashboard' && isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'admin') ? (
           // Teamleiter/Admin Dashboard
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4 mb-4">
               <Button variant="outline" onClick={handleBackToOverview}>
                 ← Zurück zur Startseite
               </Button>
