@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AlertTriangle, Plus, FileText, Download, CheckCircle, Clock, Users, LogIn, LogOut, Edit, Search, Settings, Trash2, ArrowUpDown, LayoutDashboard } from 'lucide-react';
 import ErrorReportFormModern from '@/components/ErrorReportFormModern';
 import StepByStepForm from '@/components/StepByStepForm';
@@ -461,17 +462,20 @@ const Index = () => {
 
                 {/* Status Filter und Sortierung */}
                 <div className="flex gap-4">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Status filtern" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Status</SelectItem>
-                      <SelectItem value="pending">Offene Meldungen</SelectItem>
-                      <SelectItem value="approved">Freigegeben</SelectItem>
-                      <SelectItem value="rejected">Abgelehnt</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <ToggleGroup type="single" value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
+                    <ToggleGroupItem value="all" aria-label="Alle Status">
+                      Alle Status
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="pending" aria-label="Offene Meldungen">
+                      Offene Meldungen
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="approved" aria-label="Freigegeben">
+                      Freigegeben
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="rejected" aria-label="Abgelehnt">
+                      Abgelehnt
+                    </ToggleGroupItem>
+                  </ToggleGroup>
 
                   <Button
                     variant="outline"
