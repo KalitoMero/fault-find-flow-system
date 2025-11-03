@@ -39,7 +39,7 @@ const Index = () => {
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'orderNumber' | 'articleNumber'>('orderNumber');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -467,7 +467,7 @@ const Index = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alle Status</SelectItem>
-                      <SelectItem value="pending">Zur Prüfung</SelectItem>
+                      <SelectItem value="pending">Offene Meldungen</SelectItem>
                       <SelectItem value="approved">Freigegeben</SelectItem>
                       <SelectItem value="rejected">Abgelehnt</SelectItem>
                     </SelectContent>
