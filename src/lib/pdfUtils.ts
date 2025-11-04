@@ -35,11 +35,7 @@ export const generatePDF = async (report: ErrorReport) => {
   doc.setFontSize(20);
   doc.text('QF14-03 Fehlermeldung', 105, 20, { align: 'center' });
   
-  // Meldungsnummer
-  doc.setFontSize(12);
-  doc.text(`Meldungsnummer: ${report.id}`, 20, 35);
-  
-  let yPos = 50;
+  let yPos = 35;
   const lineHeight = 8;
   
   // Basic Information Section

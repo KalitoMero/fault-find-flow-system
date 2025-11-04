@@ -226,7 +226,6 @@ export const printErrorReport = async (report: ErrorReport) => {
     
     <div id="print-content">
       <h1>QF14-03 Fehlermeldung</h1>
-      <div class="report-number">Meldungsnummer: #${report.id}</div>
       
       ${report.approvalStatus === 'approved' && approvedByName && report.approvedAt ? `
         <div class="status-card approved">

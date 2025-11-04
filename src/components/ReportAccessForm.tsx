@@ -185,7 +185,6 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
-                    <Badge variant="outline">#{report.id}</Badge>
                     <h3 className="font-medium text-card-foreground">Auftrag: {report.orderNumber}</h3>
                     <Badge variant={
                       report.approvalStatus === 'approved' ? 'default' : 

@@ -85,10 +85,9 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprov
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline">#{report.id}</Badge>
-                    <span className="font-semibold">Auftrag: {report.order_number}</span>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold">Auftrag: {report.order_number}</span>
                     {getStatusBadge(report.approval_status)}
                   </div>
                   <p className="text-sm text-gray-700 line-clamp-2">

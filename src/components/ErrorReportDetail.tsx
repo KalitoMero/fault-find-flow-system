@@ -286,7 +286,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
-                <span>Fehlermeldung #{report.id}</span>
+                <span>Fehlermeldung</span>
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge()}
