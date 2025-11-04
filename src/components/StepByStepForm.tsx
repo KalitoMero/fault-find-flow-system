@@ -51,8 +51,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [additionalExcelData, setAdditionalExcelData] = useState<Record<string, any>>({});
   const [showReview, setShowReview] = useState(false);
   const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
-  const [manualDepartment, setManualDepartment] = useState<string>('');
-  const [departments, setDepartments] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
   // N8N Settings State - Always enabled
@@ -153,8 +151,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     const loadEmployees = async () => {
       const emps = await getEmployees();
       setEmployees(emps);
-      const depts = await getDepartments();
-      setDepartments(depts);
     };
     loadEmployees();
     loadN8nSettings();
@@ -428,32 +424,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
     // After AFO field (step 1), check if Excel data was found
     if (currentStep === 1) {
-      // Check if department selection is needed:
-      // 1. No Excel data found at all, OR
-      // 2. Excel data found but no matching department in database
-      const needsDepartmentSelection = (excelDataFound === false || !excelDepartment) && !manualDepartment;
-      
-      if (needsDepartmentSelection) {
-        // Don't mark as completed and don't proceed
-        toast.error('Bitte wählen Sie eine Abteilung aus');
-        return;
-      }
-      
-      // Mark field as completed only when we can proceed
-      setFields(prev => prev.map((field, index) => 
-        index === currentStep ? { ...field, completed: true } : field
-      ));
-      
-      // If manual department was selected, set up team leader
-      if (manualDepartment) {
-        const selectedDept = departments.find(d => d.id === manualDepartment);
-        if (selectedDept) {
-          findTeamLeaderForDepartment(selectedDept.name).then(teamLeader => {
-            setAssignedTeamLeader(teamLeader);
-            setExcelDepartment(manualDepartment);
-            setExcelDepartmentName(selectedDept.name);
-          });
-        }
+      // If no Excel department found, warn user
+      if (excelDataFound === false || !excelDepartment) {
+        toast.error('Keine Abteilungsinformationen gefunden. Bitte stellen Sie sicher, dass die Excel-Daten korrekt sind.');
       }
     }
 
@@ -702,18 +675,15 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               ))}
 
               {/* Excel data if available */}
-              {(excelDepartmentName || Object.keys(additionalExcelData).length > 0 || manualDepartment) && (
+              {(excelDepartmentName || Object.keys(additionalExcelData).length > 0) && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-800 mb-2">
-                    {excelDepartmentName ? 'Excel-Daten' : 'Abteilungs-Informationen'}
+                    Excel-Daten
                   </h4>
                   <div className="space-y-1 text-sm">
-                    {(excelDepartmentName || manualDepartment) && (
+                    {excelDepartmentName && (
                       <div>
-                        <span className="text-blue-600">Abteilung:</span> {excelDepartmentName || departments.find(d => d.id === manualDepartment)?.name}
-                        {manualDepartment && !excelDepartmentName && (
-                          <span className="ml-2 text-xs text-yellow-600">(Manuell ausgewählt)</span>
-                        )}
+                        <span className="text-blue-600">Abteilung:</span> {excelDepartmentName}
                       </div>
                     )}
                     {assignedTeamLeader !== 'System' && (
@@ -801,17 +771,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           <CardContent className="p-4">
             <div className="space-y-3">
               {/* Excel Status Info */}
-              {(excelDepartment || Object.keys(additionalExcelData).length > 0 || manualDepartment) && (
+              {(excelDepartment || Object.keys(additionalExcelData).length > 0) && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                    {(excelDepartmentName || manualDepartment) && (
+                    {excelDepartmentName && (
                       <div>
                         <span className="text-blue-600">Abteilung:</span> <span className="font-medium">
-                          {excelDepartmentName || departments.find(d => d.id === manualDepartment)?.name}
+                          {excelDepartmentName}
                         </span>
-                        {manualDepartment && !excelDepartmentName && (
-                          <span className="ml-2 text-xs text-yellow-600">(Manuell ausgewählt)</span>
-                        )}
                       </div>
                     )}
                     {assignedTeamLeader !== 'System' && (
@@ -1086,36 +1053,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
               )}
             </div>
 
-            {/* Department Selection - Show when no department assigned */}
-            {currentStep === 1 && (excelDataFound === false || !excelDepartment) && !manualDepartment && (
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="text-center mb-4">
-                  <p className="text-yellow-800 font-medium">
-                    {excelDataFound === false 
-                      ? 'Keine Excel-Daten gefunden. Bitte wählen Sie eine Abteilung aus:'
-                      : 'Keine passende Abteilung gefunden. Bitte wählen Sie eine Abteilung aus:'}
-                  </p>
-                </div>
-                <Select 
-                  value={manualDepartment} 
-                  onValueChange={(value) => {
-                    setManualDepartment(value);
-                    toast.success('Abteilung ausgewählt');
-                  }}
-                >
-                  <SelectTrigger className="text-center text-lg max-w-md h-12 mx-auto">
-                    <SelectValue placeholder="Abteilung wählen..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id} className="hover:bg-gray-100">
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div className="flex justify-center gap-4 pt-6">
               {isLastStep ? (
