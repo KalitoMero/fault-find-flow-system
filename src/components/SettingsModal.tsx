@@ -29,6 +29,7 @@ import {
 } from '@/lib/settingsStorage';
 import AccountCreationDialog from './AccountCreationDialog';
 import AccountManagementDialog from './AccountManagementDialog';
+import ManagementAccountCreationForm from './ManagementAccountCreationForm';
 import AdminManagement from './AdminManagement';
 import AdminAuthDialog from './AdminAuthDialog';
 import ExcelUploadSettings from './ExcelUploadSettings';
@@ -329,7 +330,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -353,6 +354,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="n8n" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
               <span>N8N Integration</span>
+            </TabsTrigger>
+            <TabsTrigger value="management" className="flex items-center space-x-2">
+              <UserPlus className="h-4 w-4" />
+              <span>Management</span>
             </TabsTrigger>
             <TabsTrigger 
               value="admin" 
@@ -689,6 +694,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           <TabsContent value="n8n">
             <N8nWebhookSettings onSettingsChange={handleN8nSettingsChange} />
+          </TabsContent>
+
+          <TabsContent value="management" className="space-y-4">
+            <ManagementAccountCreationForm onAccountCreated={loadData} />
           </TabsContent>
 
           <TabsContent value="admin" className="space-y-4">
