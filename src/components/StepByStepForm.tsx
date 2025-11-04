@@ -195,32 +195,24 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     return () => clearTimeout(timer);
   }, [currentStep, fields]);
 
-  // Finde den passenden Teamleiter basierend auf der Excel-Abteilung
-  const findTeamLeaderForDepartment = async (departmentName: string): Promise<string> => {
+  // Finde den passenden Teamleiter basierend auf der Abteilungs-ID
+  const findTeamLeaderForDepartment = async (departmentId: string): Promise<string> => {
     try {
       const employees = await getEmployees();
-      const departments = await getDepartments();
-      
-      // Finde die Abteilung basierend auf dem Namen
-      const department = departments.find(d => d.name === departmentName);
-      if (!department) {
-        console.log('No department found for name:', departmentName);
-        return 'System';
-      }
       
       // Finde Teamleiter in dieser Abteilung
       const teamLeader = employees.find(emp => 
         emp.isTeamLeader && 
-        emp.departmentId === department.id && 
+        emp.departmentId === departmentId && 
         emp.id
       );
       
       if (teamLeader && teamLeader.id) {
-        console.log('Team leader found for department', departmentName, ':', teamLeader.id);
+        console.log('Team leader found for department ID', departmentId, ':', teamLeader.id);
         return teamLeader.id;
       }
       
-      console.log('No team leader found for department:', departmentName);
+      console.log('No team leader found for department ID:', departmentId);
       return 'System';
     } catch (error) {
       // If access is denied (e.g., team leader trying to access admin function), return System
@@ -306,24 +298,25 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         
         // Auto-fill department if available
         if (typedResult.department) {
-          console.log('Department found:', typedResult.department);
+          console.log('Department code from Excel:', typedResult.department);
           
           const departments = await getDepartments();
-          const department = departments.find(d => d.name === typedResult.department);
+          // Search by code (from Excel) instead of name
+          const department = departments.find(d => d.code === typedResult.department || d.name === typedResult.department);
           if (department) {
             setExcelDepartment(department.id);
             setExcelDepartmentName(department.name);
-            console.log('Department ID set:', department.id);
+            console.log('Department matched:', department.name, 'with ID:', department.id);
             foundWithDepartment = true;
             
-            // Find and set team leader
-            const teamLeader = await findTeamLeaderForDepartment(typedResult.department);
+            // Find and set team leader using department ID
+            const teamLeader = await findTeamLeaderForDepartment(department.id);
             setAssignedTeamLeader(teamLeader);
             console.log('Assigned team leader:', teamLeader);
           } else {
             setExcelDepartment('');
             setExcelDepartmentName('');
-            console.log('No matching department UUID found for:', typedResult.department);
+            console.log('No matching department found for code/name:', typedResult.department);
           }
         } else {
           console.log('No department found in Excel data');
