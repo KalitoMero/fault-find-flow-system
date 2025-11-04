@@ -10,6 +10,7 @@ import { Download, FileSpreadsheet, Database, Filter, Calendar } from 'lucide-re
 import { ErrorReport } from '@/lib/storage';
 import { exportToExcel, exportToCSV } from '@/lib/export';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExportSectionProps {
   reports: ErrorReport[];
@@ -53,6 +54,40 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
     return filtered;
   };
 
+  const enrichReportsWithNames = async (reports: ErrorReport[]): Promise<ErrorReport[]> => {
+    try {
+      // Get all unique approver IDs and department names
+      const approverIds = [...new Set(reports.map(r => r.approvedBy).filter(Boolean))];
+      
+      // Fetch approver names from profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', approverIds);
+      
+      const approverMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+      
+      // Fetch department names
+      const { data: departments } = await supabase
+        .from('departments')
+        .select('id, name');
+      
+      const departmentMap = new Map(departments?.map(d => [d.id, d.name]) || []);
+      
+      // Enrich reports with names
+      return reports.map(report => ({
+        ...report,
+        approverName: report.approvedBy ? approverMap.get(report.approvedBy) : undefined,
+        departmentName: report.excelDepartment && departmentMap.has(report.excelDepartment) 
+          ? departmentMap.get(report.excelDepartment) 
+          : report.excelDepartment
+      }));
+    } catch (error) {
+      console.error('Fehler beim Anreichern der Daten:', error);
+      return reports;
+    }
+  };
+
   const handleExport = async () => {
     const filteredReports = getFilteredReports();
     
@@ -62,14 +97,16 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
     }
 
     try {
+      toast.info("Bereite Export vor...");
+      const enrichedReports = await enrichReportsWithNames(filteredReports);
       const filename = `Fehlermeldungen_${new Date().toISOString().split('T')[0]}`;
       
       if (exportFormat === 'excel') {
-        await exportToExcel(filteredReports, selectedFields, includeAudio, filename);
-        toast.success(`${filteredReports.length} Datensätze als Excel exportiert`);
+        await exportToExcel(enrichedReports, selectedFields, includeAudio, filename);
+        toast.success(`${enrichedReports.length} Datensätze als Excel exportiert`);
       } else {
-        await exportToCSV(filteredReports, selectedFields, filename);
-        toast.success(`${filteredReports.length} Datensätze als CSV exportiert`);
+        await exportToCSV(enrichedReports, selectedFields, filename);
+        toast.success(`${enrichedReports.length} Datensätze als CSV exportiert`);
       }
     } catch (error) {
       console.error('Export-Fehler:', error);

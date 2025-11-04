@@ -30,6 +30,8 @@ export interface ErrorReport {
   excelDepartment?: string;
   additionalExcelData?: Record<string, any>;
   additionalInfo?: string;
+  approverName?: string;
+  departmentName?: string;
 }
 
 // Helper: Convert snake_case to camelCase

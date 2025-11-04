@@ -258,9 +258,9 @@ const buildExcelCompatibleCSV = (
     if (fields.approval) {
       row.push(
         escapeCsvValue(formatStatus(report.approvalStatus)),
-        escapeCsvValue(report.approvedBy || ''),
+        escapeCsvValue(report.approverName || report.approvedBy || ''),
         escapeCsvValue(formatDate(report.approvedAt)),
-        escapeCsvValue(report.rejectionReason || '')
+        escapeCsvValue(report.approvalStatus === 'rejected' ? (report.rejectionReason || '') : '')
       );
     }
 
@@ -306,7 +306,7 @@ const buildDataRows = (
       row.push(
         report.orderNumber,
         report.afoNumber,
-        report.excelDepartment || '',
+        report.departmentName || report.excelDepartment || '',
         report.additionalExcelData?.Artikelnummer || ''
       );
     }
@@ -336,9 +336,9 @@ const buildDataRows = (
     if (fields.approval) {
       row.push(
         formatStatus(report.approvalStatus),
-        report.approvedBy || '',
+        report.approverName || report.approvedBy || '',
         formatDate(report.approvedAt),
-        report.rejectionReason || ''
+        report.approvalStatus === 'rejected' ? (report.rejectionReason || '') : ''
       );
     }
 
