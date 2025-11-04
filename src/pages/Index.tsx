@@ -203,8 +203,15 @@ const Index = () => {
       setShowLogin(false);
       setSelectedReport(null);
       setEditingReport(null);
-      // Keep selectedTab as 'dashboard' if coming from dashboard, otherwise null
-      if (selectedTab !== 'dashboard') {
+      // Keep selectedTab as 'dashboard' only if coming from a detail view
+      // If we're in a tab view and going back, clear the tab
+      if (selectedReport || editingReport) {
+        // Coming from detail/edit view - keep dashboard if that's where we came from
+        if (selectedTab !== 'dashboard') {
+          setSelectedTab(null);
+        }
+      } else {
+        // Direct navigation from tab view - always go to overview
         setSelectedTab(null);
       }
       setViewHistory([]);
