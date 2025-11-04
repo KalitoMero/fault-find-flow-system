@@ -93,15 +93,16 @@ serve(async (req) => {
 
     if (profileError) throw profileError
 
-    // Add management role
+    // Update role from employee to management (handle_new_user trigger creates employee role)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
-        user_id: newUser.user.id,
-        role: 'management'
-      })
+      .update({ role: 'management' })
+      .eq('user_id', newUser.user.id)
 
-    if (roleError) throw roleError
+    if (roleError) {
+      console.error('Role update error:', roleError)
+      throw roleError
+    }
 
     return new Response(
       JSON.stringify({ 
