@@ -437,7 +437,7 @@ const Index = () => {
 
             {/* Excel Export Section */}
             {showExport && (
-              <ExportSection reports={filteredReports} />
+              <ExportSection reports={errorReports} />
             )}
 
             {/* Admin: Teamleiter Statistiken */}
