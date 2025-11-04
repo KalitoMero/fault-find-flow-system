@@ -64,7 +64,7 @@ const ManagementAccountCreationForm: React.FC<ManagementAccountCreationFormProps
     
     try {
       const normalizedUsername = username.trim().toLowerCase();
-      const email = `${normalizedUsername}@app.internal`;
+      const email = `${normalizedUsername}@internal.local`;
 
       // Check if username already exists
       const { data: existingProfile } = await supabase
