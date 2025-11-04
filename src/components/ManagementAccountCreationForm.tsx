@@ -63,55 +63,26 @@ const ManagementAccountCreationForm: React.FC<ManagementAccountCreationFormProps
     setIsCreating(true);
     
     try {
-      const normalizedUsername = username.trim().toLowerCase();
-      const email = `${normalizedUsername}@internal.local`;
-
-      // Check if username already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', normalizedUsername)
-        .maybeSingle();
-
-      if (existingProfile) {
-        toast.error('Dieser Benutzername ist bereits vergeben');
-        setIsCreating(false);
-        return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Nicht angemeldet');
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: password.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: name.trim(),
-            username: normalizedUsername
-          }
+      const response = await supabase.functions.invoke('create-management-account', {
+        body: {
+          username: username.trim().toLowerCase(),
+          password: password.trim(),
+          name: name.trim()
         }
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('Benutzer konnte nicht erstellt werden');
+      if (response.error) throw response.error;
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Fehler beim Erstellen des Accounts');
       }
 
-      // Update profile with username
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          username: normalizedUsername,
-          name: name.trim()
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) throw profileError;
-
-      await addUserRole(authData.user.id, 'management');
-
       toast.success('Management-Account erfolgreich erstellt', {
-        description: `Benutzername: ${normalizedUsername}`
+        description: `Benutzername: ${response.data.username}`
       });
       onAccountCreated();
       
@@ -120,12 +91,7 @@ const ManagementAccountCreationForm: React.FC<ManagementAccountCreationFormProps
       setPassword('');
     } catch (error: any) {
       console.error('Fehler beim Erstellen des Management-Accounts:', error);
-      
-      if (error.message?.includes('already registered')) {
-        toast.error('Dieser Benutzername ist bereits vergeben');
-      } else {
-        toast.error('Fehler beim Erstellen des Accounts: ' + error.message);
-      }
+      toast.error('Fehler beim Erstellen des Accounts: ' + (error.message || 'Unbekannter Fehler'));
     } finally {
       setIsCreating(false);
     }
