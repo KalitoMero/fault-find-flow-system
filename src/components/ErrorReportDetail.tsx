@@ -130,6 +130,31 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
     }
   };
 
+  const handleResetStatus = async () => {
+    setIsSubmitting(true);
+    try {
+      const updatedReport: ErrorReport = {
+        ...report,
+        approvalStatus: 'pending',
+        rejectionReason: undefined,
+        rejectedBy: undefined,
+        rejectedAt: undefined,
+        approvedBy: undefined,
+        approvedAt: undefined
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      toast.success('Status wurde auf "Offen" zurückgesetzt');
+      onStatusChange();
+      onBack(); // Zurück zum Dashboard
+    } catch (error) {
+      console.error('Fehler beim Zurücksetzen:', error);
+      toast.error('Fehler beim Zurücksetzen des Status');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePrint = () => {
     printErrorReport(report);
   };
@@ -272,6 +297,17 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
+                {(report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetStatus}
+                    disabled={isSubmitting}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {isSubmitting ? 'Setze zurück...' : 'Als offen markieren'}
+                  </Button>
+                )}
                 {isAuthenticated && !hideDeleteButton && (
                   <Button
                     variant="destructive"
