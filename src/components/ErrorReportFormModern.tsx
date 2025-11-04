@@ -559,7 +559,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 label="Ba-Nr."
                 value={orderNumber}
                 onChange={handleOrderNumberChange}
-                placeholder="z.B. AUF-2024-001 oder 12345.678"
+                placeholder="z.B. 20250"
                 required
                 icon={<Hash className="h-4 w-4" />}
               />

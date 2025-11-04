@@ -282,7 +282,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 id="orderNumber"
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
-                placeholder="z.B. AUF-2024-001"
+                placeholder="z.B. 20250"
                 required
               />
             </div>

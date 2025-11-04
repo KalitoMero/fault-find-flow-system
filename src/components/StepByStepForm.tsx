@@ -73,7 +73,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       required: true,
       completed: false,
       icon: <Hash className="h-4 w-4" />,
-      placeholder: 'z.B. AUF-2024-001'
+      placeholder: 'z.B. 20250'
     },
     {
       id: 'afoNumber',
