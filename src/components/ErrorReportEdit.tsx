@@ -166,6 +166,30 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     }
   };
 
+  const handleResetStatus = async () => {
+    setIsSubmitting(true);
+    try {
+      const updatedReport: ErrorReport = {
+        ...report,
+        approvalStatus: 'pending',
+        rejectionReason: undefined,
+        rejectedBy: undefined,
+        rejectedAt: undefined,
+        approvedBy: undefined,
+        approvedAt: undefined
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      toast.success('Status wurde auf "Offen" zurückgesetzt');
+      onSave();
+    } catch (error) {
+      console.error('Fehler beim Zurücksetzen:', error);
+      toast.error('Fehler beim Zurücksetzen des Status');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getRelatedReports = async () => {
     if (!report.additionalExcelData?.Artikelnummer) return [];
     
@@ -269,16 +293,16 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                 <span>Fehlermeldung #{report.id} bearbeiten</span>
               </div>
               <div className="flex items-center space-x-2">
-                {/* Speichern-Button für abgelehnte Meldungen neben dem Titel */}
-                {report.approvalStatus === 'rejected' && (
+                {/* Status zurücksetzen Button für freigegebene/abgelehnte Meldungen */}
+                {(report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
                   <Button 
-                    onClick={handleSaveChanges}
-                    disabled={isSubmitting || !formData.problemDescription.trim()}
-                    variant="destructive"
+                    onClick={handleResetStatus}
+                    disabled={isSubmitting}
+                    variant="outline"
                     size="sm"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isSubmitting ? 'Speichere...' : 'Speichern'}
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    {isSubmitting ? 'Setze zurück...' : 'Als offen markieren'}
                   </Button>
                 )}
                 {getStatusBadge()}
