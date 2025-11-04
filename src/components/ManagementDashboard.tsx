@@ -267,7 +267,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
                   className="flex items-center gap-2"
                 >
                   <ArrowUpDown className="h-4 w-4" />
-                  Auftragsnr. {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  Ba-Nr. {sortBy === 'orderNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </Button>
 
                 <Badge variant="secondary" className="ml-auto self-center">
