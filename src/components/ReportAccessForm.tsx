@@ -143,7 +143,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       case 'articleNumber':
         return 'z.B. D532-7';
       case 'articleDescription':
-        return 'z.B. Schrauben M8';
+        return 'z.B. Beschlag';
       default:
         return 'Suchbegriff eingeben';
     }
