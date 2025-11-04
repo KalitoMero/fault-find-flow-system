@@ -203,7 +203,10 @@ const Index = () => {
       setShowLogin(false);
       setSelectedReport(null);
       setEditingReport(null);
-      setSelectedTab(null);
+      // Keep selectedTab as 'dashboard' if coming from dashboard, otherwise null
+      if (selectedTab !== 'dashboard') {
+        setSelectedTab(null);
+      }
       setViewHistory([]);
       loadData();
     }
@@ -354,6 +357,12 @@ const Index = () => {
 
   // Zeige Detailansicht
   if (selectedReport && (isAuthenticated || selectedReport.approvalStatus === 'approved')) {
+    const getBackButtonText = () => {
+      if (viewHistory.length > 0) return "Zurück zur Fehlermeldung";
+      if (selectedTab === 'dashboard') return "Zurück zum Dashboard";
+      return "Zurück zur Übersicht";
+    };
+    
     return (
       <ErrorReportDetail
         report={selectedReport}
@@ -361,7 +370,7 @@ const Index = () => {
         onStatusChange={handleApprovalChange}
         onEdit={handleEditClick}
         onViewReport={handleViewRelatedReport}
-        backButtonText={viewHistory.length > 0 ? "Zurück zur Fehlermeldung" : "Zurück zur Übersicht"}
+        backButtonText={getBackButtonText()}
       />
     );
   }
