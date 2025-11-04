@@ -139,7 +139,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   const getSearchPlaceholder = () => {
     switch (searchType) {
       case 'orderNumber':
-        return 'z.B. 123456';
+        return 'z.B. 20250';
       case 'articleNumber':
         return 'z.B. D532-7';
       case 'articleDescription':
