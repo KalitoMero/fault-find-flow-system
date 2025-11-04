@@ -48,6 +48,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newDepartmentCode, setNewDepartmentCode] = useState('');
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [newMachineName, setNewMachineName] = useState('');
   const [selectedDepartmentForEmployee, setSelectedDepartmentForEmployee] = useState('');
@@ -131,21 +133,46 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     toast.success('Logo entfernt');
   };
 
-  const handleAddDepartment = () => {
+  const handleAddDepartment = async () => {
+    if (!newDepartmentCode.trim()) {
+      toast.error('Bitte geben Sie einen Abteilungscode ein');
+      return;
+    }
+
     if (!newDepartmentName.trim()) {
       toast.error('Bitte geben Sie einen Abteilungsnamen ein');
       return;
     }
 
     const newDepartment: Department = {
-      id: generateId(),
-      name: newDepartmentName.trim()
+      id: editingDepartment?.id || generateId(),
+      name: newDepartmentName.trim(),
+      code: newDepartmentCode.trim().toUpperCase()
     };
 
-    saveDepartment(newDepartment);
+    try {
+      await saveDepartment(newDepartment);
+      setNewDepartmentName('');
+      setNewDepartmentCode('');
+      setEditingDepartment(null);
+      loadData();
+      toast.success(editingDepartment ? 'Abteilung erfolgreich aktualisiert' : 'Abteilung erfolgreich erstellt');
+    } catch (error) {
+      console.error('Error saving department:', error);
+      toast.error('Fehler beim Speichern der Abteilung');
+    }
+  };
+
+  const handleEditDepartment = (department: Department) => {
+    setEditingDepartment(department);
+    setNewDepartmentCode(department.code || '');
+    setNewDepartmentName(department.name);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDepartment(null);
+    setNewDepartmentCode('');
     setNewDepartmentName('');
-    loadData();
-    toast.success('Abteilung erfolgreich erstellt');
   };
 
   const handleDeleteDepartment = (departmentId: string) => {
@@ -339,29 +366,51 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <TabsContent value="departments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Neue Abteilung erstellen</CardTitle>
+                <CardTitle>{editingDepartment ? 'Abteilung bearbeiten' : 'Neue Abteilung erstellen'}</CardTitle>
                 <CardDescription>
-                  Fügen Sie eine neue Abteilung hinzu
+                  {editingDepartment ? 'Ändern Sie Code und Name der Abteilung' : 'Fügen Sie eine neue Abteilung hinzu'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex space-x-2">
-                  <div className="flex-1">
-                    <Label htmlFor="departmentName">Abteilungsname</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="departmentCode">Abteilungscode (aus Excel)</Label>
+                    <Input
+                      id="departmentCode"
+                      value={newDepartmentCode}
+                      onChange={(e) => setNewDepartmentCode(e.target.value.toUpperCase())}
+                      placeholder="z.B. FRÄ"
+                      maxLength={10}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddDepartment()}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Der kurze Code aus der Excel-Datei
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="departmentName">Anzeigename</Label>
                     <Input
                       id="departmentName"
                       value={newDepartmentName}
                       onChange={(e) => setNewDepartmentName(e.target.value)}
-                      placeholder="z.B. Produktion"
+                      placeholder="z.B. Fräsen"
                       onKeyDown={(e) => e.key === 'Enter' && handleAddDepartment()}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Der Name, der in der Anwendung angezeigt wird
+                    </p>
                   </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleAddDepartment}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Hinzufügen
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleAddDepartment}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {editingDepartment ? 'Aktualisieren' : 'Hinzufügen'}
+                  </Button>
+                  {editingDepartment && (
+                    <Button variant="outline" onClick={handleCancelEdit}>
+                      Abbrechen
                     </Button>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -377,14 +426,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2">
                     {departments.map((department) => (
                       <div key={department.id} className="flex items-center justify-between p-3 border rounded">
-                        <span className="font-medium">{department.name}</span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteDepartment(department.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {department.code && (
+                              <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                                {department.code}
+                              </span>
+                            )}
+                            <span className="font-medium">{department.name}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditDepartment(department)}
+                          >
+                            Bearbeiten
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteDepartment(department.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

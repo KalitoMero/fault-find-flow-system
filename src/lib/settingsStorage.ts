@@ -11,6 +11,7 @@ export type Employee = EmployeeType;
 export interface Department {
   id: string;
   name: string;
+  code?: string;
 }
 
 export interface Machine {
@@ -32,7 +33,11 @@ export const getDepartments = async (): Promise<Department[]> => {
 export const saveDepartment = async (department: Department): Promise<void> => {
   const { error } = await supabase
     .from('departments')
-    .upsert({ id: department.id, name: department.name });
+    .upsert({ 
+      id: department.id, 
+      name: department.name,
+      code: department.code 
+    });
 
   if (error) throw error;
 };
