@@ -55,7 +55,7 @@ serve(async (req) => {
     }
 
     const normalizedUsername = username.trim().toLowerCase()
-    const email = `${normalizedUsername}@internal.local`
+    const email = `${normalizedUsername}@app.internal`
 
     // Check if username already exists
     const { data: existingProfile } = await supabaseAdmin
