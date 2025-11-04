@@ -33,7 +33,7 @@ export const generatePDF = async (report: ErrorReport) => {
   
   // Title
   doc.setFontSize(20);
-  doc.text('Fehlermeldung', 105, 20, { align: 'center' });
+  doc.text('QF14-03 Fehlermeldung', 105, 20, { align: 'center' });
   
   // Meldungsnummer
   doc.setFontSize(12);
@@ -187,6 +187,25 @@ export const generatePDF = async (report: ErrorReport) => {
       doc.text(`${key}: ${value}`, 20, yPos);
       yPos += lineHeight;
     });
+  }
+  
+  // Footer on every page
+  const pageCount = doc.internal.pages.length - 1;
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    
+    const footerY = 287;
+    const pageWidth = doc.internal.pageSize.width;
+    const leftMargin = 20;
+    const rightMargin = 20;
+    const availableWidth = pageWidth - leftMargin - rightMargin;
+    
+    // Drei Teile der Fußzeile gleichmäßig verteilt
+    doc.text('Ersteller: Karl-Heinz Leuze', leftMargin, footerY);
+    doc.text('Prüfung/Freigabe: siehe Qwiki', pageWidth / 2, footerY, { align: 'center' });
+    doc.text('Revision: 01 vom 04.11.2025', pageWidth - rightMargin, footerY, { align: 'right' });
   }
   
   // Save PDF

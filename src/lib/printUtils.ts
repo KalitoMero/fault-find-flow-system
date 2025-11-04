@@ -188,10 +188,44 @@ export const printErrorReport = async (report: ErrorReport) => {
         border-top: 1px solid #ddd;
         margin: 20px 0;
       }
+      
+      #print-content .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px;
+        font-size: 10px;
+        color: #666;
+        border-top: 1px solid #ddd;
+        background-color: white;
+      }
+      
+      #print-content .footer-item {
+        flex: 1;
+        text-align: center;
+      }
+      
+      #print-content .footer-item:first-child {
+        text-align: left;
+      }
+      
+      #print-content .footer-item:last-child {
+        text-align: right;
+      }
+      
+      @media print {
+        #print-content .footer {
+          position: fixed;
+          bottom: 0;
+        }
+      }
     </style>
     
     <div id="print-content">
-      <h1>Fehlermeldung</h1>
+      <h1>QF14-03 Fehlermeldung</h1>
       <div class="report-number">Meldungsnummer: #${report.id}</div>
       
       ${report.approvalStatus === 'approved' && approvedByName && report.approvedAt ? `
@@ -315,6 +349,12 @@ export const printErrorReport = async (report: ErrorReport) => {
       <div class="section">
         <div class="section-title">Korrekturmaßnahme</div>
         <div class="text-content">${report.correctiveAction}</div>
+      </div>
+      
+      <div class="footer">
+        <div class="footer-item">Ersteller: Karl-Heinz Leuze</div>
+        <div class="footer-item">Prüfung/Freigabe: siehe Qwiki</div>
+        <div class="footer-item">Revision: 01 vom 04.11.2025</div>
       </div>
     </div>
   `;
