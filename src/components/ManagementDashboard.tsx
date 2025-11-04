@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, Euro } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, Euro } from 'lucide-react';
 import { getDepartments, Department } from '@/lib/settingsStorage';
 import { getErrorReports, ErrorReport } from '@/lib/storage';
 import ApprovalDashboard from './ApprovalDashboard';
@@ -28,6 +27,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [viewMode, setViewMode] = useState<'overview' | 'costs'>('overview');
   const [teamLeaderStats, setTeamLeaderStats] = useState<any[]>([]);
 
   useEffect(() => {
@@ -107,23 +107,29 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList>
-          <TabsTrigger value="overview">
-            <Users className="h-4 w-4 mr-2" />
-            Übersicht
-          </TabsTrigger>
-          <TabsTrigger value="reports">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Fehlermeldungen
-          </TabsTrigger>
-          <TabsTrigger value="costs">
-            <Euro className="h-4 w-4 mr-2" />
-            Kosten
-          </TabsTrigger>
-        </TabsList>
+      {/* View Mode Toggle */}
+      <div className="grid grid-cols-2 gap-4">
+        <Button
+          variant={viewMode === 'overview' ? 'default' : 'outline'}
+          onClick={() => setViewMode('overview')}
+          className="h-16 text-lg"
+        >
+          <TrendingUp className="h-5 w-5 mr-2" />
+          Übersicht
+        </Button>
+        <Button
+          variant={viewMode === 'costs' ? 'default' : 'outline'}
+          onClick={() => setViewMode('costs')}
+          className="h-16 text-lg"
+        >
+          <Euro className="h-5 w-5 mr-2" />
+          Kosten
+        </Button>
+      </div>
 
-        <TabsContent value="overview">
+      {viewMode === 'overview' ? (
+        <>
+          {/* Teamleiter Übersicht */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -188,9 +194,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="reports">
           {/* Filter und Sortierung */}
           <Card>
             <CardHeader>
@@ -298,10 +302,9 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
             }}
             hideApprovalButtons={false}
           />
-        </TabsContent>
-
-        <TabsContent value="costs">
-          <Card>
+        </>
+      ) : (
+        <Card>
           <CardHeader>
             <CardTitle>Kostenübersicht</CardTitle>
             <CardDescription>
@@ -315,8 +318,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
             </div>
           </CardContent>
         </Card>
-        </TabsContent>
-      </Tabs>
+      )}
     </div>
   );
 };
