@@ -93,14 +93,23 @@ serve(async (req) => {
 
     if (profileError) throw profileError
 
-    // Update role from employee to management (handle_new_user trigger creates employee role)
-    const { error: roleError } = await supabaseAdmin
+    // Upsert management role (handle_new_user trigger creates employee role first)
+    // Delete existing roles first to avoid unique constraint violation
+    await supabaseAdmin
       .from('user_roles')
-      .update({ role: 'management' })
+      .delete()
       .eq('user_id', newUser.user.id)
 
+    // Insert new management role
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: newUser.user.id,
+        role: 'management'
+      })
+
     if (roleError) {
-      console.error('Role update error:', roleError)
+      console.error('Role insert error:', roleError)
       throw roleError
     }
 
