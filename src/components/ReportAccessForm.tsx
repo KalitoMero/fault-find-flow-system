@@ -141,7 +141,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       case 'orderNumber':
         return 'z.B. 123456';
       case 'articleNumber':
-        return 'z.B. ART123';
+        return 'z.B. D532-7';
       case 'articleDescription':
         return 'z.B. Schrauben M8';
       default:
