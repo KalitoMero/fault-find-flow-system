@@ -218,7 +218,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
         </div>
       ) : (
         /* Suchformular anzeigen wenn keine Ergebnisse */
-        <Card className="max-w-md mx-auto">
+        <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="sm" onClick={onBack}>
