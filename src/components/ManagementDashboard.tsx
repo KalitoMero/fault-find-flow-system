@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, TrendingUp, Euro, Users, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, Euro } from 'lucide-react';
 import { getDepartments, Department } from '@/lib/settingsStorage';
 import { getErrorReports, ErrorReport } from '@/lib/storage';
 import ApprovalDashboard from './ApprovalDashboard';
 import { toast } from 'sonner';
 import { getTeamLeaderStatistics } from '@/lib/supabaseStorage';
+import { Users, Clock, AlertTriangle } from 'lucide-react';
 
 interface ManagementDashboardProps {
   onReportClick: (report: ErrorReport) => void;
@@ -27,6 +27,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [sortBy, setSortBy] = useState<'date' | 'orderNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [viewMode, setViewMode] = useState<'overview' | 'costs'>('overview');
   const [teamLeaderStats, setTeamLeaderStats] = useState<any[]>([]);
 
   useEffect(() => {
@@ -106,23 +107,29 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList>
-          <TabsTrigger value="overview">
-            <Users className="h-4 w-4 mr-2" />
-            Übersicht
-          </TabsTrigger>
-          <TabsTrigger value="reports">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Fehlermeldungen
-          </TabsTrigger>
-          <TabsTrigger value="costs">
-            <Euro className="h-4 w-4 mr-2" />
-            Kosten
-          </TabsTrigger>
-        </TabsList>
+      {/* View Mode Toggle */}
+      <div className="grid grid-cols-2 gap-4">
+        <Button
+          variant={viewMode === 'overview' ? 'default' : 'outline'}
+          onClick={() => setViewMode('overview')}
+          className="h-16 text-lg"
+        >
+          <TrendingUp className="h-5 w-5 mr-2" />
+          Übersicht
+        </Button>
+        <Button
+          variant={viewMode === 'costs' ? 'default' : 'outline'}
+          onClick={() => setViewMode('costs')}
+          className="h-16 text-lg"
+        >
+          <Euro className="h-5 w-5 mr-2" />
+          Kosten
+        </Button>
+      </div>
 
-        <TabsContent value="overview">
+      {viewMode === 'overview' ? (
+        <>
+          {/* Teamleiter Übersicht */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -134,11 +141,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Lädt...</p>
-                </div>
-              ) : teamLeaderStats.length === 0 ? (
+              {teamLeaderStats.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -191,10 +194,8 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="reports">
-          <div className="space-y-6">
+          {/* Filter und Sortierung */}
           <Card>
             <CardHeader>
               <CardTitle>Filter & Sortierung</CardTitle>
@@ -301,10 +302,8 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
             }}
             hideApprovalButtons={false}
           />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="costs">
+        </>
+      ) : (
         <Card>
           <CardHeader>
             <CardTitle>Kostenübersicht</CardTitle>
@@ -319,8 +318,7 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
             </div>
           </CardContent>
         </Card>
-        </TabsContent>
-      </Tabs>
+      )}
     </div>
   );
 };
