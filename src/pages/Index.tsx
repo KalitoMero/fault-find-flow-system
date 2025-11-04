@@ -475,9 +475,6 @@ const Index = () => {
                 {/* Status Filter und Sortierung */}
                 <div className="flex gap-4">
                   <ToggleGroup type="single" value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
-                    <ToggleGroupItem value="all" aria-label="Alle Status">
-                      Alle Status
-                    </ToggleGroupItem>
                     <ToggleGroupItem value="pending" aria-label="Offene Meldungen">
                       Offene Meldungen
                     </ToggleGroupItem>
@@ -486,6 +483,9 @@ const Index = () => {
                     </ToggleGroupItem>
                     <ToggleGroupItem value="rejected" aria-label="Abgelehnt">
                       Abgelehnt
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="all" aria-label="Alle Meldungen">
+                      Alle Meldungen
                     </ToggleGroupItem>
                   </ToggleGroup>
 
