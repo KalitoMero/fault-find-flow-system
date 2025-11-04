@@ -310,8 +310,8 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 </Button>
               )}
               {!readOnly && isAuthenticated && !hideDeleteButton && (
-                // Admins können alles löschen, Teamleiter nur abgelehnte Meldungen
-                (profile?.role === 'admin' || (profile?.role === 'teamleader' && report.approvalStatus === 'rejected'))
+                // Admins und Management können alles löschen, Teamleiter nur abgelehnte Meldungen
+                (profile?.role === 'admin' || profile?.role === 'management' || (profile?.role === 'teamleader' && report.approvalStatus === 'rejected'))
               ) && (
                 <Button
                   variant="destructive"
@@ -525,8 +525,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               </>
             )}
 
-            {/* Freigabe-Aktionen für Teamleiter */}
-            {!readOnly && isAuthenticated && report.approvalStatus === 'pending' && (
+            {/* Freigabe-Aktionen für Teamleiter und Management */}
+            {!readOnly && isAuthenticated && report.approvalStatus === 'pending' && 
+             (profile?.role === 'teamleader' || profile?.role === 'admin' || profile?.role === 'management') && (
               <>
                 <Separator />
                 <div className="space-y-4">

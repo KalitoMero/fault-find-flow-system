@@ -124,38 +124,13 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
 
       {viewMode === 'overview' ? (
         <>
-          {/* Department Filter */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Abteilungsfilter</CardTitle>
-              <CardDescription>
-                Wählen Sie eine Abteilung aus, um die Fehlermeldungen zu filtern
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Abteilung auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Abteilungen</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name} {dept.code && `(${dept.code})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
           {/* Filter und Sortierung */}
           <Card>
             <CardHeader>
               <CardTitle>Filter & Sortierung</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Suchleiste */}
+              {/* Suchleiste mit Abteilungsfilter */}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Input
@@ -169,9 +144,22 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
                   <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background z-50">
                     <SelectItem value="orderNumber">Ba-Nr.</SelectItem>
                     <SelectItem value="articleNumber">Artikelnummer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Abteilung" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all">Alle Abteilungen</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name} {dept.code && `(${dept.code})`}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -234,14 +222,14 @@ const ManagementDashboard: React.FC<ManagementDashboardProps> = ({ onReportClick
               created_at: report.createdAt,
               approval_status: report.approvalStatus as 'pending' | 'approved' | 'rejected'
             }))}
-            onApprovalChange={() => {}}
+            onApprovalChange={loadData}
             onReportClick={(report) => {
               const fullReport = filteredReports.find(r => r.id === report.id);
               if (fullReport) {
                 onReportClick(fullReport);
               }
             }}
-            hideApprovalButtons={true}
+            hideApprovalButtons={false}
           />
         </>
       ) : (
