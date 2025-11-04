@@ -20,9 +20,10 @@ interface ErrorReportDetailProps {
   onViewReport?: (report: ErrorReport) => void;
   backButtonText?: string;
   hideDeleteButton?: boolean;
+  readOnly?: boolean;
 }
 
-const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewReport, backButtonText = "Zurück zur Übersicht", hideDeleteButton = false }: ErrorReportDetailProps) => {
+const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewReport, backButtonText = "Zurück zur Übersicht", hideDeleteButton = false, readOnly = false }: ErrorReportDetailProps) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -297,7 +298,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {(report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
+                {!readOnly && (report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -308,7 +309,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                     {isSubmitting ? 'Setze zurück...' : 'Als offen markieren'}
                   </Button>
                 )}
-                {isAuthenticated && !hideDeleteButton && (
+                {!readOnly && isAuthenticated && !hideDeleteButton && (
                   <Button
                     variant="destructive"
                     size="sm"
@@ -460,7 +461,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-              {report.approvalStatus !== 'approved' ? (
+              {report.approvalStatus !== 'approved' && !readOnly ? (
                 <Textarea
                   value={editedProblemDescription}
                   onChange={(e) => setEditedProblemDescription(e.target.value)}
@@ -478,7 +479,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
-              {report.approvalStatus !== 'approved' ? (
+              {report.approvalStatus !== 'approved' && !readOnly ? (
                 <Textarea
                   value={editedCorrectiveAction}
                   onChange={(e) => setEditedCorrectiveAction(e.target.value)}
@@ -493,7 +494,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             </div>
 
             {/* Speichern Button nur wenn Änderungen vorhanden und nicht freigegeben */}
-            {report.approvalStatus !== 'approved' && hasChanges && (
+            {!readOnly && report.approvalStatus !== 'approved' && hasChanges && (
               <div className="flex justify-end">
                 <Button
                   onClick={handleSaveChanges}
@@ -522,7 +523,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             )}
 
             {/* Freigabe-Aktionen für Teamleiter */}
-            {isAuthenticated && report.approvalStatus === 'pending' && (
+            {!readOnly && isAuthenticated && report.approvalStatus === 'pending' && (
               <>
                 <Separator />
                 <div className="space-y-4">

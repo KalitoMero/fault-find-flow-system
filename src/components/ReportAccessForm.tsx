@@ -55,15 +55,18 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
           break;
       }
 
-      // Filter nur freigegebene und abgelehnte Meldungen
-      const visibleReports = reports.filter(report => 
-        report.approvalStatus === 'approved' || report.approvalStatus === 'rejected'
-      );
+      // Alle Meldungen anzeigen (offen, freigegeben, abgelehnt)
+      const visibleReports = reports;
       
       if (visibleReports.length === 0) {
-        toast.error('Keine freigegebenen oder abgelehnten Meldungen gefunden');
+        toast.error('Keine Meldungen gefunden');
       } else if (visibleReports.length === 1) {
-        onReportFound(visibleReports[0]);
+        // Bei abgelehnten Meldungen direkt bearbeiten, sonst nur ansehen
+        if (visibleReports[0].approvalStatus === 'rejected') {
+          onReportFound(visibleReports[0]);
+        } else {
+          setSelectedReport(visibleReports[0]);
+        }
         toast.success('Fehlermeldung gefunden!');
       } else {
         setSearchResults(visibleReports);
@@ -99,6 +102,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
         onStatusChange={() => {}}
         backButtonText="Zurück zur Liste"
         hideDeleteButton={true}
+        readOnly={true}
       />
     );
   }
