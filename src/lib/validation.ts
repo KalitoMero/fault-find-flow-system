@@ -9,8 +9,8 @@ import { z } from 'zod';
 export const errorReportSchema = z.object({
   orderNumber: z.string()
     .trim()
-    .min(1, 'Auftragsnummer ist erforderlich')
-    .max(50, 'Auftragsnummer darf maximal 50 Zeichen lang sein'),
+    .min(1, 'Ba-Nr. ist erforderlich')
+    .max(50, 'Ba-Nr. darf maximal 50 Zeichen lang sein'),
   
   afoNumber: z.string()
     .trim()

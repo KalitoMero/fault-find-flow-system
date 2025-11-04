@@ -242,7 +242,7 @@ export const printErrorReport = async (report: ErrorReport) => {
         <div class="section-title">Grunddaten</div>
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-label">Auftragsnummer:</span>
+            <span class="info-label">Ba-Nr.:</span>
             <span class="info-value">${report.orderNumber}</span>
           </div>
           <div class="info-item">

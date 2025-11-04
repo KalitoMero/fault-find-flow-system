@@ -455,7 +455,7 @@ const Index = () => {
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Input
-                      placeholder={searchType === 'orderNumber' ? 'Nach Auftragsnummer suchen...' : 'Nach Artikelnummer suchen...'}
+                      placeholder={searchType === 'orderNumber' ? 'Nach Ba-Nr. suchen...' : 'Nach Artikelnummer suchen...'}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full"
@@ -466,7 +466,7 @@ const Index = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="orderNumber">Auftragsnummer</SelectItem>
+                      <SelectItem value="orderNumber">Ba-Nr.</SelectItem>
                       <SelectItem value="articleNumber">Artikelnummer</SelectItem>
                     </SelectContent>
                   </Select>

@@ -52,7 +52,7 @@ export const generatePDF = async (report: ErrorReport) => {
   doc.setFont(undefined, 'normal');
   
   const basicInfo = [
-    `Auftragsnummer: ${report.orderNumber}`,
+    `Ba-Nr.: ${report.orderNumber}`,
     `AFO-Nummer: ${report.afoNumber || 'Nicht angegeben'}`,
     `Feststellort: ${machineName || 'Nicht angegeben'}`,
     `Fehlerhafte Menge: ${report.defectiveQuantity} (${report.quantityType || 'Ausschussmenge'})`,

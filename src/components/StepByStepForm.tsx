@@ -67,7 +67,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [fields, setFields] = useState<FormField[]>([
     {
       id: 'orderNumber',
-      label: 'Auftragsnummer',
+      label: 'Ba-Nr.',
       value: '',
       type: 'text',
       required: true,

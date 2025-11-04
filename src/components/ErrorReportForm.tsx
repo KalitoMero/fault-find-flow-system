@@ -183,7 +183,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Auftragsnummer</Label>
+              <Label className="text-sm font-medium text-muted-foreground">Ba-Nr.</Label>
               <p className="text-sm bg-muted p-2 rounded">{orderNumber}</p>
             </div>
             <div>
@@ -277,7 +277,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="orderNumber">Auftragsnummer *</Label>
+              <Label htmlFor="orderNumber">Ba-Nr. *</Label>
               <Input
                 id="orderNumber"
                 value={orderNumber}

@@ -357,7 +357,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Auftragsnummer:</span>
+                  <span className="text-sm text-gray-600">Ba-Nr.:</span>
                   <span className="font-medium">{report.orderNumber}</span>
                 </div>
                 <div className="flex items-center gap-2">

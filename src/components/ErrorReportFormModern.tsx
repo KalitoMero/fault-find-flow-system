@@ -361,7 +361,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     Grunddaten
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Auftragsnummer:</span> {orderNumber}</div>
+                    <div><span className="font-medium">Ba-Nr.:</span> {orderNumber}</div>
                     <div><span className="font-medium">AFO-Nummer:</span> {afoNumber}</div>
                     <div><span className="font-medium">Menge:</span> {defectiveQuantity}</div>
                   </div>
@@ -556,7 +556,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FloatingLabelInput
                 id="orderNumber"
-                label="Auftragsnummer"
+                label="Ba-Nr."
                 value={orderNumber}
                 onChange={handleOrderNumberChange}
                 placeholder="z.B. AUF-2024-001 oder 12345.678"

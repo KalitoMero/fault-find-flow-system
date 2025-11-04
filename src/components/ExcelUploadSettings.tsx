@@ -415,7 +415,7 @@ const ExcelUploadSettings: React.FC = () => {
 
   const handleSave = async () => {
     if (!orderNumberColumn) {
-      toast.error('Bitte geben Sie eine Spalten-Nummer für die Auftragsnummer ein');
+      toast.error('Bitte geben Sie eine Spalten-Nummer für die Ba-Nr. ein');
       return;
     }
 
@@ -434,7 +434,7 @@ const ExcelUploadSettings: React.FC = () => {
     const afoColumnIndex = parseInt(afoNumberColumn) - 1;
     
     if (orderColumnIndex < 0 || orderColumnIndex >= columns.length) {
-      toast.error(`Ungültige Auftragsnummer-Spalte. Verfügbare Spalten: 1-${columns.length}`);
+      toast.error(`Ungültige Ba-Nr.-Spalte. Verfügbare Spalten: 1-${columns.length}`);
       return;
     }
     
@@ -697,7 +697,7 @@ const ExcelUploadSettings: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="order-column">Auftragsnummer Spalte *</Label>
+                <Label htmlFor="order-column">Ba-Nr. Spalte *</Label>
                 <div className="mt-1">
                   <Input
                     id="order-column"

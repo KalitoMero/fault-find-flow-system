@@ -122,7 +122,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   const getSearchLabel = () => {
     switch (searchType) {
       case 'orderNumber':
-        return 'Auftragsnummer';
+        return 'Ba-Nr.';
       case 'articleNumber':
         return 'Artikelnummer';
       case 'articleDescription':
@@ -243,7 +243,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 onClick={() => setSearchType('orderNumber')}
                 className="flex-1 min-w-0"
               >
-                Auftragsnummer
+                Ba-Nr.
               </Button>
               <Button
                 variant={searchType === 'articleNumber' ? 'default' : 'outline'}
