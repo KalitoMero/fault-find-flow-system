@@ -298,28 +298,31 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
-                {!readOnly && (report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetStatus}
-                    disabled={isSubmitting}
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    {isSubmitting ? 'Setze zurück...' : 'Als offen markieren'}
-                  </Button>
-                )}
-                {!readOnly && isAuthenticated && !hideDeleteButton && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {isDeleting ? 'Lösche...' : 'Löschen'}
-                  </Button>
-                )}
+              {!readOnly && (report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetStatus}
+                  disabled={isSubmitting}
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  {isSubmitting ? 'Setze zurück...' : 'Als offen markieren'}
+                </Button>
+              )}
+              {!readOnly && isAuthenticated && !hideDeleteButton && (
+                // Admins können alles löschen, Teamleiter nur abgelehnte Meldungen
+                (profile?.role === 'admin' || (profile?.role === 'teamleader' && report.approvalStatus === 'rejected'))
+              ) && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {isDeleting ? 'Lösche...' : 'Löschen'}
+                </Button>
+              )}
               </div>
             </CardTitle>
             <CardDescription>
