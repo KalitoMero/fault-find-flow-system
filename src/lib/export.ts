@@ -127,7 +127,7 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean, reports: Erro
 
   if (fields.basicInfo) {
     headers.push(
-      'Auftragsnummer',
+      'Ba-Nr.',
       'AFO-Nummer',
       'Abteilung',
       'Artikelnummer'
