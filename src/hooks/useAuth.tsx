@@ -7,7 +7,7 @@ interface UserProfile {
   name: string;
   personal_number?: string;
   department_id?: string;
-  role: 'admin' | 'teamleader' | 'employee';
+  role: 'admin' | 'teamleader' | 'employee' | 'management';
 }
 
 interface AuthContextType {
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name: (profileData as any).name,
         personal_number: (profileData as any).personal_number || undefined,
         department_id: (profileData as any).department_id || undefined,
-        role: userRole as 'admin' | 'teamleader' | 'employee'
+        role: userRole as 'admin' | 'teamleader' | 'employee' | 'management'
       });
     } catch (error) {
       console.error('Error loading user profile:', error);

@@ -24,6 +24,7 @@ interface ApprovalDashboardProps {
   reports: ErrorReport[];
   onApprovalChange: () => void;
   onReportClick: (report: ErrorReport) => void;
+  hideApprovalButtons?: boolean;
 }
 
 const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ reports, onApprovalChange, onReportClick }) => {

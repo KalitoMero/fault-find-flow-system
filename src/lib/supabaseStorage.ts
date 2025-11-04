@@ -306,7 +306,7 @@ export const updateProfile = async (userId: string, updates: any) => {
 };
 
 // Rolle hinzufügen
-export const addUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee') => {
+export const addUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee' | 'management') => {
   const { error } = await (supabase as any)
     .from('user_roles')
     .insert({ user_id: userId, role });
@@ -315,7 +315,7 @@ export const addUserRole = async (userId: string, role: 'admin' | 'teamleader' |
 };
 
 // Rolle entfernen
-export const removeUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee') => {
+export const removeUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee' | 'management') => {
   const { error } = await (supabase as any)
     .from('user_roles')
     .delete()

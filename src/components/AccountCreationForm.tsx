@@ -33,7 +33,7 @@ const AccountCreationForm: React.FC<AccountCreationFormProps> = ({ onAccountCrea
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [role, setRole] = useState<'employee' | 'teamleader' | 'admin'>('employee');
+  const [role, setRole] = useState<'employee' | 'teamleader' | 'admin' | 'management'>('employee');
 
   const handleGeneratePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
@@ -247,6 +247,7 @@ const AccountCreationForm: React.FC<AccountCreationFormProps> = ({ onAccountCrea
             <option value="employee">Mitarbeiter</option>
             <option value="teamleader">Teamleiter</option>
             <option value="admin">Administrator</option>
+            <option value="management">Geschäftsführung</option>
           </select>
         </div>
 

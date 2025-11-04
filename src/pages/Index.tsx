@@ -18,6 +18,7 @@ import ReportAccessForm from '@/components/ReportAccessForm';
 import SettingsModal from '@/components/SettingsModal';
 import AdminAuthDialog from '@/components/AdminAuthDialog';
 import AdminDashboard from '@/components/AdminDashboard';
+import ManagementDashboard from '@/components/ManagementDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Logo from '@/components/Logo';
@@ -68,10 +69,10 @@ const Index = () => {
 
   const loadData = async () => {
     try {
-      if (profile && (profile.role === 'teamleader' || profile.role === 'admin')) {
+      if (profile && (profile.role === 'teamleader' || profile.role === 'admin' || profile.role === 'management')) {
         let reports: ErrorReport[] = [];
         
-        if (profile.role === 'admin') {
+        if (profile.role === 'admin' || profile.role === 'management') {
           reports = await getErrorReports();
         } else if (profile.role === 'teamleader') {
           reports = await getErrorReportsForTeamLeader(profile.id);
@@ -399,9 +400,11 @@ const Index = () => {
                 Dashboard
               </Button>
             )}
-            <Button variant="outline" onClick={handleSettingsClick}>
-              <Settings className="h-4 w-4" />
-            </Button>
+            {profile && profile.role !== 'management' && (
+              <Button variant="outline" onClick={handleSettingsClick}>
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Abmelden
@@ -438,8 +441,18 @@ const Index = () => {
             </Button>
             <ReportAccessForm onReportFound={handleReportFound} onBack={handleBackToOverview} />
           </div>
-        ) : selectedTab === 'dashboard' && isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'admin') ? (
-          // Teamleiter/Admin Dashboard
+        ) : selectedTab === 'dashboard' && isAuthenticated && profile && (profile.role === 'teamleader' || profile.role === 'admin' || profile.role === 'management') ? (
+          // Teamleiter/Admin/Management Dashboard
+          profile.role === 'management' ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 mb-4">
+                <Button variant="outline" onClick={handleBackToOverview}>
+                  ← Zurück zur Startseite
+                </Button>
+              </div>
+              <ManagementDashboard onReportClick={handleReportClick} />
+            </div>
+          ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-4 mb-4">
               <Button variant="outline" onClick={handleBackToOverview}>
@@ -556,6 +569,7 @@ const Index = () => {
               }}
             />
           </div>
+          )
         ) : (
           // Start screen mit runden Buttons
           <div className="relative h-[calc(100vh-100px)] flex flex-col">
