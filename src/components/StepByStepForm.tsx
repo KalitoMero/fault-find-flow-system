@@ -1013,13 +1013,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         e.preventDefault();
                         handleNext();
                       }
-                      // Ensure backspace can clear the field completely
-                      if (e.key === 'Backspace' && currentField.value.length === 1) {
-                        e.preventDefault();
-                        handleFieldUpdate(currentField.id, '');
-                      }
                     }}
-                    placeholder={currentField.placeholder || "0"}
+                    placeholder={currentField.placeholder || ""}
                     className="text-center text-xl max-w-md h-14"
                     inputMode="numeric"
                     autoComplete="off"
