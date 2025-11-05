@@ -466,7 +466,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   const handleKeypadBackspace = () => {
     const currentField = fields[currentStep];
-    handleFieldUpdate(currentField.id, currentField.value.slice(0, -1));
+    const newValue = currentField.value.slice(0, -1);
+    handleFieldUpdate(currentField.id, newValue);
   };
 
   const handleSubmitAndPrint = useCallback(async () => {
@@ -993,16 +994,26 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   <Input
                     type="text"
                     value={currentField.value}
-                    onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers and empty string
+                      if (value === '' || /^[0-9]+$/.test(value)) {
+                        handleFieldUpdate(currentField.id, value);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && currentField.value.trim()) {
                         e.preventDefault();
                         handleNext();
                       }
+                      // Handle backspace key for manual keyboard input
+                      if (e.key === 'Backspace' && currentField.value.length === 1) {
+                        e.preventDefault();
+                        handleFieldUpdate(currentField.id, '');
+                      }
                     }}
                     placeholder={currentField.placeholder}
                     className="text-center text-xl max-w-md h-14"
-                    pattern="[0-9]*"
                     inputMode="numeric"
                     disabled={isSearching && currentStep === 0}
                   />
