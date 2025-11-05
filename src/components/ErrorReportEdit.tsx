@@ -259,22 +259,41 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
   // Hole den Namen des Freigabenden/Ablehnenden
   const [employees, setEmployees] = React.useState<any[]>([]);
   const [machines, setMachines] = React.useState<any[]>([]);
+  const [approvedByName, setApprovedByName] = React.useState<string | undefined>(report.approvedBy);
+  const [rejectedByName, setRejectedByName] = React.useState<string | undefined>(report.rejectedBy);
   
   React.useEffect(() => {
     const loadData = async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
       setEmployees(await getEmployees());
       setMachines(await getMachines());
+
+      // Lade Namen der Freigeber/Ablehnenden aus der profiles Tabelle
+      if (report.approvedBy) {
+        const { data: approvedProfile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', report.approvedBy)
+          .maybeSingle();
+        if (approvedProfile) {
+          setApprovedByName(approvedProfile.name);
+        }
+      }
+
+      if (report.rejectedBy) {
+        const { data: rejectedProfile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', report.rejectedBy)
+          .maybeSingle();
+        if (rejectedProfile) {
+          setRejectedByName(rejectedProfile.name);
+        }
+      }
     };
     loadData();
-  }, []);
-  
-  const getEmployeeName = (username: string) => {
-    const employee = employees.find(emp => emp.account?.username === username);
-    return employee ? employee.name : username;
-  };
-
-  const approvedByName = report.approvedBy ? getEmployeeName(report.approvedBy) : report.approvedBy;
-  const rejectedByName = report.rejectedBy ? getEmployeeName(report.rejectedBy) : report.rejectedBy;
+  }, [report.approvedBy, report.rejectedBy]);
 
   // Hole den richtigen Feststellort-Namen
   const machine = machines.find(m => m.id === report.machine);
