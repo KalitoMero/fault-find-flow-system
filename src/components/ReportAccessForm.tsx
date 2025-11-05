@@ -61,8 +61,8 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       if (visibleReports.length === 0) {
         toast.error('Keine Meldungen gefunden');
       } else if (visibleReports.length === 1) {
-        // Bei abgelehnten Meldungen direkt bearbeiten, sonst nur ansehen
-        if (visibleReports[0].approvalStatus === 'rejected') {
+        // Bei abgelehnten oder pending Meldungen direkt bearbeiten, sonst nur ansehen
+        if (visibleReports[0].approvalStatus === 'rejected' || visibleReports[0].approvalStatus === 'pending') {
           onReportFound(visibleReports[0]);
         } else {
           setSelectedReport(visibleReports[0]);
@@ -81,8 +81,8 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   };
 
   const handleReportSelect = (report: ErrorReport) => {
-    // Abgelehnte Meldungen direkt im Bearbeitungsmodus öffnen
-    if (report.approvalStatus === 'rejected') {
+    // Abgelehnte UND pending Meldungen direkt im Bearbeitungsmodus öffnen
+    if (report.approvalStatus === 'rejected' || report.approvalStatus === 'pending') {
       onReportFound(report);
     } else {
       setSelectedReport(report);

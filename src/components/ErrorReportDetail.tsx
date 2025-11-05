@@ -117,7 +117,9 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
       const updatedReport: ErrorReport = {
         ...report,
         problemDescription: editedProblemDescription,
-        correctiveAction: editedCorrectiveAction
+        correctiveAction: editedCorrectiveAction,
+        editedAt: new Date().toISOString(),
+        editedBy: profile?.id
       };
       
       await updateErrorReport(report.id, updatedReport);
@@ -327,6 +329,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             </CardTitle>
             <CardDescription>
               Erstellt am {formatDate(report.createdAt)} von {report.creator}
+              {report.editedAt && (
+                <span className="ml-2 text-amber-600">
+                  • Bearbeitet am {formatDate(report.editedAt)}
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
 

@@ -37,6 +37,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [editingReport, setEditingReport] = useState<ErrorReport | null>(null);
+  const [editingFromSearch, setEditingFromSearch] = useState(false); // Track if editing from search
   const [viewHistory, setViewHistory] = useState<ErrorReport[]>([]);
   const [refreshDepartments, setRefreshDepartments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,6 +205,7 @@ const Index = () => {
       setShowLogin(false);
       setSelectedReport(null);
       setEditingReport(null);
+      setEditingFromSearch(false); // Reset the flag
       // Keep selectedTab as 'dashboard' only if coming from a detail view
       // If we're in a tab view and going back, clear the tab
       if (selectedReport || editingReport) {
@@ -300,13 +302,15 @@ const Index = () => {
   const handleEditSave = () => {
     loadData();
     setEditingReport(null);
+    setEditingFromSearch(false); // Reset the flag
     toast.success("Fehlermeldung erfolgreich aktualisiert!");
   };
 
   const handleReportFound = (report: ErrorReport) => {
-    // If report is rejected, open it in edit mode for anyone accessing through search
-    if (report.approvalStatus === 'rejected') {
+    // If report is rejected or pending, open it in edit mode for anyone accessing through search
+    if (report.approvalStatus === 'rejected' || report.approvalStatus === 'pending') {
       setEditingReport(report);
+      setEditingFromSearch(true); // Mark that this is from search
     } else {
       setSelectedReport(report);
     }
@@ -359,6 +363,7 @@ const Index = () => {
         onBack={handleBackToOverview}
         onSave={handleEditSave}
         onViewReport={handleViewRelatedReport}
+        fromSearch={editingFromSearch}
       />
     );
   }

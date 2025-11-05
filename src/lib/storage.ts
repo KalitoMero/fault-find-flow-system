@@ -32,6 +32,8 @@ export interface ErrorReport {
   additionalInfo?: string;
   approverName?: string;
   departmentName?: string;
+  editedAt?: string;
+  editedBy?: string;
 }
 
 // Helper: Convert snake_case to camelCase
@@ -60,7 +62,9 @@ const toCamelCase = (dbReport: any): ErrorReport => {
     rejectedAt: dbReport.rejected_at,
     excelDepartment: dbReport.department_id,
     additionalInfo: dbReport.additional_info,
-    additionalExcelData: dbReport.additional_excel_data
+    additionalExcelData: dbReport.additional_excel_data,
+    editedAt: dbReport.edited_at,
+    editedBy: dbReport.edited_by_id
   };
 };
 
@@ -97,7 +101,9 @@ const toSnakeCase = async (report: Partial<ErrorReport>): Promise<any> => {
     // department_id should be a UUID or null
     department_id: report.excelDepartment || null,
     additional_info: report.additionalInfo,
-    additional_excel_data: report.additionalExcelData || null
+    additional_excel_data: report.additionalExcelData || null,
+    edited_at: report.editedAt,
+    edited_by_id: report.editedBy || null
   };
 };
 

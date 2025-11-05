@@ -125,6 +125,8 @@ export type Database = {
           defective_quantity: number
           department_id: string | null
           detection_location: string | null
+          edited_at: string | null
+          edited_by_id: string | null
           error_cause: string
           id: string
           machine_id: string | null
@@ -153,6 +155,8 @@ export type Database = {
           defective_quantity: number
           department_id?: string | null
           detection_location?: string | null
+          edited_at?: string | null
+          edited_by_id?: string | null
           error_cause: string
           id: string
           machine_id?: string | null
@@ -181,6 +185,8 @@ export type Database = {
           defective_quantity?: number
           department_id?: string | null
           detection_location?: string | null
+          edited_at?: string | null
+          edited_by_id?: string | null
           error_cause?: string
           id?: string
           machine_id?: string | null

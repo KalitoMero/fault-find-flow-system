@@ -18,9 +18,10 @@ interface ErrorReportEditProps {
   onBack: () => void;
   onSave: () => void;
   onViewReport?: (report: ErrorReport) => void;
+  fromSearch?: boolean; // Neues Flag um zu wissen ob von "Meldung Suchen" geöffnet
 }
 
-const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEditProps) => {
+const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = false }: ErrorReportEditProps) => {
   const [formData, setFormData] = useState({
     problemDescription: report.problemDescription,
     correctiveAction: report.correctiveAction,
@@ -139,17 +140,23 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
     setIsSubmitting(true);
 
     try {
-      // Update the report and reset status to pending if it was rejected
+      // Update the report - keep status as is (pending or rejected)
       const updatedReport: ErrorReport = {
         ...report,
         problemDescription: formData.problemDescription,
         correctiveAction: formData.correctiveAction,
         defectiveQuantity: formData.defectiveQuantity,
-        approvalStatus: 'pending',
-        rejectionReason: undefined,
-        rejectedBy: undefined,
-        rejectedAt: undefined
+        editedAt: new Date().toISOString(),
+        editedBy: profile?.id
       };
+      
+      // Nur bei abgelehnten Meldungen Status zurücksetzen
+      if (report.approvalStatus === 'rejected') {
+        updatedReport.approvalStatus = 'pending';
+        updatedReport.rejectionReason = undefined;
+        updatedReport.rejectedBy = undefined;
+        updatedReport.rejectedAt = undefined;
+      }
       
       await updateErrorReport(report.id, updatedReport);
       
@@ -293,8 +300,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
                 <span>Fehlermeldung bearbeiten</span>
               </div>
               <div className="flex items-center space-x-2">
-                {/* Status zurücksetzen Button für freigegebene/abgelehnte Meldungen */}
-                {(report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
+                {/* Status zurücksetzen Button nur wenn NICHT von Meldung Suchen geöffnet */}
+                {!fromSearch && (report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
                   <Button 
                     onClick={handleResetStatus}
                     disabled={isSubmitting}
@@ -310,6 +317,11 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
             </CardTitle>
             <CardDescription>
               Erstellt am {formatDate(report.createdAt)} von {report.creator}
+              {report.editedAt && (
+                <span className="ml-2 text-amber-600">
+                  • Bearbeitet am {formatDate(report.editedAt)}
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
 
@@ -445,8 +457,25 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport }: ErrorReportEd
               />
             </div>
 
-            {/* Freigabe-Aktionen für Teamleiter */}
-            {isAuthenticated && report.approvalStatus === 'pending' && (
+            {/* Speichern Button für bearbeitete Meldungen (pending oder rejected) */}
+            {fromSearch && (report.approvalStatus === 'pending' || report.approvalStatus === 'rejected') && (
+              <>
+                <Separator />
+                <div className="flex space-x-4">
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={isSubmitting}
+                    className="w-full"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSubmitting ? 'Speichere...' : 'Speichern'}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Freigabe-Aktionen für Teamleiter - nur wenn NICHT von "Meldung Suchen" */}
+            {!fromSearch && isAuthenticated && report.approvalStatus === 'pending' && (
               <>
                 <Separator />
                 <div className="space-y-4">
