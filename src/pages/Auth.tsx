@@ -32,12 +32,15 @@ const Auth = () => {
       toast.error('Login fehlgeschlagen', {
         description: error.message
       });
+      setIsLoading(false);
     } else {
       toast.success('Erfolgreich angemeldet');
-      navigate('/');
+      // Wait a moment for the auth context to update with profile
+      setTimeout(() => {
+        setIsLoading(false);
+        navigate('/');
+      }, 500);
     }
-    
-    setIsLoading(false);
   };
 
 

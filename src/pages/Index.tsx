@@ -68,6 +68,15 @@ const Index = () => {
     }
   }, [loading, isAuthenticated, navigate]);
 
+  // Auto-open dashboard for team leaders on login
+  useEffect(() => {
+    if (!loading && isAuthenticated && profile) {
+      if (profile.role === 'teamleader' && !selectedTab && !selectedReport && !editingReport) {
+        setSelectedTab('dashboard');
+      }
+    }
+  }, [loading, isAuthenticated, profile]);
+
   const loadData = async () => {
     try {
       if (profile && (profile.role === 'teamleader' || profile.role === 'admin' || profile.role === 'management')) {
