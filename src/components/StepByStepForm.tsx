@@ -1003,10 +1003,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     onChange={(e) => {
                       const value = e.target.value;
                       console.log('Quantity onChange:', value);
-                      // Allow only numbers and empty string, no validation on empty
-                      if (value === '') {
-                        handleFieldUpdate(currentField.id, '');
-                      } else if (/^[0-9]+$/.test(value)) {
+                      // Allow empty string or numbers only
+                      if (value === '' || /^[0-9]+$/.test(value)) {
                         handleFieldUpdate(currentField.id, value);
                       }
                     }}
@@ -1015,8 +1013,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         e.preventDefault();
                         handleNext();
                       }
+                      // Ensure backspace can clear the field completely
+                      if (e.key === 'Backspace' && currentField.value.length === 1) {
+                        e.preventDefault();
+                        handleFieldUpdate(currentField.id, '');
+                      }
                     }}
-                    placeholder={currentField.placeholder}
+                    placeholder={currentField.placeholder || "0"}
                     className="text-center text-xl max-w-md h-14"
                     inputMode="numeric"
                     autoComplete="off"
