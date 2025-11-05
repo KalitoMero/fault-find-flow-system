@@ -366,7 +366,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     console.log('handleFieldUpdate called:', fieldId, value);
     setFields(prev => prev.map(field => {
       if (field.id === fieldId) {
-        const updated = { ...field, value, completed: value.length > 0 };
+        // For quantity fields, allow empty string
+        const updated = { 
+          ...field, 
+          value, 
+          completed: field.type === 'quantity' ? value.length > 0 : value.length > 0 
+        };
         return updated;
       }
       return field;
