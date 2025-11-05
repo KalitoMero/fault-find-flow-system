@@ -22,7 +22,11 @@ interface ErrorReportEditProps {
 }
 
 const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = false }: ErrorReportEditProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    problemDescription: string;
+    correctiveAction: string;
+    defectiveQuantity: number | string;
+  }>({
     problemDescription: report.problemDescription,
     correctiveAction: report.correctiveAction,
     defectiveQuantity: report.defectiveQuantity
@@ -68,7 +72,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
         ...report,
         problemDescription: formData.problemDescription,
         correctiveAction: formData.correctiveAction,
-        defectiveQuantity: formData.defectiveQuantity,
+        defectiveQuantity: formData.defectiveQuantity === '' ? 0 : Number(formData.defectiveQuantity),
         approvalStatus: 'approved',
         approvedBy: profile.id,
         approvedAt: new Date().toISOString(),
@@ -108,7 +112,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
         ...report,
         problemDescription: formData.problemDescription,
         correctiveAction: formData.correctiveAction,
-        defectiveQuantity: formData.defectiveQuantity,
+        defectiveQuantity: formData.defectiveQuantity === '' ? 0 : Number(formData.defectiveQuantity),
         approvalStatus: 'rejected',
         rejectionReason: rejectionReason,
         rejectedBy: profile.id,
@@ -145,7 +149,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
         ...report,
         problemDescription: formData.problemDescription,
         correctiveAction: formData.correctiveAction,
-        defectiveQuantity: formData.defectiveQuantity,
+        defectiveQuantity: formData.defectiveQuantity === '' ? 0 : Number(formData.defectiveQuantity),
         editedAt: new Date().toISOString(),
         editedBy: profile?.id
       };
@@ -405,7 +409,7 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
                       const value = e.target.value;
                       // Allow empty string or numbers only
                       if (value === '' || /^[0-9]+$/.test(value)) {
-                        handleInputChange('defectiveQuantity', value === '' ? 0 : parseInt(value));
+                        handleInputChange('defectiveQuantity', value === '' ? '' : parseInt(value));
                       }
                     }}
                     inputMode="numeric"
