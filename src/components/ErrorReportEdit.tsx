@@ -65,6 +65,11 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
       return;
     }
 
+    if (formData.defectiveQuantity === '' || formData.defectiveQuantity === 0) {
+      toast.error('Bitte geben Sie eine gültige Menge ein');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // First update the report content
@@ -104,6 +109,11 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
       toast.error('Bitte füllen Sie die Problembeschreibung aus');
       return;
     }
+
+    if (formData.defectiveQuantity === '' || formData.defectiveQuantity === 0) {
+      toast.error('Bitte geben Sie eine gültige Menge ein');
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -138,6 +148,11 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
   const handleSaveChanges = async () => {
     if (!formData.problemDescription.trim()) {
       toast.error('Problembeschreibung darf nicht leer sein');
+      return;
+    }
+
+    if (formData.defectiveQuantity === '' || formData.defectiveQuantity === 0) {
+      toast.error('Bitte geben Sie eine gültige Menge ein');
       return;
     }
 
