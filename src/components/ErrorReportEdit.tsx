@@ -399,9 +399,17 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
                   <Label htmlFor="defectiveQuantity" className="text-sm text-gray-600">{report.quantityType || 'Fehlermenge'}:</Label>
                   <Input
                     id="defectiveQuantity"
-                    type="number"
+                    type="text"
                     value={formData.defectiveQuantity}
-                    onChange={(e) => handleInputChange('defectiveQuantity', parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow empty string or numbers only
+                      if (value === '' || /^[0-9]+$/.test(value)) {
+                        handleInputChange('defectiveQuantity', value === '' ? 0 : parseInt(value));
+                      }
+                    }}
+                    inputMode="numeric"
+                    placeholder=""
                     className="w-24"
                   />
                 </div>
