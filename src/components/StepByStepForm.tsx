@@ -612,11 +612,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       toast.success('Fehlermeldung erfolgreich erstellt!');
       
-      // Automatisch Druckdialog öffnen
-      await printErrorReport(report);
-      
-      onReportCreated();
-      onClose();
+      // Automatisch Druckdialog öffnen mit automatischer Rückkehr zur Startseite
+      await printErrorReport(report, () => {
+        onReportCreated(); // Navigiert automatisch zur Startseite
+        onClose(); // Schließt das Formular
+      });
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
       const errorMessage = error instanceof Error ? error.message : 'Fehler beim Speichern der Fehlermeldung';

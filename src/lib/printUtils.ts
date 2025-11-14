@@ -13,7 +13,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const printErrorReport = async (report: ErrorReport) => {
+export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () => void) => {
   // Hole den richtigen Feststellort-Namen
   const machines = await getMachines();
   const machine = machines.find(m => m.id === report.machine);
@@ -372,10 +372,18 @@ export const printErrorReport = async (report: ErrorReport) => {
   // Trigger print
   window.print();
 
-  // Clean up after a short delay
+  // Im Kiosk-Modus mit --kiosk-printing druckt es sofort
+  // Nach kurzer Verzögerung Cleanup und Callback ausführen
   setTimeout(() => {
+    // Cleanup: Print-Container entfernen
+    const printContainer = document.getElementById('print-content');
     if (printContainer) {
-      printContainer.innerHTML = '';
+      printContainer.remove();
     }
-  }, 1000);
+    
+    // Callback ausführen (Navigation zur Startseite)
+    if (onAfterPrint) {
+      onAfterPrint();
+    }
+  }, 500); // 500ms Verzögerung, damit Druckauftrag sicher gesendet wird
 };
