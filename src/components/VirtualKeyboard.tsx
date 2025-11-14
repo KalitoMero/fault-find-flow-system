@@ -1,0 +1,133 @@
+import React, { useEffect, useRef } from 'react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
+import { X } from 'lucide-react';
+import { Button } from './ui/button';
+
+interface VirtualKeyboardProps {
+  value: string;
+  onChange: (value: string) => void;
+  onClose: () => void;
+}
+
+const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onClose }) => {
+  const keyboardRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (keyboardRef.current) {
+      keyboardRef.current.setInput(value);
+    }
+  }, [value]);
+
+  const handleKeyPress = (button: string) => {
+    if (button === '{bksp}' && value.length > 0) {
+      onChange(value.slice(0, -1));
+    } else if (button === '{space}') {
+      onChange(value + ' ');
+    } else if (button === '{enter}') {
+      onChange(value + '\n');
+    } else if (button === '{tab}') {
+      onChange(value + '\t');
+    } else if (!button.startsWith('{')) {
+      onChange(value + button);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-4 border-primary shadow-2xl animate-slide-in-bottom">
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50">
+        <h3 className="text-sm font-semibold text-foreground">Tastatur</h3>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-8 w-8"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="p-2 keyboard-container">
+        <Keyboard
+          keyboardRef={(r: any) => (keyboardRef.current = r)}
+          layout={{
+            default: [
+              '1 2 3 4 5 6 7 8 9 0 ß {bksp}',
+              'q w e r t z u i o p ü +',
+              'a s d f g h j k l ö ä #',
+              '{shift} y x c v b n m , . - {shift}',
+              '{space}'
+            ],
+            shift: [
+              '! " § $ % & / ( ) = ? {bksp}',
+              'Q W E R T Z U I O P Ü *',
+              'A S D F G H J K L Ö Ä \'',
+              '{shift} Y X C V B N M ; : _ {shift}',
+              '{space}'
+            ]
+          }}
+          display={{
+            '{bksp}': '⌫',
+            '{shift}': '⇧',
+            '{space}': 'Leertaste'
+          }}
+          onKeyPress={handleKeyPress}
+          theme="hg-theme-default hg-layout-default"
+          buttonTheme={[
+            {
+              class: 'hg-special-button',
+              buttons: '{bksp} {shift} {space}'
+            }
+          ]}
+        />
+      </div>
+      <style dangerouslySetInnerHTML={{__html: `
+        .keyboard-container .hg-theme-default {
+          background-color: hsl(var(--background));
+          padding: 8px;
+        }
+        
+        .keyboard-container .hg-button {
+          background: hsl(var(--secondary));
+          color: hsl(var(--secondary-foreground));
+          border: 1px solid hsl(var(--border));
+          font-size: 18px;
+          height: 50px;
+          margin: 3px;
+          border-radius: 6px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
+        }
+        
+        .keyboard-container .hg-button:active,
+        .keyboard-container .hg-button:hover {
+          background: hsl(var(--primary));
+          color: hsl(var(--primary-foreground));
+          transform: scale(0.95);
+        }
+        
+        .keyboard-container .hg-special-button {
+          background: hsl(var(--primary));
+          color: hsl(var(--primary-foreground));
+          font-weight: 600;
+        }
+        
+        @keyframes slide-in-bottom {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .animate-slide-in-bottom {
+          animation: slide-in-bottom 0.3s ease-out;
+        }
+      `}} />
+    </div>
+  );
+};
+
+export default VirtualKeyboard;
