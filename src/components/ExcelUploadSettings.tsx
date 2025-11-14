@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2, Loader2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } from '@/lib/excelStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
 
@@ -118,14 +119,42 @@ const ExcelUploadSettings: React.FC = () => {
     const loadSettings = async () => {
       const settings = await getExcelSettings();
       if (settings) {
-        setOrderNumberColumn(settings.orderNumberColumn);
-        setAfoNumberColumn(settings.afoNumberColumn);
-        setArticleNumberColumn(settings.articleNumberColumn || '');
-        setArticleDescriptionColumn(settings.articleDescriptionColumn || '');
-        setDepartmentColumn(settings.departmentColumn || '');
-        setAdditionalColumns(settings.additionalColumns);
+        // Load column names from settings
         setFileName(settings.fileName || '');
         setRowCount(settings.rowCount || 0);
+        
+        // Load at least one row of Excel data to get column names
+        const { data: excelRows, error } = await supabase
+          .from('excel_data')
+          .select('row_data')
+          .limit(1);
+        
+        if (!error && excelRows && excelRows.length > 0) {
+          const firstRow = excelRows[0].row_data;
+          const columnNames = Object.keys(firstRow);
+          setColumns(columnNames);
+          
+          // Convert stored column names to column indices (1-based)
+          const orderIndex = columnNames.indexOf(settings.orderNumberColumn) + 1;
+          const afoIndex = columnNames.indexOf(settings.afoNumberColumn) + 1;
+          const articleIndex = settings.articleNumberColumn ? columnNames.indexOf(settings.articleNumberColumn) + 1 : 0;
+          const articleDescIndex = settings.articleDescriptionColumn ? columnNames.indexOf(settings.articleDescriptionColumn) + 1 : 0;
+          const deptIndex = settings.departmentColumn ? columnNames.indexOf(settings.departmentColumn) + 1 : 0;
+          
+          setOrderNumberColumn(orderIndex > 0 ? String(orderIndex) : '');
+          setAfoNumberColumn(afoIndex > 0 ? String(afoIndex) : '');
+          setArticleNumberColumn(articleIndex > 0 ? String(articleIndex) : '');
+          setArticleDescriptionColumn(articleDescIndex > 0 ? String(articleDescIndex) : '');
+          setDepartmentColumn(deptIndex > 0 ? String(deptIndex) : '');
+          
+          // Convert additional columns
+          const convertedAdditionalColumns = settings.additionalColumns.map(col => ({
+            name: col.name,
+            column: String(columnNames.indexOf(col.column) + 1)
+          })).filter(col => col.column !== '0'); // Filter out columns not found
+          
+          setAdditionalColumns(convertedAdditionalColumns);
+        }
       }
     };
     

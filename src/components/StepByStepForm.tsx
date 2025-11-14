@@ -736,24 +736,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     </>
                   )}
                 </Button>
-                <Button 
-                  onClick={handleSubmitAndPrint}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
-                  size="lg"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Settings className="h-5 w-5 mr-2 animate-spin" />
-                      Wird gespeichert...
-                    </>
-                  ) : (
-                    <>
-                      <Printer className="h-5 w-5 mr-2" />
-                      Fertigstellen und PDF herunterladen
-                    </>
-                  )}
-                </Button>
               </div>
             </CardContent>
           </Card>
