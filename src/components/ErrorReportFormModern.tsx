@@ -27,6 +27,7 @@ import { getDepartments, getEmployees, getMachines, Department, Employee, Machin
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import SimpleCombobox from './SimpleCombobox';
+import VirtualKeyboard from './VirtualKeyboard';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
@@ -83,7 +84,9 @@ const FloatingLabelTextarea: React.FC<{
   placeholder?: string;
   required?: boolean;
   rows?: number;
-}> = ({ id, label, value, onChange, placeholder, required, rows = 3 }) => {
+  onFocus?: () => void;
+  onBlur?: () => void;
+}> = ({ id, label, value, onChange, placeholder, required, rows = 3, onFocus, onBlur }) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
@@ -93,8 +96,14 @@ const FloatingLabelTextarea: React.FC<{
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
           placeholder=""
           required={required}
           rows={rows}
@@ -133,6 +142,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   
   // Step tracking
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Virtual Keyboard State
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+  const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | null>(null);
+  const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   const steps = [
     { id: 1, title: 'Grunddaten', icon: Package, description: 'Auftrag & Menge' },
@@ -677,6 +691,19 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Problembeschreibung"
                     value={problemDescription}
                     onChange={setProblemDescription}
+                    onFocus={() => {
+                      if (blurTimeoutRef.current) {
+                        clearTimeout(blurTimeoutRef.current);
+                      }
+                      setShowVirtualKeyboard(true);
+                      setActiveKeyboardField('problemDescription');
+                    }}
+                    onBlur={() => {
+                      blurTimeoutRef.current = setTimeout(() => {
+                        setShowVirtualKeyboard(false);
+                        setActiveKeyboardField(null);
+                      }, 300);
+                    }}
                     placeholder="Beschreiben Sie das aufgetretene Problem detailliert..."
                     rows={8}
                   />
@@ -701,6 +728,19 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Korrekturmaßnahme"
                     value={correctiveAction}
                     onChange={setCorrectiveAction}
+                    onFocus={() => {
+                      if (blurTimeoutRef.current) {
+                        clearTimeout(blurTimeoutRef.current);
+                      }
+                      setShowVirtualKeyboard(true);
+                      setActiveKeyboardField('correctiveAction');
+                    }}
+                    onBlur={() => {
+                      blurTimeoutRef.current = setTimeout(() => {
+                        setShowVirtualKeyboard(false);
+                        setActiveKeyboardField(null);
+                      }, 300);
+                    }}
                     placeholder="Beschreiben Sie die durchgeführten Korrekturmaßnahmen..."
                     rows={8}
                   />
@@ -723,7 +763,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         <Card className="form-section">
           <CardContent className="pt-6">
             <Button 
-              onClick={handleSubmit} 
+              onClick={() => {
+                setShowVirtualKeyboard(false);
+                setActiveKeyboardField(null);
+                if (blurTimeoutRef.current) {
+                  clearTimeout(blurTimeoutRef.current);
+                }
+                handleSubmit();
+              }} 
               className={`w-full h-14 text-lg ${isFormComplete() ? 'gradient-button' : 'bg-muted text-muted-foreground'}`}
               disabled={isSubmitting || !isFormComplete()}
               size="lg"
@@ -748,6 +795,24 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
           </CardContent>
         </Card>
       </div>
+
+      {/* Virtual Keyboard */}
+      {showVirtualKeyboard && activeKeyboardField && (
+        <VirtualKeyboard
+          value={activeKeyboardField === 'problemDescription' ? problemDescription : correctiveAction}
+          onChange={(value) => {
+            if (activeKeyboardField === 'problemDescription') {
+              setProblemDescription(value);
+            } else if (activeKeyboardField === 'correctiveAction') {
+              setCorrectiveAction(value);
+            }
+          }}
+          onClose={() => {
+            setShowVirtualKeyboard(false);
+            setActiveKeyboardField(null);
+          }}
+        />
+      )}
     </div>
   );
 };

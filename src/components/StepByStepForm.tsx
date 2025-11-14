@@ -14,6 +14,7 @@ import { generatePDF } from '@/lib/pdfUtils';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
+import VirtualKeyboard from './VirtualKeyboard';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -55,6 +56,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  
+  // Virtual Keyboard State
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+  const [activeKeyboardField, setActiveKeyboardField] = useState<string | null>(null);
+  const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Ref for textarea to track cursor position
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -1123,7 +1129,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 </Button>
               ) : (
                 <Button 
-                  onClick={handleNext}
+                  onClick={() => {
+                    setShowVirtualKeyboard(false);
+                    setActiveKeyboardField(null);
+                    if (blurTimeoutRef.current) {
+                      clearTimeout(blurTimeoutRef.current);
+                    }
+                    handleNext();
+                  }}
                   className="px-8 py-3 text-lg"
                   size="lg"
                   disabled={isSearching}
@@ -1136,6 +1149,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           </CardContent>
         </Card>
       </div>
+
+      {/* Virtual Keyboard */}
+      {showVirtualKeyboard && activeKeyboardField && (
+        <VirtualKeyboard
+          value={fields.find(f => f.id === activeKeyboardField)?.value || ''}
+          onChange={(value) => handleFieldUpdate(activeKeyboardField, value)}
+          onClose={() => {
+            setShowVirtualKeyboard(false);
+            setActiveKeyboardField(null);
+          }}
+        />
+      )}
     </div>
   );
 };
