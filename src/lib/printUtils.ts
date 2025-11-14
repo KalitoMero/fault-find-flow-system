@@ -372,8 +372,24 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
   // Trigger print
   window.print();
 
-  // Im Kiosk-Modus mit --kiosk-printing druckt es sofort
-  // Nach kurzer Verzögerung Cleanup und Callback ausführen
+  // WORKAROUND: Automatisch "Enter" nach 2 Sekunden drücken
+  // um den Druckdialog zu bestätigen
+  setTimeout(() => {
+    // Simuliere Enter-Tastendruck
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true
+    });
+    document.dispatchEvent(enterEvent);
+    
+    console.log('Auto-Enter für Druckdialog gesendet');
+  }, 2000); // 2 Sekunden warten, dann Enter drücken
+
+  // Cleanup und Navigation nach weiteren 3 Sekunden (insgesamt 5 Sek)
   setTimeout(() => {
     // Cleanup: Print-Container entfernen
     const printContainer = document.getElementById('print-content');
@@ -385,5 +401,5 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
     if (onAfterPrint) {
       onAfterPrint();
     }
-  }, 500); // 500ms Verzögerung, damit Druckauftrag sicher gesendet wird
+  }, 5000); // 5 Sekunden Gesamtverzögerung
 };
