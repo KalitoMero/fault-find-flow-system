@@ -55,6 +55,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  
+  // Ref for textarea to track cursor position
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (teamLeaderId: string): string => {
@@ -920,6 +923,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 <div className="w-full max-w-md space-y-4">
                   <div className="flex gap-2 items-start">
                     <Textarea
+                      ref={textareaRef}
                       value={currentField.value}
                       onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
                       onKeyDown={(e) => {
@@ -940,9 +944,22 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                           variant="outline"
                           size="default"
                           onClick={() => {
+                            const textarea = textareaRef.current;
+                            if (!textarea) return;
+                            
                             const currentValue = currentField.value;
-                            if (currentValue.length > 0) {
-                              handleFieldUpdate(currentField.id, currentValue.slice(0, -1));
+                            const cursorPos = textarea.selectionStart;
+                            
+                            if (cursorPos > 0) {
+                              // Zeichen vor dem Cursor löschen
+                              const newValue = currentValue.slice(0, cursorPos - 1) + currentValue.slice(cursorPos);
+                              handleFieldUpdate(currentField.id, newValue);
+                              
+                              // Cursor-Position wiederherstellen (eine Position zurück)
+                              setTimeout(() => {
+                                textarea.focus();
+                                textarea.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                              }, 0);
                             }
                           }}
                           className="h-10 px-4"
