@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer, Delete } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelSettings } from '@/lib/excelStorage';
@@ -606,10 +606,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       };
 
       await saveErrorReport(report);
-      onReportCreated();
-      onClose();
       
       toast.success('Fehlermeldung erfolgreich erstellt!');
+      
+      // Automatisch Druckdialog öffnen
+      await printErrorReport(report);
+      
+      onReportCreated();
+      onClose();
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
       const errorMessage = error instanceof Error ? error.message : 'Fehler beim Speichern der Fehlermeldung';
@@ -718,8 +722,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Fertigstellen
+                      <Printer className="h-5 w-5 mr-2" />
+                      Fertigstellen & Drucken
                     </>
                   )}
                 </Button>
@@ -931,6 +935,21 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
                       <div className="flex flex-col gap-0.5 self-start -mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => {
+                            const currentValue = currentField.value;
+                            if (currentValue.length > 0) {
+                              handleFieldUpdate(currentField.id, currentValue.slice(0, -1));
+                            }
+                          }}
+                          className="h-10 px-4"
+                          title="Letztes Zeichen löschen"
+                        >
+                          <Delete className="h-5 w-5" />
+                        </Button>
                         <Button
                           type="button"
                           variant="outline"
