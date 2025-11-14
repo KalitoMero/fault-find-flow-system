@@ -7,8 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, User, Calendar, Save, Search, Printer } from 'lucide-react';
-import { printErrorReport } from '@/lib/printUtils';
+import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, User, Calendar, Save, Search } from 'lucide-react';
 import { ErrorReport, getErrorReports, updateErrorReport } from '@/lib/storage';
 import { getEmployees, getMachines } from '@/lib/settingsStorage';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,10 +89,6 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
       await updateErrorReport(report.id, updatedReport);
       
       toast.success('Fehlermeldung wurde gespeichert und freigegeben!');
-      
-      // Automatisch Druckdialog öffnen
-      await printErrorReport(updatedReport);
-      
       onSave();
     } catch (error) {
       console.error('Fehler beim Freigeben:', error);
@@ -539,8 +534,8 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
                         disabled={isSubmitting}
                         className="bg-green-600 hover:bg-green-700"
                       >
-                        <Printer className="h-4 w-4 mr-2" />
-                        {isSubmitting ? 'Freigebe & Drucke...' : 'Freigeben & Drucken'}
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {isSubmitting ? 'Freigebe...' : 'Freigeben'}
                       </Button>
                       <Button 
                         variant="destructive"
