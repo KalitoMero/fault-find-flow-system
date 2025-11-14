@@ -932,6 +932,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       ref={textareaRef}
                       value={currentField.value}
                       onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
+                      onFocus={() => {
+                        if (blurTimeoutRef.current) {
+                          clearTimeout(blurTimeoutRef.current);
+                        }
+                        setShowVirtualKeyboard(true);
+                        setActiveKeyboardField(currentField.id);
+                      }}
+                      onBlur={() => {
+                        blurTimeoutRef.current = setTimeout(() => {
+                          setShowVirtualKeyboard(false);
+                          setActiveKeyboardField(null);
+                        }, 300);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
                           e.preventDefault();
@@ -1106,7 +1119,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             <div className="flex justify-center gap-4 pt-6">
               {isLastStep ? (
                 <Button 
-                  onClick={handleSubmit}
+                  onClick={() => {
+                    setShowVirtualKeyboard(false);
+                    setActiveKeyboardField(null);
+                    if (blurTimeoutRef.current) {
+                      clearTimeout(blurTimeoutRef.current);
+                    }
+                    handleSubmit();
+                  }}
                   disabled={isSubmitting || !isFormComplete()}
                   className={`px-8 py-3 text-lg transition-colors ${
                     isFormComplete() 
