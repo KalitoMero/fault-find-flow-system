@@ -84,9 +84,9 @@ const FloatingLabelTextarea: React.FC<{
   placeholder?: string;
   required?: boolean;
   rows?: number;
-  onFocus?: () => void;
+  onClick?: () => void;
   onBlur?: () => void;
-}> = ({ id, label, value, onChange, placeholder, required, rows = 3, onFocus, onBlur }) => {
+}> = ({ id, label, value, onChange, placeholder, required, rows = 3, onClick, onBlur }) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
@@ -98,7 +98,9 @@ const FloatingLabelTextarea: React.FC<{
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => {
             setIsFocused(true);
-            onFocus?.();
+          }}
+          onClick={() => {
+            onClick?.();
           }}
           onBlur={() => {
             setIsFocused(false);
@@ -691,7 +693,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Problembeschreibung"
                     value={problemDescription}
                     onChange={setProblemDescription}
-                    onFocus={() => {
+                    onClick={() => {
                       if (blurTimeoutRef.current) {
                         clearTimeout(blurTimeoutRef.current);
                       }
@@ -728,7 +730,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Korrekturmaßnahme"
                     value={correctiveAction}
                     onChange={setCorrectiveAction}
-                    onFocus={() => {
+                    onClick={() => {
                       if (blurTimeoutRef.current) {
                         clearTimeout(blurTimeoutRef.current);
                       }

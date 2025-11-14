@@ -34,19 +34,19 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-4 border-primary shadow-2xl animate-slide-in-bottom">
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50">
-        <h3 className="text-sm font-semibold text-foreground">Tastatur</h3>
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-primary shadow-xl animate-slide-in-bottom max-h-[280px]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/50">
+        <h3 className="text-xs font-semibold text-foreground">Tastatur</h3>
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-8 w-8"
+          className="h-6 w-6"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3 w-3" />
         </Button>
       </div>
-      <div className="p-2 keyboard-container">
+      <div className="p-1 keyboard-container">
         <Keyboard
           keyboardRef={(r: any) => (keyboardRef.current = r)}
           layout={{
@@ -83,19 +83,20 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
       <style dangerouslySetInnerHTML={{__html: `
         .keyboard-container .hg-theme-default {
           background-color: hsl(var(--background));
-          padding: 8px;
+          padding: 4px;
+          max-height: 220px;
         }
         
         .keyboard-container .hg-button {
           background: hsl(var(--secondary));
           color: hsl(var(--secondary-foreground));
           border: 1px solid hsl(var(--border));
-          font-size: 18px;
-          height: 50px;
-          margin: 3px;
-          border-radius: 6px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          transition: all 0.2s ease;
+          font-size: 14px;
+          height: 38px;
+          margin: 2px;
+          border-radius: 4px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          transition: all 0.15s ease;
         }
         
         .keyboard-container .hg-button:active,

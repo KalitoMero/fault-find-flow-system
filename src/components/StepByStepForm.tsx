@@ -932,7 +932,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       ref={textareaRef}
                       value={currentField.value}
                       onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                      onFocus={() => {
+                      onClick={() => {
                         if (blurTimeoutRef.current) {
                           clearTimeout(blurTimeoutRef.current);
                         }
