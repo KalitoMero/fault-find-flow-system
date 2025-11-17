@@ -429,9 +429,36 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       return;
     }
 
-    // After AFO field (step 1), check if Excel data was found
+    // After AFO field (step 1), trigger Excel search for separate inputs
     if (currentStep === 1) {
-      // If no Excel department found, warn user
+      const orderField = fields.find(f => f.id === 'orderNumber');
+      const afoField = fields.find(f => f.id === 'afoNumber');
+      
+      // If both fields are filled and no Excel search was done yet (excelDataFound is null)
+      if (orderField?.value && afoField?.value && excelDataFound === null) {
+        console.log('Triggering Excel search for separate inputs:', orderField.value, afoField.value);
+        
+        // Perform Excel search
+        const foundWithDepartment = await checkExcelData(orderField.value, afoField.value);
+        
+        // Mark fields as completed
+        setFields(prev => prev.map((field, index) => 
+          index === currentStep ? { ...field, completed: true } : field
+        ));
+        
+        // Navigate based on result
+        if (foundWithDepartment) {
+          console.log('✅ Excel data found with department, jumping to defectiveQuantity');
+          setCurrentStep(2);
+        } else {
+          console.log('⚠️ No department found in Excel data');
+          toast.error('Keine Abteilungsinformationen gefunden. Bitte stellen Sie sicher, dass die Excel-Daten korrekt sind.');
+          setCurrentStep(2); // Continue anyway
+        }
+        return;
+      }
+      
+      // If Excel search was already done (by dot method), just show warning if no department
       if (excelDataFound === false || !excelDepartment) {
         toast.error('Keine Abteilungsinformationen gefunden. Bitte stellen Sie sicher, dass die Excel-Daten korrekt sind.');
       }
@@ -440,14 +467,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     setFields(prev => prev.map((field, index) => 
       index === currentStep ? { ...field, completed: true } : field
     ));
-
-    // Excel check is now only done on order number parsing with "."
-    const orderField = fields.find(f => f.id === 'orderNumber');
-    const afoField = fields.find(f => f.id === 'afoNumber');
-    if (false && orderField?.value && afoField?.value) {
-      console.log('handleNext: triggering Excel check');
-      setTimeout(() => checkExcelData(orderField.value, afoField.value), 100);
-    }
 
     // Return to original step or go to next step
     if (originalStep > currentStep && originalStep < fields.length) {
