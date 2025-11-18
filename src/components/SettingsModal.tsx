@@ -37,6 +37,7 @@ import ExportSection from './ExportSection';
 import N8nWebhookSettings from './N8nWebhookSettings';
 import { getErrorReports } from '@/lib/storage';
 import { toast } from "sonner";
+import { ResourceManagement } from './ResourceManagement';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -330,7 +331,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <Tabs defaultValue="departments" className="space-y-4" onValueChange={(value) => value === 'admin' && handleAdminTabClick()}>
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="departments" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Abteilungen</span>
@@ -338,6 +339,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="employees" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Mitarbeiter</span>
+            </TabsTrigger>
+            <TabsTrigger value="resources" className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4" />
+              <span>Ressourcen</span>
             </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center space-x-2">
               <Download className="h-4 w-4" />
@@ -694,6 +699,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           <TabsContent value="n8n">
             <N8nWebhookSettings onSettingsChange={handleN8nSettingsChange} />
+          </TabsContent>
+          
+          <TabsContent value="resources" className="space-y-4">
+            <ResourceManagement />
           </TabsContent>
 
           <TabsContent value="management" className="space-y-4">

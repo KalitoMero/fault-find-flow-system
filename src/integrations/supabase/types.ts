@@ -137,6 +137,7 @@ export type Database = {
           rejected_at: string | null
           rejected_by_id: string | null
           rejection_reason: string | null
+          resource_name: string | null
           total_defective_quantity: number
           updated_at: string | null
         }
@@ -167,6 +168,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by_id?: string | null
           rejection_reason?: string | null
+          resource_name?: string | null
           total_defective_quantity: number
           updated_at?: string | null
         }
@@ -197,6 +199,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by_id?: string | null
           rejection_reason?: string | null
+          resource_name?: string | null
           total_defective_quantity?: number
           updated_at?: string | null
         }
@@ -248,6 +251,7 @@ export type Database = {
           file_name: string | null
           id: string
           order_number_column: string | null
+          resource_column: string | null
           row_count: number | null
           updated_at: string | null
         }
@@ -260,6 +264,7 @@ export type Database = {
           file_name?: string | null
           id?: string
           order_number_column?: string | null
+          resource_column?: string | null
           row_count?: number | null
           updated_at?: string | null
         }
@@ -272,6 +277,7 @@ export type Database = {
           file_name?: string | null
           id?: string
           order_number_column?: string | null
+          resource_column?: string | null
           row_count?: number | null
           updated_at?: string | null
         }
@@ -359,6 +365,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      teamleader_resources: {
+        Row: {
+          created_at: string | null
+          id: string
+          resource_name: string
+          teamleader_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          resource_name: string
+          teamleader_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          resource_name?: string
+          teamleader_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
