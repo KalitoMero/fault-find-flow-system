@@ -53,6 +53,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [showReview, setShowReview] = useState(false);
   const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [lastSearchedCombination, setLastSearchedCombination] = useState<string>('');
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
@@ -322,6 +323,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             const teamLeader = await findTeamLeaderForDepartment(department.id);
             setAssignedTeamLeader(teamLeader);
             console.log('Assigned team leader:', teamLeader);
+            
+            // Track this successful search combination
+            setLastSearchedCombination(`${orderNumber}-${afoNumber}`);
           } else {
             setExcelDepartment('');
             setExcelDepartmentName('');
@@ -373,6 +377,13 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   const handleFieldUpdate = useCallback((fieldId: string, value: string) => {
     console.log('handleFieldUpdate called:', fieldId, value);
+    
+    // Reset Excel search tracking when order or AFO number changes
+    if (fieldId === 'orderNumber' || fieldId === 'afoNumber') {
+      setLastSearchedCombination('');
+      setExcelDataFound(null);
+    }
+    
     setFields(prev => prev.map(field => {
       if (field.id === fieldId) {
         // For quantity fields, allow empty string
@@ -416,6 +427,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       // Wait for Excel search to complete and get result
       const foundWithDepartment = await checkExcelData(orderPart, afoPart);
       
+      // Track this search combination
+      setLastSearchedCombination(`${orderPart}-${afoPart}`);
+      
       // Decide where to go based on the result
       if (foundWithDepartment) {
         // Data found and department set - skip to step 2 (defectiveQuantity)
@@ -434,12 +448,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const orderField = fields.find(f => f.id === 'orderNumber');
       const afoField = fields.find(f => f.id === 'afoNumber');
       
-      // If both fields are filled and no Excel search was done yet (excelDataFound is null)
-      if (orderField?.value && afoField?.value && excelDataFound === null) {
+      // Check if this is a new combination that needs to be searched
+      const currentCombination = `${orderField?.value}-${afoField?.value}`;
+      if (orderField?.value && afoField?.value && lastSearchedCombination !== currentCombination) {
         console.log('Triggering Excel search for separate inputs:', orderField.value, afoField.value);
         
         // Perform Excel search
         const foundWithDepartment = await checkExcelData(orderField.value, afoField.value);
+        
+        // Track this search combination (set in checkExcelData if successful)
+        if (!foundWithDepartment) {
+          // Also track unsuccessful searches to prevent re-searching
+          setLastSearchedCombination(currentCombination);
+        }
         
         // Mark fields as completed
         setFields(prev => prev.map((field, index) => 
