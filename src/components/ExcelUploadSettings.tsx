@@ -22,19 +22,8 @@ interface ExcelColumn {
 const formatExcelDate = (value: any): string => {
   if (!value) return '';
   
-  // If it's already a string, return as is
+  // If it's already a string, don't try to parse it as a date
   if (typeof value === 'string') {
-    // Check if it looks like a date string
-    const dateTest = new Date(value);
-    if (!isNaN(dateTest.getTime())) {
-      return dateTest.toLocaleDateString('de-DE', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
     return value;
   }
   
@@ -66,7 +55,7 @@ const formatExcelDate = (value: any): string => {
     });
   }
   
-  // Return original value if no date conversion possible
+  // Return original value as string instead of "Invalid Date"
   return String(value);
 };
 
@@ -74,22 +63,19 @@ const formatExcelDate = (value: any): string => {
 const processCellValue = (cell: any): string => {
   if (!cell) return '';
   
-  // Handle different cell types
+  // ONLY process as date if explicitly marked as Date type
   if (cell.type === ExcelJS.ValueType.Date && cell.value instanceof Date) {
     return formatExcelDate(cell.value);
   }
   
-  if (cell.type === ExcelJS.ValueType.Number && cell.numFmt && cell.numFmt.includes('d')) {
-    // This might be a date formatted as number
-    return formatExcelDate(cell.value);
-  }
-  
   // For text or other types, use the text property or value as-is
+  // Do NOT try to interpret numbers as dates unless explicitly marked
   if (cell.text !== undefined) {
     return String(cell.text).trim();
   }
   
   if (cell.value !== undefined) {
+    // Don't try to format as date - just convert to string
     return String(cell.value).trim();
   }
   
