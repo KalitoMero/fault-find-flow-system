@@ -30,6 +30,7 @@ export interface ErrorReport {
   excelDepartment?: string;
   additionalExcelData?: Record<string, any>;
   additionalInfo?: string;
+  resourceName?: string;
   approverName?: string;
   departmentName?: string;
   editedAt?: string;
@@ -63,6 +64,7 @@ const toCamelCase = (dbReport: any): ErrorReport => {
     excelDepartment: dbReport.department_id,
     additionalInfo: dbReport.additional_info,
     additionalExcelData: dbReport.additional_excel_data,
+    resourceName: dbReport.resource_name,
     editedAt: dbReport.edited_at,
     editedBy: dbReport.edited_by_id
   };
@@ -247,6 +249,23 @@ export const getErrorReportStatistics = async () => {
 };
 
 export const getErrorReportsForTeamLeader = async (userId: string): Promise<ErrorReport[]> => {
+  // Get team leader's assigned resources
+  const { data: resourceData } = await supabase
+    .from('teamleader_resources')
+    .select('resource_name')
+    .eq('teamleader_id', userId);
+  
+  const assignedResources = resourceData?.map(r => r.resource_name) || [];
+  
+  // Get team leader's department
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('department_id')
+    .eq('id', userId)
+    .maybeSingle();
+  
+  const departmentId = profileData?.department_id;
+  
   // Check for active deputy assignments
   const { data: deputyAssignments } = await supabase
     .from('deputy_assignments')
@@ -256,12 +275,34 @@ export const getErrorReportsForTeamLeader = async (userId: string): Promise<Erro
 
   const deputyIds = deputyAssignments?.map(d => d.deputy_id) || [];
 
-  // Get reports assigned to team leader or their deputies
-  const { data, error } = await supabase
+  // Build query
+  let query = supabase
     .from('error_reports')
     .select('*')
-    .or(`assigned_team_leader_id.eq.${userId}${deputyIds.length > 0 ? `,assigned_team_leader_id.in.(${deputyIds.join(',')})` : ''}`)
     .order('created_at', { ascending: false });
+  
+  // Filter by resources, department, or direct assignment
+  const filters: string[] = [];
+  
+  if (assignedResources.length > 0) {
+    filters.push(...assignedResources.map(r => `resource_name.eq.${r}`));
+  }
+  
+  if (departmentId) {
+    filters.push(`department_id.eq.${departmentId}`);
+  }
+  
+  filters.push(`assigned_team_leader_id.eq.${userId}`);
+  
+  if (deputyIds.length > 0) {
+    filters.push(...deputyIds.map(id => `assigned_team_leader_id.eq.${id}`));
+  }
+  
+  if (filters.length > 0) {
+    query = query.or(filters.join(','));
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return (data || []).map(toCamelCase);

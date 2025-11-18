@@ -11,6 +11,7 @@ interface ExcelSettings {
   articleNumberColumn?: string;
   articleDescriptionColumn?: string;
   departmentColumn?: string;
+  resourceColumn?: string;
   additionalColumns: ExcelColumn[];
   fileName?: string;
   rowCount?: number;
@@ -79,6 +80,7 @@ export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> 
         article_number_column: settings.articleNumberColumn,
         article_description_column: settings.articleDescriptionColumn,
         department_column: settings.departmentColumn,
+        resource_column: settings.resourceColumn,
         additional_columns: JSON.stringify(settings.additionalColumns),
         file_name: settings.fileName,
         row_count: settings.rowCount
@@ -178,6 +180,7 @@ export const getExcelSettings = async (): Promise<ExcelSettings | null> => {
       articleNumberColumn: data.article_number_column,
       articleDescriptionColumn: data.article_description_column,
       departmentColumn: data.department_column,
+      resourceColumn: data.resource_column,
       additionalColumns: typeof data.additional_columns === 'string' 
         ? JSON.parse(data.additional_columns) 
         : (Array.isArray(data.additional_columns) ? data.additional_columns : []),

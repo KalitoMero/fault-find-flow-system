@@ -10,6 +10,8 @@ import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } fr
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
+import { extractResourcesFromExcel } from '@/lib/resourceUtils';
+import { Badge } from '@/components/ui/badge';
 
 interface ExcelColumn {
   name: string;
@@ -103,6 +105,7 @@ const ExcelUploadSettings: React.FC = () => {
   const [articleNumberColumn, setArticleNumberColumn] = useState('');
   const [articleDescriptionColumn, setArticleDescriptionColumn] = useState('');
   const [departmentColumn, setDepartmentColumn] = useState('');
+  const [resourceColumn, setResourceColumn] = useState('');
   const [additionalColumns, setAdditionalColumns] = useState<ExcelColumn[]>([]);
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnRef, setNewColumnRef] = useState('');
@@ -114,6 +117,7 @@ const ExcelUploadSettings: React.FC = () => {
   const [selectedSheet, setSelectedSheet] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [extractedResources, setExtractedResources] = useState<string[]>([]);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -146,6 +150,10 @@ const ExcelUploadSettings: React.FC = () => {
           setArticleNumberColumn(articleIndex > 0 ? String(articleIndex) : '');
           setArticleDescriptionColumn(articleDescIndex > 0 ? String(articleDescIndex) : '');
           setDepartmentColumn(deptIndex > 0 ? String(deptIndex) : '');
+          
+          // Load resource column
+          const resourceIndex = settings.resourceColumn ? columnNames.indexOf(settings.resourceColumn) + 1 : 0;
+          setResourceColumn(resourceIndex > 0 ? String(resourceIndex) : '');
           
           // Convert additional columns
           const convertedAdditionalColumns = settings.additionalColumns.map(col => ({
@@ -478,6 +486,7 @@ const ExcelUploadSettings: React.FC = () => {
     const articleColName = articleNumberColumn ? columns[parseInt(articleNumberColumn) - 1] : undefined;
     const articleDescColName = articleDescriptionColumn ? columns[parseInt(articleDescriptionColumn) - 1] : undefined;
     const deptColName = departmentColumn ? columns[parseInt(departmentColumn) - 1] : undefined;
+    const resourceColName = resourceColumn ? columns[parseInt(resourceColumn) - 1] : undefined;
 
     console.log('=== SAVING SETTINGS ===');
     console.log('Column mappings:');
@@ -486,6 +495,7 @@ const ExcelUploadSettings: React.FC = () => {
     console.log(`- Article Number: Column ${articleNumberColumn} = "${articleColName}"`);
     console.log(`- Article Description: Column ${articleDescriptionColumn} = "${articleDescColName}"`);
     console.log(`- Department: Column ${departmentColumn} = "${deptColName}"`);
+    console.log(`- Resource: Column ${resourceColumn} = "${resourceColName}"`);
     
     // Test data access
     const sampleRow = excelData[0];
@@ -509,6 +519,7 @@ const ExcelUploadSettings: React.FC = () => {
         articleNumberColumn: articleColName || undefined,
         articleDescriptionColumn: articleDescColName || undefined,
         departmentColumn: deptColName || undefined,
+        resourceColumn: resourceColName || undefined,
         additionalColumns: additionalColumns.map(col => ({
           name: col.name,
           column: columns[parseInt(col.column) - 1] // Convert index to column name
@@ -519,6 +530,19 @@ const ExcelUploadSettings: React.FC = () => {
 
       setUploadProgress(70);
       await saveExcelSettings(settings);
+      setUploadProgress(80);
+      
+      // Extract resources if resource column is configured
+      if (resourceColName) {
+        try {
+          const resources = await extractResourcesFromExcel(resourceColName);
+          setExtractedResources(resources);
+          console.log(`✅ ${resources.length} Ressourcen gefunden`);
+        } catch (error) {
+          console.error('Error extracting resources:', error);
+        }
+      }
+      
       setUploadProgress(100);
 
       toast.success(`✅ Einstellungen gespeichert! ${excelData.length.toLocaleString('de-DE')} Zeilen in Datenbank.`);
@@ -544,10 +568,12 @@ const ExcelUploadSettings: React.FC = () => {
     setArticleNumberColumn('');
     setArticleDescriptionColumn('');
     setDepartmentColumn('');
+    setResourceColumn('');
     setAdditionalColumns([]);
     setFileName('');
     setRowCount(0);
     setShowPreview(false);
+    setExtractedResources([]);
     toast.success('Excel-Daten gelöscht');
   };
 
@@ -824,7 +850,38 @@ const ExcelUploadSettings: React.FC = () => {
                   )}
                 </div>
               </div>
+              
+              <div>
+                <Label htmlFor="resourceColumn">Ressource (Optional)</Label>
+                <div className="mt-1">
+                  <Input
+                    id="resourceColumn"
+                    type="number"
+                    min="1"
+                    max={columns.length}
+                    placeholder={`1-${columns.length}`}
+                    value={resourceColumn}
+                    onChange={(e) => setResourceColumn(e.target.value)}
+                  />
+                  {resourceColumn && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      → Spalte "{columns[parseInt(resourceColumn) - 1] || 'ungültig'}"
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+            
+            {extractedResources.length > 0 && (
+              <div className="p-4 bg-muted rounded-md">
+                <h4 className="font-medium mb-2">Gefundene Ressourcen ({extractedResources.length}):</h4>
+                <div className="flex flex-wrap gap-2">
+                  {extractedResources.map(resource => (
+                    <Badge key={resource} variant="secondary">{resource}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="pt-4 border-t">
               <Button 
