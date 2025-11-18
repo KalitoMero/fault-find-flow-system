@@ -38,6 +38,7 @@ import N8nWebhookSettings from './N8nWebhookSettings';
 import { getErrorReports } from '@/lib/storage';
 import { toast } from "sonner";
 import { ResourceManagement } from './ResourceManagement';
+import { TeamleaderResourceManager } from './TeamleaderResourceManager';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -177,10 +178,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setNewDepartmentName('');
   };
 
-  const handleDeleteDepartment = (departmentId: string) => {
-    deleteDepartment(departmentId);
-    loadData();
-    toast.success('Abteilung gelöscht');
+  const handleDeleteDepartment = async (departmentId: string) => {
+    try {
+      // Check if employees are still assigned to this department
+      const employeesInDepartment = employees.filter(e => e.departmentId === departmentId);
+      if (employeesInDepartment.length > 0) {
+        toast.error(`Abteilung kann nicht gelöscht werden: ${employeesInDepartment.length} Mitarbeiter sind noch zugeordnet`);
+        return;
+      }
+      
+      await deleteDepartment(departmentId);
+      await loadData();
+      toast.success('Abteilung erfolgreich gelöscht');
+    } catch (error: any) {
+      console.error('Error deleting department:', error);
+      toast.error(`Fehler beim Löschen: ${error.message || 'Unbekannter Fehler'}`);
+    }
   };
 
   const handleAddEmployee = async () => {
@@ -611,6 +624,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Teamleiter-Ressourcen</CardTitle>
+                <CardDescription>
+                  Weisen Sie Teamleitern spezifische Ressourcen zu
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TeamleaderResourceManager 
+                  teamLeaders={employees.filter(e => e.isTeamLeader)} 
+                />
               </CardContent>
             </Card>
           </TabsContent>
