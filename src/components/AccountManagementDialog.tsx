@@ -66,11 +66,6 @@ const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({
       return;
     }
 
-    if (!departmentId) {
-      toast.error('Bitte wählen Sie eine Abteilung aus');
-      return;
-    }
-
     // Password validation only if password is being changed
     if (newPassword) {
       if (newPassword !== confirmPassword) {
