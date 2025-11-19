@@ -212,3 +212,70 @@ export const clearExcelData = async (): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Sucht eine Excel-Zeile anhand der Auftragsnummer
+ * Verwendet Batching um alle Zeilen zu durchsuchen
+ */
+export const getExcelDataByOrderNumber = async (orderNumber: string): Promise<Record<string, any> | null> => {
+  try {
+    // Excel-Settings laden, um zu wissen, in welcher Spalte die Auftragsnummer steht
+    const settings = await getExcelSettings();
+    if (!settings || !settings.orderNumberColumn) {
+      console.warn('No Excel settings or order number column configured');
+      return null;
+    }
+
+    const orderColumn = settings.orderNumberColumn;
+    const normalizedOrderNumber = orderNumber.trim().replace(/[-\s]/g, '').toLowerCase();
+    
+    let lastRowIndex = -1;
+    const batchSize = 1000;
+    
+    console.log(`Searching for order number: ${orderNumber} in column: ${orderColumn}`);
+    
+    while (true) {
+      const { data, error } = await supabase
+        .from('excel_data')
+        .select('row_data, row_index')
+        .gt('row_index', lastRowIndex)
+        .order('row_index', { ascending: true })
+        .limit(batchSize);
+
+      if (error) {
+        console.error('Error loading batch:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('No matching row found');
+        break;
+      }
+
+      // Search in this batch
+      for (const row of data) {
+        const rowOrderNumber = row.row_data?.[orderColumn];
+        if (rowOrderNumber) {
+          const normalizedRowOrderNumber = String(rowOrderNumber).trim().replace(/[-\s]/g, '').toLowerCase();
+          if (normalizedRowOrderNumber === normalizedOrderNumber) {
+            console.log(`✅ Found matching row at row_index ${row.row_index}`);
+            return row.row_data as Record<string, any>;
+          }
+        }
+      }
+      
+      lastRowIndex = data[data.length - 1].row_index;
+      
+      // If we got less than batchSize rows, we've reached the end
+      if (data.length < batchSize) {
+        console.log('Reached end of data without finding match');
+        break;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error searching Excel data:', error);
+    return null;
+  }
+};
