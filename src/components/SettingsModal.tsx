@@ -54,6 +54,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [newDepartmentCode, setNewDepartmentCode] = useState('');
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeePersonalNumber, setNewEmployeePersonalNumber] = useState('');
   const [newMachineName, setNewMachineName] = useState('');
   const [selectedDepartmentForEmployee, setSelectedDepartmentForEmployee] = useState('');
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('all');
@@ -233,11 +234,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         departmentId: selectedDepartmentForEmployee,
         email: email.trim(),
         password: password,
+        personalNumber: newEmployeePersonalNumber.trim() || undefined,
         isTeamLeader: false,
         isAdmin: false
       });
 
       setNewEmployeeName('');
+      setNewEmployeePersonalNumber('');
       setSelectedDepartmentForEmployee('');
       loadData();
       toast.success('Mitarbeiter erfolgreich erstellt');
@@ -492,7 +495,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="employeeName">Mitarbeitername</Label>
                     <Input
@@ -500,6 +503,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                       value={newEmployeeName}
                       onChange={(e) => setNewEmployeeName(e.target.value)}
                       placeholder="Vor- und Nachname"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="employeePersonalNumber">Personalnummer (optional)</Label>
+                    <Input
+                      id="employeePersonalNumber"
+                      value={newEmployeePersonalNumber}
+                      onChange={(e) => setNewEmployeePersonalNumber(e.target.value)}
+                      placeholder="z.B. 12345"
                     />
                   </div>
                   <div>
@@ -566,6 +578,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
                             <span className="font-medium">{employee.name}</span>
+                            {employee.personalNumber && (
+                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                PN: {employee.personalNumber}
+                              </span>
+                            )}
                             {employee.isTeamLeader && (
                               <Shield className="h-4 w-4 text-blue-600" />
                             )}
