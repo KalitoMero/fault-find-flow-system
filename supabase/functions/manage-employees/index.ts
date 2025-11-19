@@ -210,9 +210,51 @@ serve(async (req) => {
       case 'delete': {
         const { id } = data;
 
-        // Delete auth user (profile and roles will cascade)
+        // Delete related records first (in correct order due to foreign keys)
+        // 1. Delete teamleader resources
+        const { error: deleteResourcesError } = await supabaseAdmin
+          .from('teamleader_resources')
+          .delete()
+          .eq('teamleader_id', id);
+        if (deleteResourcesError) {
+          console.error('Error deleting teamleader resources:', deleteResourcesError);
+        }
+
+        // 2. Delete deputy assignments
+        const { error: deleteDeputiesError } = await supabaseAdmin
+          .from('deputy_assignments')
+          .delete()
+          .or(`team_leader_id.eq.${id},deputy_id.eq.${id}`);
+        if (deleteDeputiesError) {
+          console.error('Error deleting deputy assignments:', deleteDeputiesError);
+        }
+
+        // 3. Delete user roles
+        const { error: deleteRolesError } = await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', id);
+        if (deleteRolesError) {
+          console.error('Error deleting user roles:', deleteRolesError);
+          throw deleteRolesError;
+        }
+
+        // 4. Delete profile
+        const { error: deleteProfileError } = await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('id', id);
+        if (deleteProfileError) {
+          console.error('Error deleting profile:', deleteProfileError);
+          throw deleteProfileError;
+        }
+
+        // 5. Finally delete auth user
         const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(id);
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error('Error deleting auth user:', deleteError);
+          throw deleteError;
+        }
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
