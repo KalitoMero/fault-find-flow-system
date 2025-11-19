@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
+import { getExcelSettings, getExcelDataByOrderNumber } from '@/lib/excelStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import SimpleCombobox from './SimpleCombobox';
@@ -284,6 +285,42 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
       const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
 
+      // Excel-Daten laden basierend auf Auftragsnummer
+      const excelData = await getExcelDataByOrderNumber(orderNumber);
+      const excelSettings = await getExcelSettings();
+
+      // Zusätzliche Daten extrahieren
+      const additionalExcelData: Record<string, any> = {};
+      let resourceName: string | undefined;
+
+      if (excelData && excelSettings) {
+        // Artikelnummer
+        if (excelSettings.articleNumberColumn && excelData[excelSettings.articleNumberColumn]) {
+          additionalExcelData.Artikelnummer = excelData[excelSettings.articleNumberColumn];
+        }
+        
+        // Artikelbezeichnung
+        if (excelSettings.articleDescriptionColumn && excelData[excelSettings.articleDescriptionColumn]) {
+          additionalExcelData.Artikelbezeichnung = excelData[excelSettings.articleDescriptionColumn];
+        }
+        
+        // Ressource
+        if (excelSettings.resourceColumn && excelData[excelSettings.resourceColumn]) {
+          const resource = excelData[excelSettings.resourceColumn];
+          additionalExcelData.Ressource = resource;
+          resourceName = resource;
+        }
+        
+        // Zusätzliche konfigurierte Spalten
+        if (excelSettings.additionalColumns) {
+          excelSettings.additionalColumns.forEach(col => {
+            if (excelData[col.column]) {
+              additionalExcelData[col.name] = excelData[col.column];
+            }
+          });
+        }
+      }
+
       const report = {
         id: await generateErrorReportId(),
         orderNumber,
@@ -299,6 +336,8 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: teamLeader!.account?.username || teamLeader!.name,
+        additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
+        resourceName: resourceName || undefined,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
       };
 
