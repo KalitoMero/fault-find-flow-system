@@ -21,13 +21,27 @@ export interface Machine {
 
 // Departments
 export const getDepartments = async (): Promise<Department[]> => {
-  const { data, error } = await supabase
-    .from('departments')
-    .select('*')
-    .order('name');
+  try {
+    console.log('🔍 Fetching departments from Supabase...');
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name');
 
-  if (error) throw error;
-  return data || [];
+    if (error) {
+      console.error('❌ Error fetching departments:', error);
+      throw error;
+    }
+    
+    console.log('✅ Departments fetched:', data?.length || 0, 'departments found');
+    if (data && data.length > 0) {
+      console.log('📋 Department list:', data.map(d => ({ id: d.id, name: d.name, code: d.code })));
+    }
+    return data || [];
+  } catch (error) {
+    console.error('❌ Exception in getDepartments:', error);
+    throw error;
+  }
 };
 
 export const saveDepartment = async (department: Department): Promise<void> => {
