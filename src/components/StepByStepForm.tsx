@@ -186,18 +186,24 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     
     // Nur wenn wir auf Schritt 0 sind und ein Punkt im Wert ist
     if (currentStep === 0 && orderField?.value?.includes('.')) {
-      console.log('🔍 Barcode mit Punkt erkannt:', orderField.value);
+      const value = orderField.value;
+      const currentCombination = value.replace('.', '-');
+      
+      // Verhindere mehrfache Verarbeitung derselben Kombination
+      if (currentCombination === lastSearchedCombination) {
+        return;
+      }
+      
+      console.log('🔍 Barcode mit Punkt erkannt:', value);
       
       // Kleine Verzögerung (debounce), damit der Scanner fertig ist
       const timer = setTimeout(async () => {
-        const value = orderField.value;
         const dotIndex = value.indexOf('.');
         const orderPart = value.substring(0, dotIndex).trim();
         const afoPart = value.substring(dotIndex + 1).trim();
         
-        // Nur verarbeiten, wenn beide Teile vorhanden sind und noch nicht gesucht wurde
-        const currentCombination = `${orderPart}-${afoPart}`;
-        if (orderPart && afoPart && currentCombination !== lastSearchedCombination) {
+        // Nur verarbeiten, wenn beide Teile vorhanden sind
+        if (orderPart && afoPart) {
           console.log('📊 Teile Barcode auf:', { orderPart, afoPart });
           toast.info('🔍 Barcode wird verarbeitet...');
           
@@ -218,7 +224,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           // Springe zum nächsten relevanten Feld
           if (foundWithDepartment) {
             console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
-            toast.success(`✅ Auftrag gefunden! Abteilung: ${excelDepartmentName || 'Unbekannt'}`);
+            const deptName = excelDepartmentName || 'Unbekannt';
+            toast.success(`✅ Auftrag gefunden! Abteilung: ${deptName}`);
             setCurrentStep(2); // Personalnummer
           } else {
             console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
@@ -230,7 +237,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       return () => clearTimeout(timer);
     }
-  }, [fields, currentStep, lastSearchedCombination, excelDepartmentName]);
+  }, [fields, currentStep, lastSearchedCombination]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
@@ -475,96 +482,11 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       return;
     }
 
-    // Parse order number when leaving the order number field (step 0)
-    if (currentStep === 0 && currentField.value.includes('.')) {
-      console.log('Parsing order number:', currentField.value);
-      const dotIndex = currentField.value.indexOf('.');
-      const orderPart = currentField.value.substring(0, dotIndex);
-      const afoPart = currentField.value.substring(dotIndex + 1);
-      
-      // Update fields immediately
-      setFields(prev => prev.map(field => {
-        if (field.id === 'orderNumber') {
-          return { ...field, value: orderPart, completed: true };
-        }
-        if (field.id === 'afoNumber') {
-          return { ...field, value: afoPart, completed: true };
-        }
-        return field;
-      }));
-      
-      // Wait for Excel search to complete and get result
-      const foundWithDepartment = await checkExcelData(orderPart, afoPart);
-      
-      // Track this search combination
-      setLastSearchedCombination(`${orderPart}-${afoPart}`);
-      
-      // Decide where to go based on the result
-      if (foundWithDepartment) {
-        // Data found and department set - skip to step 2 (defectiveQuantity)
-        console.log('✅ Excel data found with department, skipping to defectiveQuantity');
-        setCurrentStep(2);
-      } else {
-        // Data not found or no department - go to AFO step for manual department selection
-        console.log('⚠️ Excel data not found or no department, going to AFO step for department selection');
-        setCurrentStep(1);
-      }
-      return;
-    }
-
-    // After AFO field (step 1), trigger Excel search for separate inputs
-    if (currentStep === 1) {
-      const orderField = fields.find(f => f.id === 'orderNumber');
-      const afoField = fields.find(f => f.id === 'afoNumber');
-      
-      // Check if this is a new combination that needs to be searched
-      const currentCombination = `${orderField?.value}-${afoField?.value}`;
-      if (orderField?.value && afoField?.value && lastSearchedCombination !== currentCombination) {
-        console.log('Triggering Excel search for separate inputs:', orderField.value, afoField.value);
-        
-        // Perform Excel search
-        const foundWithDepartment = await checkExcelData(orderField.value, afoField.value);
-        
-        // Track this search combination (set in checkExcelData if successful)
-        if (!foundWithDepartment) {
-          // Also track unsuccessful searches to prevent re-searching
-          setLastSearchedCombination(currentCombination);
-        }
-        
-        // Mark fields as completed
-        setFields(prev => prev.map((field, index) => 
-          index === currentStep ? { ...field, completed: true } : field
-        ));
-        
-        // Navigate based on result
-        if (foundWithDepartment) {
-          console.log('✅ Excel data found with department, jumping to defectiveQuantity');
-          setCurrentStep(2);
-        } else {
-          console.log('⚠️ No department found in Excel data');
-          toast.error('Keine Abteilungsinformationen gefunden. Bitte stellen Sie sicher, dass die Excel-Daten korrekt sind.');
-          setCurrentStep(2); // Continue anyway
-        }
-        return;
-      }
-      
-      // If Excel search was already done (by dot method), just show warning if no department
-      if (excelDataFound === false || !excelDepartment) {
-        toast.error('Keine Abteilungsinformationen gefunden. Bitte stellen Sie sicher, dass die Excel-Daten korrekt sind.');
-      }
-    }
-
+    // Simple navigation - parsing is now handled by the auto-detect useEffect
     setFields(prev => prev.map((field, index) => 
       index === currentStep ? { ...field, completed: true } : field
     ));
-
-    // Return to original step or go to next step
-    if (originalStep > currentStep && originalStep < fields.length) {
-      setCurrentStep(originalStep);
-      setOriginalStep(0);
-    } else if (currentStep < fields.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
+    setCurrentStep(currentStep + 1);
   };
 
   const handleFieldClick = (index: number) => {
