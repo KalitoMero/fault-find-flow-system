@@ -311,12 +311,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           console.log('Department code from Excel:', typedResult.department);
           
           const departments = await getDepartments();
-          // Search by code (from Excel) instead of name
-          const department = departments.find(d => d.code === typedResult.department || d.name === typedResult.department);
+          console.log('Available departments:', departments.map(d => ({ id: d.id, name: d.name, code: d.code })));
+          
+          // Search by code (from Excel) with case-insensitive and trim comparison
+          const deptCode = typedResult.department?.toString().trim().toUpperCase();
+          const department = departments.find(d => 
+            d.code?.trim().toUpperCase() === deptCode || 
+            d.name?.trim().toUpperCase() === deptCode
+          );
+          
           if (department) {
             setExcelDepartment(department.id);
             setExcelDepartmentName(department.name);
-            console.log('Department matched:', department.name, 'with ID:', department.id);
+            console.log('✅ Department matched:', department.name, 'with ID:', department.id);
             foundWithDepartment = true;
             
             // Find and set team leader using department ID
@@ -329,7 +336,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           } else {
             setExcelDepartment('');
             setExcelDepartmentName('');
-            console.log('No matching department found for code/name:', typedResult.department);
+            console.log('❌ No matching department found for code/name:', typedResult.department, 'Available codes:', departments.map(d => d.code));
           }
         } else {
           console.log('No department found in Excel data');
