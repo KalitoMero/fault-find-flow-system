@@ -96,15 +96,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string) => {
-    // Convert username to email format for authentication
-    const email = `${username.toLowerCase()}@app.internal`;
+  const login = async (usernameOrPersonalNumber: string, password: string) => {
+    const credential = usernameOrPersonalNumber.trim();
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    // Check if it looks like a personal number (only digits) or contains special characters
+    // If it's not a simple alphanumeric username, try the edge function
+    const isLikelyPersonalNumber = /^\d+$/.test(credential) || credential.includes('-') || credential.includes('_');
+    
+    if (isLikelyPersonalNumber) {
+      // Use edge function for personal number or non-standard credentials
+      try {
+        const { data, error } = await supabase.functions.invoke('login-with-credential', {
+          body: { credential, password }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.session) {
+          // Set the session manually
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+          
+          return { error: sessionError };
+        }
+        
+        return { error: new Error('No session returned') };
+      } catch (error) {
+        console.error('Login with credential failed:', error);
+        return { error };
+      }
+    } else {
+      // Standard username login - convert to email format
+      const email = `${credential.toLowerCase()}@app.internal`;
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    }
   };
 
 

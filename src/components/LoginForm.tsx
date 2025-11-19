@@ -57,14 +57,14 @@ const LoginForm = ({ onBack }: LoginFormProps) => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Benutzername</Label>
+                <Label htmlFor="username">Benutzername oder Personalnummer</Label>
                 <Input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  placeholder="Benutzername eingeben"
+                  placeholder="Benutzername oder Personalnummer eingeben"
                 />
               </div>
               <div className="space-y-2">

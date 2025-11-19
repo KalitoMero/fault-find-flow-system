@@ -1,1 +1,10 @@
 project_id = "fzyohssalaivehujkngi"
+
+[functions.create-management-account]
+verify_jwt = false
+
+[functions.login-with-credential]
+verify_jwt = false
+
+[functions.manage-employees]
+verify_jwt = true
