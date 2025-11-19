@@ -168,16 +168,30 @@ const ExcelUploadSettings: React.FC = () => {
         setFileName(settings.fileName || '');
         setRowCount(settings.rowCount || 0);
         
-        // Load at least one row of Excel data to get column names
-        const { data: excelRows, error } = await supabase
-          .from('excel_data')
-          .select('row_data')
-          .limit(1);
+        // Use stored column order if available, otherwise load from data
+        let columnNames: string[];
         
-        if (!error && excelRows && excelRows.length > 0) {
-          const firstRow = excelRows[0].row_data;
-          const columnNames = Object.keys(firstRow);
+        if (settings.columnOrder && settings.columnOrder.length > 0) {
+          // Use stored column order
+          columnNames = settings.columnOrder;
           setColumns(columnNames);
+        } else {
+          // Fallback: Load at least one row of Excel data to get column names
+          const { data: excelRows, error } = await supabase
+            .from('excel_data')
+            .select('row_data')
+            .limit(1);
+          
+          if (!error && excelRows && excelRows.length > 0) {
+            const firstRow = excelRows[0].row_data;
+            columnNames = Object.keys(firstRow);
+            setColumns(columnNames);
+          } else {
+            return;
+          }
+        }
+        
+        if (columnNames.length > 0) {
           
           // Convert stored column names to column indices (1-based)
           const orderIndex = columnNames.indexOf(settings.orderNumberColumn) + 1;
@@ -566,7 +580,8 @@ const ExcelUploadSettings: React.FC = () => {
           column: columns[parseInt(col.column) - 1] // Convert index to column name
         })),
         fileName,
-        rowCount: excelData.length
+        rowCount: excelData.length,
+        columnOrder: columns  // Store the original column order
       };
 
       setUploadProgress(70);

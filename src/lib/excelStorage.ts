@@ -15,6 +15,7 @@ interface ExcelSettings {
   additionalColumns: ExcelColumn[];
   fileName?: string;
   rowCount?: number;
+  columnOrder?: string[];
   orderColumnName?: string;
   afoColumnName?: string;
   articleColumnName?: string;
@@ -83,7 +84,8 @@ export const saveExcelSettings = async (settings: ExcelSettings): Promise<void> 
         resource_column: settings.resourceColumn,
         additional_columns: JSON.stringify(settings.additionalColumns),
         file_name: settings.fileName,
-        row_count: settings.rowCount
+        row_count: settings.rowCount,
+        column_order: settings.columnOrder ? JSON.stringify(settings.columnOrder) : null
       });
 
     if (error) {
@@ -186,6 +188,9 @@ export const getExcelSettings = async (): Promise<ExcelSettings | null> => {
         : (Array.isArray(data.additional_columns) ? data.additional_columns : []),
       fileName: data.file_name,
       rowCount: data.row_count,
+      columnOrder: data.column_order 
+        ? (typeof data.column_order === 'string' ? JSON.parse(data.column_order) : data.column_order)
+        : undefined,
       orderColumnName: data.order_number_column,
       afoColumnName: data.afo_number_column,
       articleColumnName: data.article_number_column,
