@@ -68,14 +68,32 @@ const processCellValue = (cell: any): string => {
     return formatExcelDate(cell.value);
   }
   
+  // Check if cell.value is a Date object (even if not marked as Date type)
+  if (cell.value instanceof Date) {
+    // Check if it's a valid date
+    if (!isNaN(cell.value.getTime())) {
+      // Valid date - format it
+      return formatExcelDate(cell.value);
+    } else {
+      // Invalid Date object - try to use cell.text or cell.result as fallback
+      if (cell.text !== undefined && cell.text !== '') {
+        return String(cell.text).trim();
+      }
+      if (cell.result !== undefined && cell.result !== '') {
+        return String(cell.result).trim();
+      }
+      // Last resort: return empty string instead of "Invalid Date"
+      return '';
+    }
+  }
+  
   // For text or other types, use the text property or value as-is
-  // Do NOT try to interpret numbers as dates unless explicitly marked
   if (cell.text !== undefined) {
     return String(cell.text).trim();
   }
   
   if (cell.value !== undefined) {
-    // Don't try to format as date - just convert to string
+    // Safe string conversion for non-Date values
     return String(cell.value).trim();
   }
   
