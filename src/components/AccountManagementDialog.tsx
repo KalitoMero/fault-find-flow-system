@@ -73,8 +73,8 @@ const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({
         return;
       }
 
-      if (newPassword.length < 6) {
-        toast.error('Passwort muss mindestens 6 Zeichen lang sein');
+      if (newPassword.length < 4) {
+        toast.error('Passwort muss mindestens 4 Zeichen lang sein');
         return;
       }
     }
