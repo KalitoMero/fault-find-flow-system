@@ -12,6 +12,7 @@ import StepByStepForm from '@/components/StepByStepForm';
 import ApprovalDashboard from '@/components/ApprovalDashboard';
 import ExportSection from '@/components/ExportSection';
 import LoginForm from '@/components/LoginForm';
+import { LoginDialog } from '@/components/LoginDialog';
 import ErrorReportDetail from '@/components/ErrorReportDetail';
 import ErrorReportEdit from '@/components/ErrorReportEdit';
 import ReportAccessForm from '@/components/ReportAccessForm';
@@ -60,13 +61,6 @@ const Index = () => {
     };
     checkDeputy();
   }, [profile?.id]);
-
-  // Redirect to auth page if not authenticated
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/auth');
-    }
-  }, [loading, isAuthenticated, navigate]);
 
   // Auto-open dashboard for team leaders on login
   useEffect(() => {
@@ -359,10 +353,6 @@ const Index = () => {
     );
   }
 
-  // Zeige Login-Formular
-  if (showLogin && !isAuthenticated) {
-    return <LoginForm onBack={handleBackToOverview} />;
-  }
 
   // Zeige Bearbeitungs-Formular
   if (editingReport) {
@@ -425,15 +415,10 @@ const Index = () => {
             </Button>
           </>
         ) : (
-          <>
-            <Button variant="outline" onClick={handleSettingsClick}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleLoginClick}>
-              <LogIn className="h-4 w-4 mr-2" />
-              Login
-            </Button>
-          </>
+          <Button variant="default" onClick={() => setShowLogin(true)}>
+            <LogIn className="h-4 w-4 mr-2" />
+            Anmelden
+          </Button>
         )}
       </div>
 
@@ -619,6 +604,12 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {/* Login Dialog */}
+      <LoginDialog 
+        isOpen={showLogin && !isAuthenticated}
+        onClose={() => setShowLogin(false)}
+      />
 
       {/* Admin Auth Dialog */}
       <AdminAuthDialog
