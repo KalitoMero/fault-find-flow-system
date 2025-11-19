@@ -674,8 +674,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Review Screen
   if (showReview) {
     return (
-      <div className="min-h-screen bg-light-blue p-4">
-        <div className="fixed top-4 left-4 z-10">
+      <div className="min-h-screen bg-light-blue p-6 md:p-8">
+        <div className="fixed top-6 left-6 md:top-8 md:left-8 z-10">
           <Button 
             onClick={() => setShowReview(false)}
             variant="outline"
@@ -686,7 +686,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           </Button>
         </div>
 
-        <div className="mx-auto space-y-6 pt-16">
+        <div className="max-w-7xl mx-auto space-y-6 pt-16">
           <Card className="bg-white shadow-xl">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-2xl flex items-center justify-center gap-3">
@@ -779,9 +779,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   }
 
   return (
-    <div className="min-h-screen bg-light-blue p-4">
+    <div className="min-h-screen bg-light-blue p-6 md:p-8">
       {/* Back to Home Button - Fixed top left */}
-      <div className="fixed top-4 left-4 z-10">
+      <div className="fixed top-6 left-6 md:top-8 md:left-8 z-10">
         <Button 
           onClick={onClose}
           variant="outline"
@@ -793,7 +793,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       </div>
 
 
-      <div className="max-w-6xl mx-auto space-y-4">
+      <div className="max-w-7xl mx-auto space-y-4">
 
         {/* All Fields Overview */}
         <Card className="bg-white/80 backdrop-blur-sm">
