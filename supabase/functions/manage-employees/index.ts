@@ -215,6 +215,22 @@ serve(async (req) => {
         });
       }
 
+      case 'update-password': {
+        const { userId, password } = data;
+
+        // Update password using admin API
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { password }
+        );
+
+        if (passwordError) throw passwordError;
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'delete': {
         const { id } = data;
 

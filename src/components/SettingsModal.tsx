@@ -222,9 +222,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const password = prompt('Passwort für den neuen Mitarbeiter:\n(mindestens 6 Zeichen)');
-    if (!password || password.length < 6) {
-      toast.error('Passwort muss mindestens 6 Zeichen lang sein');
+    const password = prompt('Passwort für den neuen Mitarbeiter:\n(mindestens 4 Zeichen)');
+    if (!password || password.length < 4) {
+      toast.error('Passwort muss mindestens 4 Zeichen lang sein');
       return;
     }
 
@@ -789,8 +789,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <AccountManagementDialog
             isOpen={!!accountManagementEmployee}
             onClose={() => setAccountManagementEmployee(null)}
-            userId={accountManagementEmployee.id}
-            userName={accountManagementEmployee.name}
+            employee={{
+              id: accountManagementEmployee.id,
+              name: accountManagementEmployee.name,
+              personalNumber: accountManagementEmployee.personalNumber,
+              departmentId: accountManagementEmployee.departmentId,
+              isTeamLeader: accountManagementEmployee.isTeamLeader,
+              isAdmin: accountManagementEmployee.isAdmin
+            }}
             onAccountUpdated={handleAccountUpdated}
           />
         )}
