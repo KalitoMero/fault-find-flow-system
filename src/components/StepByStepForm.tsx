@@ -180,6 +180,58 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Removed automatic Excel check on AFO change - now only on order number parsing
 
+  // Auto-detect barcode scan with dot separator in order number field
+  useEffect(() => {
+    const orderField = fields[0]; // BA-Nummer ist immer Feld 0
+    
+    // Nur wenn wir auf Schritt 0 sind und ein Punkt im Wert ist
+    if (currentStep === 0 && orderField?.value?.includes('.')) {
+      console.log('🔍 Barcode mit Punkt erkannt:', orderField.value);
+      
+      // Kleine Verzögerung (debounce), damit der Scanner fertig ist
+      const timer = setTimeout(async () => {
+        const value = orderField.value;
+        const dotIndex = value.indexOf('.');
+        const orderPart = value.substring(0, dotIndex).trim();
+        const afoPart = value.substring(dotIndex + 1).trim();
+        
+        // Nur verarbeiten, wenn beide Teile vorhanden sind und noch nicht gesucht wurde
+        const currentCombination = `${orderPart}-${afoPart}`;
+        if (orderPart && afoPart && currentCombination !== lastSearchedCombination) {
+          console.log('📊 Teile Barcode auf:', { orderPart, afoPart });
+          toast.info('🔍 Barcode wird verarbeitet...');
+          
+          // Update fields immediately
+          setFields(prev => prev.map(field => {
+            if (field.id === 'orderNumber') {
+              return { ...field, value: orderPart, completed: true };
+            }
+            if (field.id === 'afoNumber') {
+              return { ...field, value: afoPart, completed: true };
+            }
+            return field;
+          }));
+          
+          // Starte Excel-Suche
+          const foundWithDepartment = await checkExcelData(orderPart, afoPart);
+          
+          // Springe zum nächsten relevanten Feld
+          if (foundWithDepartment) {
+            console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
+            toast.success(`✅ Auftrag gefunden! Abteilung: ${excelDepartmentName || 'Unbekannt'}`);
+            setCurrentStep(2); // Personalnummer
+          } else {
+            console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
+            toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
+            setCurrentStep(1); // AFO-Nummer zur manuellen Korrektur
+          }
+        }
+      }, 300); // 300ms Verzögerung nach letzter Eingabe
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fields, currentStep, lastSearchedCombination, excelDepartmentName]);
+
   // Auto-focus input field when step changes
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -308,10 +360,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         
         // Auto-fill department if available
         if (typedResult.department) {
-          console.log('Department code from Excel:', typedResult.department);
+          console.log('📊 Department code from Excel:', typedResult.department);
           
           const departments = await getDepartments();
-          console.log('Available departments:', departments.map(d => ({ id: d.id, name: d.name, code: d.code })));
+          console.log('📊 Departments loaded:', {
+            count: departments.length,
+            departments: departments.map(d => ({ id: d.id, name: d.name, code: d.code }))
+          });
+
+          if (departments.length === 0) {
+            console.error('⚠️ WARNUNG: Keine Departments gefunden! Mögliches RLS- oder Datenbankproblem.');
+            toast.error('Keine Abteilungen verfügbar. Bitte laden Sie die Seite neu (Strg+Shift+R).');
+            setIsSearching(false);
+            return false;
+          }
           
           // Search by code (from Excel) with case-insensitive and trim comparison
           const deptCode = typedResult.department?.toString().trim().toUpperCase();
