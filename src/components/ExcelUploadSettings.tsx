@@ -63,38 +63,75 @@ const formatExcelDate = (value: any): string => {
 const processCellValue = (cell: any): string => {
   if (!cell) return '';
   
-  // ONLY process as date if explicitly marked as Date type
+  // PRIORITY 1: Handle cells with formulas (e.g., SVERWEIS/VLOOKUP)
+  if (cell.formula) {
+    // Check if the formula result is an error
+    if (cell.result !== undefined && cell.result !== null) {
+      const resultStr = String(cell.result).trim();
+      
+      // Excel formula errors: #N/A, #REF!, #VALUE!, #DIV/0!, #NAME?, #NULL!, #NUM!
+      if (resultStr.startsWith('#') || resultStr === 'Invalid Date' || resultStr === '') {
+        // Formula has an error - try fallbacks
+        if (cell.text !== undefined && cell.text !== '' && String(cell.text) !== 'Invalid Date') {
+          return String(cell.text).trim();
+        }
+        // Return empty string for formula errors
+        return '';
+      }
+      
+      // Formula result is valid
+      return resultStr;
+    }
+    
+    // If no result, try text
+    if (cell.text !== undefined && cell.text !== '') {
+      return String(cell.text).trim();
+    }
+    
+    // Last resort for formulas: return empty string
+    return '';
+  }
+  
+  // PRIORITY 2: Handle explicit Date cells
   if (cell.type === ExcelJS.ValueType.Date && cell.value instanceof Date) {
     return formatExcelDate(cell.value);
   }
   
-  // Check if cell.value is a Date object (even if not marked as Date type)
+  // PRIORITY 3: Check if cell.value is a Date object
   if (cell.value instanceof Date) {
-    // Check if it's a valid date
     if (!isNaN(cell.value.getTime())) {
-      // Valid date - format it
       return formatExcelDate(cell.value);
     } else {
-      // Invalid Date object - try to use cell.text or cell.result as fallback
+      // Invalid Date object
       if (cell.text !== undefined && cell.text !== '') {
         return String(cell.text).trim();
       }
       if (cell.result !== undefined && cell.result !== '') {
-        return String(cell.result).trim();
+        const resultStr = String(cell.result).trim();
+        if (resultStr !== 'Invalid Date') {
+          return resultStr;
+        }
       }
-      // Last resort: return empty string instead of "Invalid Date"
       return '';
     }
   }
   
-  // For text or other types, use the text property or value as-is
+  // PRIORITY 4: Use text property
   if (cell.text !== undefined) {
-    return String(cell.text).trim();
+    const textStr = String(cell.text).trim();
+    if (textStr !== 'Invalid Date') {
+      return textStr;
+    }
   }
   
+  // PRIORITY 5: Use value property with safety check
   if (cell.value !== undefined) {
-    // Safe string conversion for non-Date values
-    return String(cell.value).trim();
+    const valueStr = String(cell.value).trim();
+    // Final safety check against "Invalid Date" and Excel errors
+    if (valueStr === 'Invalid Date' || valueStr.startsWith('#')) {
+      return '';
+    }
+    return valueStr;
   }
   
   return '';
