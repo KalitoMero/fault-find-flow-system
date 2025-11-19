@@ -142,6 +142,14 @@ serve(async (req) => {
 
         if (profileError) throw profileError;
 
+        // Delete default employee role created by trigger, then assign correct roles
+        const { error: deleteDefaultRoleError } = await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', authData.user.id);
+
+        if (deleteDefaultRoleError) throw deleteDefaultRoleError;
+
         // Assign roles
         const rolesToInsert: any[] = [];
         if (isAdmin) rolesToInsert.push({ user_id: authData.user.id, role: 'admin' });
