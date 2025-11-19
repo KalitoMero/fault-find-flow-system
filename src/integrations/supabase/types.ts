@@ -247,6 +247,7 @@ export type Database = {
           afo_number_column: string | null
           article_description_column: string | null
           article_number_column: string | null
+          column_order: Json | null
           department_column: string | null
           file_name: string | null
           id: string
@@ -260,6 +261,7 @@ export type Database = {
           afo_number_column?: string | null
           article_description_column?: string | null
           article_number_column?: string | null
+          column_order?: Json | null
           department_column?: string | null
           file_name?: string | null
           id?: string
@@ -273,6 +275,7 @@ export type Database = {
           afo_number_column?: string | null
           article_description_column?: string | null
           article_number_column?: string | null
+          column_order?: Json | null
           department_column?: string | null
           file_name?: string | null
           id?: string
