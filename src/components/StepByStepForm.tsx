@@ -184,8 +184,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   useEffect(() => {
     const orderField = fields[0]; // BA-Nummer ist immer Feld 0
     
-    // Nur wenn wir auf Schritt 0 sind und ein Punkt im Wert ist
-    if (currentStep === 0 && orderField?.value?.includes('.')) {
+    // Sobald im BA-Feld ein Punkt vorkommt, Barcode automatisch verarbeiten
+    if (orderField?.value?.includes('.')) {
       const value = orderField.value;
       const currentCombination = value.replace('.', '-');
       
@@ -231,13 +231,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
           }
 
-          setCurrentStep(2); // Immer direkt zur Personalnummer wechseln
+          // Merke verarbeitete Kombination, damit sie nicht doppelt verarbeitet wird
+          setLastSearchedCombination(currentCombination);
+
+          // Immer direkt zur Personalnummer wechseln
+          setCurrentStep(2);
         }
       }, 300); // 300ms Verzögerung nach letzter Eingabe
       
       return () => clearTimeout(timer);
     }
-  }, [fields, currentStep, lastSearchedCombination]);
+  }, [fields, lastSearchedCombination, checkExcelData, excelDepartmentName]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
@@ -296,7 +300,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Removed parseOrderNumber - logic moved to handleNext
 
   // Check Excel data using server-side search - returns true if data found with department
-  const checkExcelData = async (orderNumber: string, afoNumber?: string): Promise<boolean> => {
+  async function checkExcelData(orderNumber: string, afoNumber?: string): Promise<boolean> {
     if (!afoNumber) {
       console.log('No AFO number provided, skipping Excel check');
       setIsSearching(false);
@@ -434,7 +438,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       setIsSearching(false);
       return false;
     }
-  };
+  }
 
   // Performance optimized form validation
   const isFormComplete = useCallback(() => {
