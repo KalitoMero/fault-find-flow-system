@@ -218,20 +218,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             return field;
           }));
           
-          // Starte Excel-Suche
+          // Starte Excel-Suche im Hintergrund
           const foundWithDepartment = await checkExcelData(orderPart, afoPart);
           
-          // Springe zum nächsten relevanten Feld
+          // Unabhängig vom Excel-Ergebnis immer direkt zur Personalnummer springen
           if (foundWithDepartment) {
             console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
             const deptName = excelDepartmentName || 'Unbekannt';
             toast.success(`✅ Auftrag gefunden! Abteilung: ${deptName}`);
-            setCurrentStep(2); // Personalnummer
           } else {
             console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
             toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
-            setCurrentStep(1); // AFO-Nummer zur manuellen Korrektur
           }
+
+          setCurrentStep(2); // Immer direkt zur Personalnummer wechseln
         }
       }, 300); // 300ms Verzögerung nach letzter Eingabe
       
