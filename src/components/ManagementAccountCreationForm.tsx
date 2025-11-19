@@ -15,7 +15,7 @@ const accountCreationSchema = z.object({
     .max(20, 'Benutzername darf maximal 20 Zeichen lang sein')
     .regex(/^[a-zA-Z0-9_]+$/, 'Benutzername darf nur Buchstaben, Zahlen und Unterstrich enthalten'),
   password: z.string()
-    .min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
+    .min(4, 'Passwort muss mindestens 4 Zeichen lang sein'),
   name: z.string()
     .min(2, 'Name muss mindestens 2 Zeichen lang sein')
     .max(100, 'Name darf maximal 100 Zeichen lang sein')

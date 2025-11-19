@@ -48,11 +48,8 @@ export const accountCreationSchema = z.object({
     .max(255, 'E-Mail-Adresse ist zu lang'),
   
   password: z.string()
-    .min(6, 'Passwort muss mindestens 6 Zeichen lang sein')
-    .max(100, 'Passwort ist zu lang')
-    .regex(/[A-Z]/, 'Passwort muss mindestens einen Großbuchstaben enthalten')
-    .regex(/[a-z]/, 'Passwort muss mindestens einen Kleinbuchstaben enthalten')
-    .regex(/[0-9]/, 'Passwort muss mindestens eine Zahl enthalten'),
+    .min(4, 'Passwort muss mindestens 4 Zeichen lang sein')
+    .max(100, 'Passwort ist zu lang'),
   
   name: z.string()
     .trim()
