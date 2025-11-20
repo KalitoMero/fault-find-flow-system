@@ -119,13 +119,52 @@ export const getErrorReports = async (): Promise<ErrorReport[]> => {
   return (data || []).map(toCamelCase);
 };
 
-export const saveErrorReport = async (report: ErrorReport): Promise<void> => {
-  const dbReport = await toSnakeCase(report);
-  const { error } = await supabase
-    .from('error_reports')
-    .insert([dbReport]);
+const saveErrorReportWithRetry = async (
+  report: ErrorReport,
+  maxRetries: number = 3
+): Promise<void> => {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const dbReport = await toSnakeCase(report);
+      const { error } = await supabase
+        .from('error_reports')
+        .insert([dbReport]);
 
-  if (error) {
+      if (!error) {
+        console.log(`✅ Report saved successfully on attempt ${attempt}`);
+        return; // Success!
+      }
+
+      // If it's a duplicate key error and not the last attempt, generate new ID
+      if (error.code === '23505' && attempt < maxRetries) {
+        console.log(`🔄 Duplicate key detected, retrying with new ID (attempt ${attempt}/${maxRetries})...`);
+        const newId = await generateErrorReportId();
+        report.id = newId;
+        lastError = error;
+        continue; // Retry with new ID
+      }
+
+      // Other error or last attempt
+      throw error;
+      
+    } catch (err) {
+      lastError = err;
+      if (attempt === maxRetries) {
+        console.error('❌ All retry attempts failed:', err);
+        throw err;
+      }
+    }
+  }
+  
+  throw lastError;
+};
+
+export const saveErrorReport = async (report: ErrorReport): Promise<void> => {
+  try {
+    await saveErrorReportWithRetry(report, 3);
+  } catch (error) {
     console.error('Error saving report:', error);
     throw error;
   }
