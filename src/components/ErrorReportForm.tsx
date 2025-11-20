@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle, Printer } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Printer, Pencil, Check } from 'lucide-react';
 import { 
   saveErrorReport, 
   getDepartments, 
@@ -48,6 +48,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [lastCreatedReportId, setLastCreatedReportId] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState('');
   const [availableResources, setAvailableResources] = useState<string[]>([]);
+  const [isEditingReview, setIsEditingReview] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -180,7 +181,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   };
 
   const handleEditReport = () => {
-    setShowReview(false);
+    setIsEditingReview(!isEditingReview);
   };
 
   const handleNewReport = () => {
@@ -215,18 +216,39 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Ba-Nr.</Label>
-              <p className="text-sm bg-muted p-2 rounded">{orderNumber}</p>
+              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                Ba-Nr.
+                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+              </Label>
+              {isEditingReview ? (
+                <Input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} />
+              ) : (
+                <p className="text-sm bg-muted p-2 rounded">{orderNumber}</p>
+              )}
             </div>
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">AFO-Nummer</Label>
-              <p className="text-sm bg-muted p-2 rounded">{afoNumber}</p>
+              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                AFO-Nummer
+                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+              </Label>
+              {isEditingReview ? (
+                <Input value={afoNumber} onChange={(e) => setAfoNumber(e.target.value)} />
+              ) : (
+                <p className="text-sm bg-muted p-2 rounded">{afoNumber}</p>
+              )}
             </div>
           </div>
           
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Fehlerhafte Menge</Label>
-            <p className="text-sm bg-muted p-2 rounded">{defectiveQuantity}</p>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Fehlerhafte Menge
+              {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+            </Label>
+            {isEditingReview ? (
+              <Input type="number" value={defectiveQuantity} onChange={(e) => setDefectiveQuantity(e.target.value)} />
+            ) : (
+              <p className="text-sm bg-muted p-2 rounded">{defectiveQuantity}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -242,24 +264,89 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
           {machine && (
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Feststellort</Label>
-              <p className="text-sm bg-muted p-2 rounded">{selectedMach?.name}</p>
+              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                Feststellort
+                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+              </Label>
+              {isEditingReview ? (
+                <SearchableCombobox
+                  options={machines.map(m => ({ value: m.id, label: m.name }))}
+                  value={machine}
+                  onValueChange={setMachine}
+                  placeholder="Feststellort auswählen"
+                  className="w-full"
+                />
+              ) : (
+                <p className="text-sm bg-muted p-2 rounded">{selectedMach?.name}</p>
+              )}
+            </div>
+          )}
+
+          {selectedResource && (
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                Ressource
+                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+              </Label>
+              {isEditingReview ? (
+                <SearchableCombobox
+                  options={availableResources.map(r => ({ value: r, label: r }))}
+                  value={selectedResource}
+                  onValueChange={setSelectedResource}
+                  placeholder="Ressource auswählen"
+                  className="w-full"
+                />
+              ) : (
+                <p className="text-sm bg-muted p-2 rounded">{selectedResource}</p>
+              )}
             </div>
           )}
 
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Problembeschreibung</Label>
-            <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{problemDescription}</p>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Problembeschreibung
+              {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+            </Label>
+            {isEditingReview ? (
+              <Textarea 
+                value={problemDescription} 
+                onChange={(e) => setProblemDescription(e.target.value)} 
+                rows={3} 
+              />
+            ) : (
+              <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{problemDescription}</p>
+            )}
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Korrekturmaßnahme</Label>
-            <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{correctiveAction}</p>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Korrekturmaßnahme
+              {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+            </Label>
+            {isEditingReview ? (
+              <Textarea 
+                value={correctiveAction} 
+                onChange={(e) => setCorrectiveAction(e.target.value)} 
+                rows={3} 
+              />
+            ) : (
+              <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{correctiveAction}</p>
+            )}
           </div>
 
           <div className="flex space-x-3 pt-4">
             <Button onClick={handleEditReport} variant="outline" className="flex-1">
-              Bearbeiten
+              {isEditingReview ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Fertig bearbeiten
+                </>
+              ) : (
+                <>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Bearbeiten
+                </>
+              )}
             </Button>
             <Button onClick={handleFinalSubmit} disabled={isSubmitting} className="flex-1">
               {isSubmitting ? 'Wird erstellt...' : 'Abschicken'}
