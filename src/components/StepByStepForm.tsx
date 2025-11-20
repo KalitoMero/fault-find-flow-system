@@ -717,7 +717,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 
                 {/* Ressource if available */}
                 {additionalExcelData.Ressource && (
-                  <div className="p-4 bg-gray-50 rounded-lg col-span-2">
+                  <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Factory className="h-4 w-4" />
                       <span className="font-medium text-gray-700">Ressource</span>
