@@ -18,7 +18,7 @@ const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDe
   ];
 
   return (
-    <div className={`grid grid-cols-3 gap-3 p-4 bg-white rounded-lg shadow-lg border ${className}`}>
+    <div className={`grid grid-cols-3 gap-4 p-6 bg-white rounded-lg shadow-lg border ${className}`}>
       {numbers.map((row, rowIndex) => 
         row.map((key, keyIndex) => {
           // Skip empty keys (when decimal is not allowed)
@@ -28,7 +28,7 @@ const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDe
             <Button
               key={`${rowIndex}-${keyIndex}`}
               variant="outline"
-              className="h-12 text-lg font-semibold"
+              className="h-20 text-2xl font-semibold"
               onClick={() => {
                 console.log('TouchKeypad clicked:', key); // Debug log
                 if (key === 'DEL') {
@@ -38,7 +38,7 @@ const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDe
                 }
               }}
             >
-              {key === 'DEL' ? <Delete className="h-5 w-5" /> : key}
+              {key === 'DEL' ? <Delete className="h-6 w-6" /> : key}
             </Button>
           );
         }).filter(Boolean)
