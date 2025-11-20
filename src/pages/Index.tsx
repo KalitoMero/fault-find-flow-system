@@ -402,7 +402,7 @@ const Index = () => {
         {isAuthenticated && profile ? (
           <>
             <Badge variant="default">
-              {profile.role === 'admin' ? 'Benutzer' : profile.role === 'teamleader' ? 'Teamleiter' : profile.role === 'management' ? 'Management' : 'Mitarbeiter'}: {profile.name}
+              {profile.role === 'admin' ? 'Benutzer' : profile.role === 'teamleader' ? 'Teamleiter' : profile.role === 'management' ? 'Management' : 'Benutzer'}: {profile.name}
             </Badge>
             {(profile.role === 'teamleader' || profile.role === 'admin' || profile.role === 'management') && (
               <Button variant="outline" onClick={() => setSelectedTab('dashboard')}>
