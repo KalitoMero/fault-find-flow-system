@@ -10,7 +10,7 @@ import { getDepartments, Department } from '@/lib/settingsStorage';
 import { getErrorReports, ErrorReport } from '@/lib/storage';
 import ApprovalDashboard from './ApprovalDashboard';
 import { toast } from 'sonner';
-import { getTeamLeaderStatistics } from '@/lib/supabaseStorage';
+import { getTeamLeaderStatistics } from '@/lib/storage';
 import { Users, Clock, AlertTriangle } from 'lucide-react';
 
 interface ManagementDashboardProps {

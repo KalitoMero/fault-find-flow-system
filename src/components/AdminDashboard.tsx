@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle, Clock, UserPlus } from 'lucide-react';
-import { getTeamLeaderStatistics } from '@/lib/supabaseStorage';
+import { getTeamLeaderStatistics } from '@/lib/storage';
 import { toast } from 'sonner';
 import AccountCreationForm from './AccountCreationForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
