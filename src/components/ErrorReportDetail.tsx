@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, AlertTriangle, User, Calendar, Edit, Printer, Search } from 'lucide-react';
 import { ErrorReport, updateErrorReportStatus, getErrorReports, deleteErrorReport, updateErrorReport } from '@/lib/storage';
@@ -30,12 +31,19 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRelatedDialog, setShowRelatedDialog] = useState(false);
   const [relatedReports, setRelatedReports] = useState<ErrorReport[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedOrderNumber, setEditedOrderNumber] = useState(report.orderNumber);
+  const [editedAfoNumber, setEditedAfoNumber] = useState(report.afoNumber);
+  const [editedDefectiveQuantity, setEditedDefectiveQuantity] = useState(report.defectiveQuantity);
   const [editedProblemDescription, setEditedProblemDescription] = useState(report.problemDescription);
   const [editedCorrectiveAction, setEditedCorrectiveAction] = useState(report.correctiveAction);
   const { isAuthenticated, profile } = useAuth();
 
   const hasChanges = editedProblemDescription !== report.problemDescription || 
-                     editedCorrectiveAction !== report.correctiveAction;
+                     editedCorrectiveAction !== report.correctiveAction ||
+                     editedOrderNumber !== report.orderNumber ||
+                     editedAfoNumber !== report.afoNumber ||
+                     editedDefectiveQuantity !== report.defectiveQuantity;
 
   React.useEffect(() => {
     const loadRelated = async () => {
@@ -124,6 +132,71 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
       
       await updateErrorReport(report.id, updatedReport);
       toast.success('Änderungen wurden gespeichert!');
+      onStatusChange(); // Refresh the report
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast.error('Fehler beim Speichern der Änderungen');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEnterEditMode = () => {
+    setEditedOrderNumber(report.orderNumber);
+    setEditedAfoNumber(report.afoNumber);
+    setEditedDefectiveQuantity(report.defectiveQuantity);
+    setEditedProblemDescription(report.problemDescription);
+    setEditedCorrectiveAction(report.correctiveAction);
+    setIsEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedOrderNumber(report.orderNumber);
+    setEditedAfoNumber(report.afoNumber);
+    setEditedDefectiveQuantity(report.defectiveQuantity);
+    setEditedProblemDescription(report.problemDescription);
+    setEditedCorrectiveAction(report.correctiveAction);
+    setIsEditMode(false);
+  };
+
+  const handleSaveAllChanges = async () => {
+    if (!hasChanges) {
+      setIsEditMode(false);
+      return;
+    }
+
+    // Validation
+    if (!editedOrderNumber.trim() || !editedAfoNumber.trim()) {
+      toast.error('Ba-Nr. und AFO-Nummer dürfen nicht leer sein');
+      return;
+    }
+
+    if (editedDefectiveQuantity <= 0) {
+      toast.error('Ausschussmenge muss größer als 0 sein');
+      return;
+    }
+
+    if (editedProblemDescription.trim().length < 10) {
+      toast.error('Problembeschreibung muss mindestens 10 Zeichen lang sein');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const updatedReport: ErrorReport = {
+        ...report,
+        orderNumber: editedOrderNumber.trim(),
+        afoNumber: editedAfoNumber.trim(),
+        defectiveQuantity: editedDefectiveQuantity,
+        problemDescription: editedProblemDescription.trim(),
+        correctiveAction: editedCorrectiveAction.trim(),
+        editedAt: new Date().toISOString(),
+        editedBy: profile?.id
+      };
+      
+      await updateErrorReport(report.id, updatedReport);
+      toast.success('Alle Änderungen wurden gespeichert!');
+      setIsEditMode(false);
       onStatusChange(); // Refresh the report
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -300,6 +373,16 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                   <Printer className="h-4 w-4 mr-1" />
                   Drucken
                 </Button>
+                {!readOnly && isAuthenticated && !isEditMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEnterEditMode}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Bearbeiten
+                  </Button>
+                )}
               {!readOnly && (report.approvalStatus === 'approved' || report.approvalStatus === 'rejected') && isAuthenticated && (
                 <Button
                   variant="outline"
@@ -404,13 +487,31 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
             {/* Grunddaten */}
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1">
                   <span className="text-sm text-gray-600">Ba-Nr.:</span>
-                  <span className="font-medium">{report.orderNumber}</span>
+                  {isEditMode ? (
+                    <Input
+                      value={editedOrderNumber}
+                      onChange={(e) => setEditedOrderNumber(e.target.value)}
+                      className="border-2 border-blue-400"
+                      placeholder="Ba-Nr."
+                    />
+                  ) : (
+                    <span className="font-medium">{report.orderNumber}</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1">
                   <span className="text-sm text-gray-600">AFO-Nummer:</span>
-                  <span className="font-medium">{report.afoNumber}</span>
+                  {isEditMode ? (
+                    <Input
+                      value={editedAfoNumber}
+                      onChange={(e) => setEditedAfoNumber(e.target.value)}
+                      className="border-2 border-blue-400"
+                      placeholder="AFO-Nummer"
+                    />
+                  ) : (
+                    <span className="font-medium">{report.afoNumber}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">Ersteller:</span>
@@ -432,9 +533,20 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1">
                   <span className="text-sm text-gray-600">{report.quantityType || 'Fehlermenge'}:</span>
-                  <span className="font-medium">{report.defectiveQuantity} ({report.quantityType || 'Ausschussmenge'})</span>
+                  {isEditMode ? (
+                    <Input
+                      type="number"
+                      value={editedDefectiveQuantity}
+                      onChange={(e) => setEditedDefectiveQuantity(Number(e.target.value))}
+                      className="border-2 border-blue-400"
+                      placeholder="Menge"
+                      min="1"
+                    />
+                  ) : (
+                    <span className="font-medium">{report.defectiveQuantity} ({report.quantityType || 'Ausschussmenge'})</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">Abteilung:</span>
@@ -471,11 +583,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Problembeschreibung</h3>
-              {report.approvalStatus !== 'approved' && !readOnly ? (
+              {(isEditMode || (report.approvalStatus !== 'approved' && !readOnly)) ? (
                 <Textarea
                   value={editedProblemDescription}
                   onChange={(e) => setEditedProblemDescription(e.target.value)}
-                  className="min-h-[100px]"
+                  className={isEditMode ? "min-h-[100px] border-2 border-blue-400" : "min-h-[100px]"}
                   placeholder="Problembeschreibung eingeben..."
                 />
               ) : (
@@ -489,11 +601,11 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Korrekturmaßnahme</h3>
-              {report.approvalStatus !== 'approved' && !readOnly ? (
+              {(isEditMode || (report.approvalStatus !== 'approved' && !readOnly)) ? (
                 <Textarea
                   value={editedCorrectiveAction}
                   onChange={(e) => setEditedCorrectiveAction(e.target.value)}
-                  className="min-h-[100px]"
+                  className={isEditMode ? "min-h-[100px] border-2 border-blue-400" : "min-h-[100px]"}
                   placeholder="Korrekturmaßnahme eingeben..."
                 />
               ) : (
@@ -503,8 +615,27 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
               )}
             </div>
 
-            {/* Speichern Button nur wenn Änderungen vorhanden und nicht freigegeben */}
-            {!readOnly && report.approvalStatus !== 'approved' && hasChanges && (
+            {/* Speichern & Abbrechen Buttons im Edit-Modus */}
+            {isEditMode && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={isSubmitting}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handleSaveAllChanges}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Speichert...' : 'Änderungen speichern'}
+                </Button>
+              </div>
+            )}
+
+            {/* Speichern Button nur wenn Änderungen vorhanden und nicht freigegeben (alter Modus) */}
+            {!isEditMode && !readOnly && report.approvalStatus !== 'approved' && hasChanges && (
               <div className="flex justify-end">
                 <Button
                   onClick={handleSaveChanges}
