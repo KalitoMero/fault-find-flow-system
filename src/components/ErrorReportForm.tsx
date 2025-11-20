@@ -221,7 +221,11 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
               </Label>
               {isEditingReview ? (
-                <Input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} />
+                <Input 
+                  value={orderNumber} 
+                  onChange={(e) => setOrderNumber(e.target.value)}
+                  className="border-2 border-blue-400 focus:border-blue-600"
+                />
               ) : (
                 <p className="text-sm bg-muted p-2 rounded">{orderNumber}</p>
               )}
@@ -232,7 +236,11 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
                 {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
               </Label>
               {isEditingReview ? (
-                <Input value={afoNumber} onChange={(e) => setAfoNumber(e.target.value)} />
+                <Input 
+                  value={afoNumber} 
+                  onChange={(e) => setAfoNumber(e.target.value)}
+                  className="border-2 border-blue-400 focus:border-blue-600"
+                />
               ) : (
                 <p className="text-sm bg-muted p-2 rounded">{afoNumber}</p>
               )}
@@ -245,7 +253,12 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
             </Label>
             {isEditingReview ? (
-              <Input type="number" value={defectiveQuantity} onChange={(e) => setDefectiveQuantity(e.target.value)} />
+              <Input 
+                type="number" 
+                value={defectiveQuantity} 
+                onChange={(e) => setDefectiveQuantity(e.target.value)}
+                className="border-2 border-blue-400 focus:border-blue-600"
+              />
             ) : (
               <p className="text-sm bg-muted p-2 rounded">{defectiveQuantity}</p>
             )}
@@ -262,45 +275,45 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
             </div>
           </div>
 
-          {machine && (
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                Feststellort
-                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
-              </Label>
-              {isEditingReview ? (
-                <SearchableCombobox
-                  options={machines.map(m => ({ value: m.id, label: m.name }))}
-                  value={machine}
-                  onValueChange={setMachine}
-                  placeholder="Feststellort auswählen"
-                  className="w-full"
-                />
-              ) : (
-                <p className="text-sm bg-muted p-2 rounded">{selectedMach?.name}</p>
-              )}
-            </div>
-          )}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Feststellort
+              {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+            </Label>
+            {isEditingReview ? (
+              <SearchableCombobox
+                options={machines.map(m => ({ value: m.id, label: m.name }))}
+                value={machine}
+                onValueChange={setMachine}
+                placeholder="Feststellort auswählen"
+                className="w-full border-2 border-blue-400"
+              />
+            ) : (
+              <p className="text-sm bg-muted p-2 rounded">
+                {machines.find(m => m.id === machine)?.name || 'Nicht angegeben'}
+              </p>
+            )}
+          </div>
 
-          {selectedResource && (
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                Ressource
-                {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
-              </Label>
-              {isEditingReview ? (
-                <SearchableCombobox
-                  options={availableResources.map(r => ({ value: r, label: r }))}
-                  value={selectedResource}
-                  onValueChange={setSelectedResource}
-                  placeholder="Ressource auswählen"
-                  className="w-full"
-                />
-              ) : (
-                <p className="text-sm bg-muted p-2 rounded">{selectedResource}</p>
-              )}
-            </div>
-          )}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Ressource
+              {isEditingReview && <Pencil className="h-4 w-4 text-primary" />}
+            </Label>
+            {isEditingReview ? (
+              <SearchableCombobox
+                options={availableResources.map(r => ({ value: r, label: r }))}
+                value={selectedResource}
+                onValueChange={setSelectedResource}
+                placeholder="Ressource auswählen"
+                className="w-full border-2 border-blue-400"
+              />
+            ) : (
+              <p className="text-sm bg-muted p-2 rounded">
+                {selectedResource || 'Keine Ressource ausgewählt'}
+              </p>
+            )}
+          </div>
 
           <div>
             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -311,7 +324,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               <Textarea 
                 value={problemDescription} 
                 onChange={(e) => setProblemDescription(e.target.value)} 
-                rows={3} 
+                rows={3}
+                className="border-2 border-blue-400 focus:border-blue-600"
               />
             ) : (
               <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{problemDescription}</p>
@@ -327,7 +341,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               <Textarea 
                 value={correctiveAction} 
                 onChange={(e) => setCorrectiveAction(e.target.value)} 
-                rows={3} 
+                rows={3}
+                className="border-2 border-blue-400 focus:border-blue-600"
               />
             ) : (
               <p className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{correctiveAction}</p>
@@ -339,12 +354,12 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               {isEditingReview ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Fertig bearbeiten
+                  Änderungen übernehmen
                 </>
               ) : (
                 <>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Bearbeiten
+                  Felder bearbeiten
                 </>
               )}
             </Button>
@@ -459,7 +474,9 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
           </div>
 
           <div>
-            <Label htmlFor="resource">Ressource</Label>
+            <Label htmlFor="resource" className="text-base font-semibold">
+              Ressource (optional, aber empfohlen)
+            </Label>
             <SearchableCombobox
               options={availableResources.map(resource => ({ 
                 value: resource, 
@@ -467,10 +484,13 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               }))}
               value={selectedResource}
               onValueChange={setSelectedResource}
-              placeholder="Ressource auswählen (optional)"
+              placeholder="Ressource auswählen..."
               searchPlaceholder="Ressource suchen..."
               className="w-full"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Wählen Sie die betroffene Ressource/Maschine aus
+            </p>
           </div>
 
           <div>
