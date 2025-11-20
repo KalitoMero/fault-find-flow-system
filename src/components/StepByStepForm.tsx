@@ -873,7 +873,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     )}
                     {additionalExcelData.Ressource && (
                       <div>
-                        <span className="text-blue-600">Ressource:</span> <span className="font-medium text-primary">{additionalExcelData.Ressource}</span>
+                        <span className="text-blue-600">Ressource:</span> <span className="font-medium">{additionalExcelData.Ressource}</span>
                       </div>
                     )}
                     {additionalExcelData.Artikelnummer && (
