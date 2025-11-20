@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
-import { addUserRole } from '@/lib/supabaseStorage';
+import { addUserRole } from '@/lib/storage';
 import { z } from 'zod';
 
 const accountCreationSchema = z.object({

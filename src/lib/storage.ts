@@ -122,23 +122,25 @@ export const getErrorReports = async (): Promise<ErrorReport[]> => {
 const saveErrorReportWithRetry = async (
   report: ErrorReport,
   maxRetries: number = 3
-): Promise<void> => {
+): Promise<ErrorReport> => {
   let lastError: any;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const dbReport = await toSnakeCase(report);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('error_reports')
-        .insert([dbReport]);
+        .insert([dbReport])
+        .select()
+        .single();
 
-      if (!error) {
+      if (!error && data) {
         console.log(`✅ Report saved successfully on attempt ${attempt}`);
-        return; // Success!
+        return toCamelCase(data); // Return the saved report
       }
 
       // If it's a duplicate key error and not the last attempt, use UUID
-      if (error.code === '23505' && attempt < maxRetries) {
+      if (error?.code === '23505' && attempt < maxRetries) {
         console.log(`🔄 Duplicate key detected, using UUID (attempt ${attempt}/${maxRetries})...`);
         // Use timestamp + random for unique ID instead of querying DB again
         const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -162,9 +164,9 @@ const saveErrorReportWithRetry = async (
   throw lastError;
 };
 
-export const saveErrorReport = async (report: ErrorReport): Promise<void> => {
+export const saveErrorReport = async (report: ErrorReport): Promise<ErrorReport> => {
   try {
-    await saveErrorReportWithRetry(report, 3);
+    return await saveErrorReportWithRetry(report, 3);
   } catch (error) {
     console.error('Error saving report:', error);
     throw error;
@@ -454,4 +456,230 @@ export const getTeamLeaderStatistics = async () => {
   );
 
   return statistics;
+};
+
+// ============= ADDITIONAL FUNCTIONS FROM SUPABASESTORAGE.TS =============
+
+// Audio-Datei hochladen
+export const uploadAudioFile = async (
+  reportId: string,
+  fieldName: string,
+  audioBlob: Blob
+): Promise<string> => {
+  const fileName = `${reportId}_${fieldName}_${Date.now()}.webm`;
+  const filePath = `${reportId}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('audio-recordings')
+    .upload(filePath, audioBlob, {
+      contentType: 'audio/webm'
+    });
+
+  if (uploadError) throw uploadError;
+
+  // Speichere Referenz in audio_files Tabelle
+  const { error: dbError } = await supabase
+    .from('audio_files')
+    .insert({
+      report_id: reportId,
+      field_name: fieldName,
+      storage_path: filePath
+    });
+
+  if (dbError) throw dbError;
+
+  return filePath;
+};
+
+// Audio-Dateien für Report abrufen
+export const getAudioFilesForReport = async (reportId: string) => {
+  const { data, error } = await supabase
+    .from('audio_files')
+    .select('*')
+    .eq('report_id', reportId);
+
+  if (error) throw error;
+
+  // URLs für die Audio-Dateien generieren
+  const filesWithUrls = await Promise.all(
+    (data || []).map(async (file: any) => {
+      const { data: urlData } = supabase.storage
+        .from('audio-recordings')
+        .getPublicUrl(file.storage_path);
+
+      return {
+        ...file,
+        url: urlData.publicUrl
+      };
+    })
+  );
+
+  return filesWithUrls;
+};
+
+// Abteilungen abrufen
+export const getDepartments = async () => {
+  const { data, error } = await supabase
+    .from('departments')
+    .select('*')
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Maschinen abrufen
+export const getMachines = async () => {
+  const { data, error } = await supabase
+    .from('machines')
+    .select('*')
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Mitarbeiter einer Abteilung abrufen
+export const getEmployeesByDepartment = async (departmentId: string) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, personal_number')
+    .eq('department_id', departmentId)
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Alle Profile abrufen (mit Rollen)
+export const getProfiles = async () => {
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('name');
+
+  if (profileError) throw profileError;
+
+  // Rollen für alle Profile abrufen
+  const { data: roles, error: roleError } = await supabase
+    .from('user_roles')
+    .select('user_id, role');
+
+  if (roleError) throw roleError;
+
+  // Profile mit Rollen anreichern
+  return (profiles || []).map((profile: any) => {
+    const userRoles = (roles || []).filter((r: any) => r.user_id === profile.id);
+    return {
+      ...profile,
+      roles: userRoles.map((r: any) => r.role),
+      isTeamLeader: userRoles.some((r: any) => r.role === 'teamleader'),
+      isAdmin: userRoles.some((r: any) => r.role === 'admin')
+    };
+  });
+};
+
+// Profil aktualisieren
+export const updateProfile = async (userId: string, updates: any) => {
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+
+  if (error) throw error;
+};
+
+// Rolle hinzufügen
+export const addUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee' | 'management') => {
+  const { error } = await supabase
+    .from('user_roles')
+    .insert({ user_id: userId, role });
+
+  if (error) throw error;
+};
+
+// Rolle entfernen
+export const removeUserRole = async (userId: string, role: 'admin' | 'teamleader' | 'employee' | 'management') => {
+  const { error } = await supabase
+    .from('user_roles')
+    .delete()
+    .eq('user_id', userId)
+    .eq('role', role);
+
+  if (error) throw error;
+};
+
+// Abteilung erstellen
+export const createDepartment = async (name: string) => {
+  const { data, error } = await supabase
+    .from('departments')
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Abteilung löschen
+export const deleteDepartment = async (departmentId: string) => {
+  const { error } = await supabase
+    .from('departments')
+    .delete()
+    .eq('id', departmentId);
+
+  if (error) throw error;
+};
+
+// Maschine erstellen
+export const createMachine = async (name: string) => {
+  const { data, error } = await supabase
+    .from('machines')
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Maschine löschen
+export const deleteMachine = async (machineId: string) => {
+  const { error } = await supabase
+    .from('machines')
+    .delete()
+    .eq('id', machineId);
+
+  if (error) throw error;
+};
+
+// Logo aus app_settings abrufen
+export const getLogo = async (): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'logo')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.value || null;
+};
+
+// Logo in app_settings speichern
+export const saveLogo = async (logoDataUrl: string) => {
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert({ key: 'logo', value: logoDataUrl });
+
+  if (error) throw error;
+};
+
+// Logo aus app_settings entfernen
+export const removeLogo = async () => {
+  const { error } = await supabase
+    .from('app_settings')
+    .delete()
+    .eq('key', 'logo');
+
+  if (error) throw error;
 };

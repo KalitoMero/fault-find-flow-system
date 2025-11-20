@@ -13,7 +13,7 @@ import {
   getMachines, 
   getEmployeesByDepartment,
   uploadAudioFile 
-} from '@/lib/supabaseStorage';
+} from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
 import AudioRecorder from './AudioRecorder';
 import SearchableCombobox from './SearchableCombobox';
@@ -113,21 +113,26 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setIsSubmitting(true);
 
     try {
+      // Generate a unique ID for the report
+      const reportId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       // Fehlermeldung speichern
-      const reportData = {
-        order_number: orderNumber,
-        afo_number: afoNumber,
-        defective_quantity: parseInt(defectiveQuantity),
-        total_defective_quantity: parseInt(defectiveQuantity),
-        machine_id: machine || null,
-        problem_description: problemDescription,
-        error_cause: problemDescription,
-        corrective_action: correctiveAction,
-        creator_id: user.id,
-        creator_name: profile.name,
-        personal_number: profile.personal_number,
-        department_id: selectedDepartment,
-        approval_status: 'pending' as const
+      const reportData: import('@/lib/storage').ErrorReport = {
+        id: reportId,
+        orderNumber: orderNumber,
+        afoNumber: afoNumber,
+        defectiveQuantity: parseInt(defectiveQuantity),
+        totalDefectiveQuantity: parseInt(defectiveQuantity),
+        machine: machine || '',
+        problemDescription: problemDescription,
+        errorCause: problemDescription,
+        correctiveAction: correctiveAction,
+        creator: profile.name,
+        personalNumber: profile.personal_number || '',
+        createdAt: new Date().toISOString(),
+        approvalStatus: 'pending' as const,
+        assignedTeamLeader: '',
+        excelDepartment: selectedDepartment
       };
 
       const savedReport = await saveErrorReport(reportData);

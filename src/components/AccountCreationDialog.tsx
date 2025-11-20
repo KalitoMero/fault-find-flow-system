@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
-import { addUserRole } from '@/lib/supabaseStorage';
+import { addUserRole } from '@/lib/storage';
 import { accountCreationSchema } from '@/lib/validation';
 
 interface AccountCreationDialogProps {

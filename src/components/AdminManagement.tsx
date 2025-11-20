@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Trash2, Shield } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
-import { getProfiles, addUserRole, removeUserRole } from '@/lib/supabaseStorage';
+import { getProfiles, addUserRole, removeUserRole } from '@/lib/storage';
 import { requireAdminOrThrow } from '@/lib/authz';
 import { accountCreationSchema } from '@/lib/validation';
 
