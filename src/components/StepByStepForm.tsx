@@ -17,6 +17,7 @@ import TouchKeypad from './TouchKeypad';
 import VirtualKeyboard from './VirtualKeyboard';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
+import { findTeamLeaderForResourceOrDepartment } from '@/lib/resourceStorage';
 
 interface StepByStepFormProps {
   onReportCreated: () => void;
@@ -267,24 +268,26 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     return () => clearTimeout(timer);
   }, [currentStep, fields]);
 
-  // Finde den passenden Teamleiter basierend auf der Abteilungs-ID
-  const findTeamLeaderForDepartment = async (departmentId: string): Promise<string> => {
+  // Finde den passenden Teamleiter basierend auf Ressource (priorisiert) oder Abteilung
+  const findTeamLeaderForDepartmentOrResource = async (
+    departmentId: string | null,
+    resourceName: string | null
+  ): Promise<string> => {
     try {
-      const employees = await getEmployees();
+      console.log('🔍 Searching team leader for:', { resourceName, departmentId });
       
-      // Finde Teamleiter in dieser Abteilung
-      const teamLeader = employees.find(emp => 
-        emp.isTeamLeader && 
-        emp.departmentId === departmentId && 
-        emp.id
+      // Verwende die Funktion aus resourceStorage, die Ressource priorisiert
+      const teamLeaderId = await findTeamLeaderForResourceOrDepartment(
+        resourceName,
+        departmentId
       );
       
-      if (teamLeader && teamLeader.id) {
-        console.log('Team leader found for department ID', departmentId, ':', teamLeader.id);
-        return teamLeader.id;
+      if (teamLeaderId) {
+        console.log('✅ Team leader found:', teamLeaderId, 'for resource:', resourceName || 'none', 'department:', departmentId || 'none');
+        return teamLeaderId;
       }
       
-      console.log('No team leader found for department ID:', departmentId);
+      console.log('⚠️ No team leader found, using System');
       return 'System';
     } catch (error) {
       // If access is denied (e.g., team leader trying to access admin function), return System
@@ -399,10 +402,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             console.log('✅ Department matched:', department.name, 'with ID:', department.id);
             foundDepartmentName = department.name;
             
-            // Find and set team leader using department ID
-            const teamLeader = await findTeamLeaderForDepartment(department.id);
+            // Extrahiere Ressource aus additionalData
+            const resourceName = typedResult.additionalData?.Ressource || null;
+            console.log('📦 Resource from Excel:', resourceName);
+            
+            // Find and set team leader using resource (prioritized) or department
+            const teamLeader = await findTeamLeaderForDepartmentOrResource(
+              department.id,
+              resourceName
+            );
             setAssignedTeamLeader(teamLeader);
-            console.log('Assigned team leader:', teamLeader);
+            console.log('✅ Assigned team leader:', teamLeader, 'based on resource:', resourceName || 'none', 'and department:', department.name);
             
             // Track this successful search combination
             setLastSearchedCombination(`${orderNumber}-${afoNumber}`);
