@@ -130,6 +130,7 @@ const buildHeaders = (fields: ExportFields, includeAudio: boolean, reports: Erro
       'Ba-Nr.',
       'AFO-Nummer',
       'Abteilung',
+      'Ressource',
       'Artikelnummer'
     );
   }
@@ -229,6 +230,7 @@ const buildExcelCompatibleCSV = (
         escapeCsvValue(report.id),
         escapeCsvValue(report.orderNumber),
         escapeCsvValue(report.afoNumber),
+        escapeCsvValue(report.resourceName || ''),
         escapeCsvValue(report.machine)
       );
     }
@@ -307,6 +309,7 @@ const buildDataRows = (
         report.orderNumber,
         report.afoNumber,
         report.departmentName || report.excelDepartment || '',
+        report.resourceName || '',
         report.additionalExcelData?.Artikelnummer || ''
       );
     }
