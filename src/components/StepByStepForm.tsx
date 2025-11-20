@@ -397,10 +397,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           );
           
           if (department) {
-            setExcelDepartment(department.id);
-            setExcelDepartmentName(department.name);
-            console.log('✅ Department matched:', department.name, 'with ID:', department.id);
-            foundDepartmentName = department.name;
+            console.log('✅ Department matched from Excel:', department.name, 'with ID:', department.id);
             
             // Extrahiere Ressource aus additionalData
             const resourceName = typedResult.additionalData?.Ressource || null;
@@ -413,6 +410,35 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             );
             setAssignedTeamLeader(teamLeader);
             console.log('✅ Assigned team leader:', teamLeader, 'based on resource:', resourceName || 'none', 'and department:', department.name);
+            
+            // Jetzt die Abteilung des Teamleiters laden und anzeigen (nicht die aus Excel)
+            if (teamLeader && teamLeader !== 'System') {
+              const { data: teamLeaderProfile } = await supabase
+                .from('profiles')
+                .select('department_id, departments(name)')
+                .eq('id', teamLeader)
+                .single();
+              
+              if (teamLeaderProfile?.department_id) {
+                const teamLeaderDeptName = (teamLeaderProfile as any).departments?.name;
+                setExcelDepartment(teamLeaderProfile.department_id);
+                setExcelDepartmentName(teamLeaderDeptName || '');
+                foundDepartmentName = teamLeaderDeptName || department.name;
+                console.log('✅ Set department from team leader:', teamLeaderDeptName, 'ID:', teamLeaderProfile.department_id);
+              } else {
+                // Fallback auf Excel-Abteilung
+                setExcelDepartment(department.id);
+                setExcelDepartmentName(department.name);
+                foundDepartmentName = department.name;
+                console.log('⚠️ Team leader has no department, using Excel department:', department.name);
+              }
+            } else {
+              // Kein Teamleiter gefunden, Excel-Abteilung verwenden
+              setExcelDepartment(department.id);
+              setExcelDepartmentName(department.name);
+              foundDepartmentName = department.name;
+              console.log('⚠️ No team leader assigned, using Excel department:', department.name);
+            }
             
             // Track this successful search combination
             setLastSearchedCombination(`${orderNumber}-${afoNumber}`);
