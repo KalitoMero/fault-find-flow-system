@@ -25,6 +25,7 @@ import {
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
 import { getExcelSettings, getExcelDataByOrderNumber } from '@/lib/excelStorage';
+import { findTeamLeaderForResourceOrDepartment } from '@/lib/resourceStorage';
 import AudioRecorderSimple from './AudioRecorderSimple';
 import AudioRecorderN8n from './AudioRecorderN8n';
 import SimpleCombobox from './SimpleCombobox';
@@ -260,29 +261,39 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
-    const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
-
-    if (!teamLeader) {
-      toast.error('Kein Teamleiter für die ausgewählte Abteilung gefunden');
-      return;
-    }
-
     const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
     if (!selectedEmp) {
       toast.error('Ausgewählter Mitarbeiter nicht gefunden');
       return;
     }
 
+    // Excel-Daten laden, um Ressource zu ermitteln
+    const excelData = await getExcelDataByOrderNumber(orderNumber);
+    const excelSettings = await getExcelSettings();
+    
+    let resourceName: string | undefined;
+    if (excelData && excelSettings?.resourceColumn && excelData[excelSettings.resourceColumn]) {
+      resourceName = excelData[excelSettings.resourceColumn];
+    }
+
+    // Teamleiter basierend auf Ressource (priorisiert) oder Abteilung finden
+    const teamLeaderId = await findTeamLeaderForResourceOrDepartment(
+      resourceName || null,
+      selectedDepartment || null
+    );
+
+    if (!teamLeaderId) {
+      toast.error('Kein Teamleiter für die ausgewählte Ressource/Abteilung gefunden');
+      return;
+    }
+
     setShowReview(true);
-  }, [employees, selectedDepartment, selectedEmployee]);
+  }, [employees, selectedDepartment, selectedEmployee, orderNumber]);
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      const departmentEmployees = employees.filter(emp => emp.departmentId === selectedDepartment);
-      const teamLeader = departmentEmployees.find(emp => emp.isTeamLeader);
       const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
 
       // Excel-Daten laden basierend auf Auftragsnummer
@@ -321,6 +332,27 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         }
       }
 
+      // Teamleiter basierend auf Ressource (priorisiert) oder Abteilung finden
+      const teamLeaderId = await findTeamLeaderForResourceOrDepartment(
+        resourceName || null,
+        selectedDepartment || null
+      );
+
+      if (!teamLeaderId) {
+        toast.error('Kein Teamleiter für die ausgewählte Ressource/Abteilung gefunden');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Teamleiter-Daten laden
+      const { data: teamLeaderProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', teamLeaderId)
+        .single();
+
+      const teamLeaderName = teamLeaderProfile?.username || teamLeaderProfile?.name || 'Unbekannter Teamleiter';
+
       const report = {
         id: await generateErrorReportId(),
         orderNumber,
@@ -335,7 +367,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
         correctiveAction,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        assignedTeamLeader: teamLeader!.account?.username || teamLeader!.name,
+        assignedTeamLeader: teamLeaderName,
         additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
         resourceName: resourceName || undefined,
         audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
