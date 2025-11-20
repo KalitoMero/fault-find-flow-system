@@ -204,11 +204,10 @@ export const getErrorReportByOrderNumber = async (orderNumber: string): Promise<
 
 export const generateErrorReportId = async (): Promise<string> => {
   try {
+    // Get ALL IDs from the database to sort numerically in JavaScript
     const { data, error } = await supabase
       .from('error_reports')
-      .select('id')
-      .order('id', { ascending: false })
-      .limit(1);
+      .select('id');
 
     if (error) {
       console.error('Error fetching report IDs:', error);
@@ -216,10 +215,15 @@ export const generateErrorReportId = async (): Promise<string> => {
     }
 
     let highestId = 0;
+    
+    // Sort numerically in JavaScript (not alphabetically like SQL does with TEXT columns)
     if (data && data.length > 0) {
-      const id = parseInt(data[0].id);
-      if (!isNaN(id)) {
-        highestId = id;
+      const numericIds = data
+        .map(row => parseInt(row.id))
+        .filter(id => !isNaN(id));
+      
+      if (numericIds.length > 0) {
+        highestId = Math.max(...numericIds);
       }
     }
 
