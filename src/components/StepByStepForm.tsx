@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer, Delete } from 'lucide-react';
+import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer, Delete, Factory } from 'lucide-react';
 import { generateErrorReportId, saveErrorReport } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelSettings } from '@/lib/excelStorage';
@@ -714,6 +714,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     <p className="text-lg font-semibold">{field.value || 'Nicht angegeben'}</p>
                   </div>
                 ))}
+                
+                {/* Ressource if available */}
+                {additionalExcelData.Ressource && (
+                  <div className="p-4 bg-gray-50 rounded-lg col-span-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Factory className="h-4 w-4" />
+                      <span className="font-medium text-gray-700">Ressource</span>
+                    </div>
+                    <p className="text-lg font-semibold">{additionalExcelData.Ressource}</p>
+                  </div>
+                )}
               </div>
               
               {/* Text areas full width */}
@@ -726,17 +737,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                   <p className="whitespace-pre-wrap text-gray-900">{field.value}</p>
                 </div>
               ))}
-
-              {/* Ressource if available */}
-              {additionalExcelData.Ressource && (
-                <div className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Settings className="h-5 w-5 text-primary" />
-                    <span className="font-semibold text-primary text-lg">Ressource</span>
-                  </div>
-                  <p className="text-2xl font-bold text-primary">{additionalExcelData.Ressource}</p>
-                </div>
-              )}
 
               {/* Excel data if available */}
               {(excelDepartmentName || Object.keys(additionalExcelData).length > 0) && (
