@@ -387,7 +387,6 @@ const Index = () => {
         report={selectedReport}
         onBack={handleBackToOverview}
         onStatusChange={handleApprovalChange}
-        onEdit={handleEditClick}
         onViewReport={handleViewRelatedReport}
         backButtonText={getBackButtonText()}
       />
