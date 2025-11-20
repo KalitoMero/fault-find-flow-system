@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, ArrowRight, Edit3, Package, Hash, User, FileText, Settings, Home, Trash2, Printer, Delete } from 'lucide-react';
-import { generateErrorReportId } from '@/lib/storage';
+import { generateErrorReportId, saveErrorReport } from '@/lib/storage';
 import { getEmployees, Employee, getDepartments } from '@/lib/settingsStorage';
 import { getExcelSettings } from '@/lib/excelStorage';
 import { printErrorReport } from '@/lib/printUtils';
@@ -549,7 +549,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return;
       }
       
-      const payload = {
+      const report = {
         id: reportId,
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || '',
@@ -561,36 +561,20 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         errorCause: problemDesc,
         correctiveAction: correctiveAct,
         creator: personalNum,
-        assignedTeamLeader,
-        excelDepartment,
+        creatorName: personalNum,
+        assignedTeamLeader: assignedTeamLeader,
+        assignedTeamLeaderId: assignedTeamLeader === 'System' ? undefined : assignedTeamLeader,
+        departmentId: excelDepartment || undefined,
         additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
-        audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
-      };
-      
-      console.log('Creating report via Edge Function:', payload);
-      
-      // Call Edge Function instead of direct database insert
-      const { data, error } = await supabase.functions.invoke('create-error-report', {
-        body: payload
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Fehler beim Erstellen der Fehlermeldung');
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Fehler beim Erstellen der Fehlermeldung');
-      }
-
-      console.log('Report created successfully:', data.report);
-      
-      // Create report object for PDF generation
-      const report = {
-        ...payload,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        machine: undefined
+        machine: ''
       };
+      
+      console.log('Saving report:', report);
+      
+      // Save report directly using saveErrorReport
+      await saveErrorReport(report);
       
       // PDF automatisch generieren und herunterladen
       generatePDF(report);
@@ -645,51 +629,37 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return;
       }
       
-      const payload = {
-        id: await generateErrorReportId(),
+      const reportId = await generateErrorReportId();
+      
+      const report = {
+        id: reportId,
         orderNumber: fields.find(f => f.id === 'orderNumber')?.value || '',
         afoNumber: fields.find(f => f.id === 'afoNumber')?.value || '',
+        personalNumber: personalNum,
         defectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         totalDefectiveQuantity: parseInt(fields.find(f => f.id === 'defectiveQuantity')?.value || '0'),
         quantityType: fields.find(f => f.id === 'defectiveQuantity')?.quantityType || 'Ausschussmenge',
-        creator: personalNum,
-        personalNumber: personalNum,
         detectionLocation: fields.find(f => f.id === 'detectionLocation')?.value || undefined,
         problemDescription: problemDesc,
         errorCause: problemDesc,
         correctiveAction: correctiveAct || '',
+        creator: personalNum,
+        creatorName: personalNum,
         assignedTeamLeader: assignedTeamLeader,
-        excelDepartment: excelDepartment || undefined,
+        assignedTeamLeaderId: assignedTeamLeader === 'System' ? undefined : assignedTeamLeader,
+        departmentId: excelDepartment || undefined,
         additionalExcelData: Object.keys(additionalExcelData).length > 0 ? additionalExcelData : undefined,
-        audioFiles: Object.keys(audioFiles).length > 0 ? audioFiles : undefined
-      };
-
-      console.log('Creating report via Edge Function:', payload);
-      
-      // Call Edge Function instead of direct database insert
-      const { data, error } = await supabase.functions.invoke('create-error-report', {
-        body: payload
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Fehler beim Erstellen der Fehlermeldung');
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Fehler beim Erstellen der Fehlermeldung');
-      }
-
-      console.log('Report created successfully:', data.report);
-      
-      toast.success('Fehlermeldung erfolgreich erstellt!');
-      
-      // Create report object for printing
-      const report = {
-        ...payload,
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
-        machine: undefined
+        machine: ''
       };
+
+      console.log('Saving report:', report);
+      
+      // Save report directly using saveErrorReport
+      await saveErrorReport(report);
+      
+      toast.success('Fehlermeldung erfolgreich erstellt!');
       
       // Automatisch Druckdialog öffnen mit automatischer Rückkehr zur Startseite
       await printErrorReport(report, () => {
