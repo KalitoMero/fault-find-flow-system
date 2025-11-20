@@ -298,7 +298,7 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
           </div>
           <div class="info-item">
             <span class="info-label">Ressource:</span>
-            <span class="info-value">${report.additionalExcelData?.Ressource || machineName || 'Nicht angegeben'}</span>
+            <span class="info-value">${report.resourceName || report.additionalExcelData?.Ressource || machineName || 'Nicht angegeben'}</span>
           </div>
         </div>
         <div class="info-grid">
