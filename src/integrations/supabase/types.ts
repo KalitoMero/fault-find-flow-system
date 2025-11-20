@@ -120,7 +120,7 @@ export type Database = {
           assigned_team_leader_id: string | null
           corrective_action: string
           created_at: string | null
-          creator_id: string
+          creator_id: string | null
           creator_name: string
           defective_quantity: number
           department_id: string | null
@@ -151,7 +151,7 @@ export type Database = {
           assigned_team_leader_id?: string | null
           corrective_action: string
           created_at?: string | null
-          creator_id: string
+          creator_id?: string | null
           creator_name: string
           defective_quantity: number
           department_id?: string | null
@@ -182,7 +182,7 @@ export type Database = {
           assigned_team_leader_id?: string | null
           corrective_action?: string
           created_at?: string | null
-          creator_id?: string
+          creator_id?: string | null
           creator_name?: string
           defective_quantity?: number
           department_id?: string | null
