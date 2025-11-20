@@ -727,6 +727,17 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                 </div>
               ))}
 
+              {/* Ressource if available */}
+              {additionalExcelData.Ressource && (
+                <div className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-primary text-lg">Ressource</span>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">{additionalExcelData.Ressource}</p>
+                </div>
+              )}
+
               {/* Excel data if available */}
               {(excelDepartmentName || Object.keys(additionalExcelData).length > 0) && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
