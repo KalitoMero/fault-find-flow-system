@@ -28,7 +28,7 @@ const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDe
             <Button
               key={`${rowIndex}-${keyIndex}`}
               variant="outline"
-              className="h-20 text-2xl font-semibold"
+              className="h-20 aspect-square text-2xl font-semibold"
               onClick={() => {
                 console.log('TouchKeypad clicked:', key); // Debug log
                 if (key === 'DEL') {
