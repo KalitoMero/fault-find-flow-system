@@ -358,7 +358,7 @@ const buildDataRows = (
     
     // Remove standard headers to get only additional ones
     if (fields.basicInfo) {
-      additionalHeaders.splice(0, 4); // Remove basic info headers (4 instead of 5)
+      additionalHeaders.splice(0, 5); // Remove basic info headers
     }
     if (fields.quantities) {
       additionalHeaders.splice(0, 2); // Remove quantity headers (2 instead of 3)
