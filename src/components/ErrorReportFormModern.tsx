@@ -393,7 +393,8 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     const selectedMachine = machines.find(m => m.id === machine);
 
     return (
-      <div className="animate-fade-in">
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <div className="animate-fade-in w-full max-w-4xl px-4">
         <Card className="glass-card border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
           <CardHeader className="text-center pb-6">
             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 animate-scale-in">
@@ -492,13 +493,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
 
   if (showSuccess) {
     return (
-      <div className="animate-fade-in">
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <div className="animate-fade-in w-full max-w-4xl px-4">
         <Card className="glass-card border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
           <CardHeader className="text-center pb-6">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-scale-in">
@@ -534,12 +537,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="min-h-screen flex items-center justify-center py-8">
+      <div className="animate-fade-in space-y-8 w-full max-w-4xl px-4">
       {/* Step Indicator */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="pt-6">
@@ -852,8 +857,9 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             setShowVirtualKeyboard(false);
             setActiveKeyboardField(null);
           }}
-        />
+         />
       )}
+      </div>
     </div>
   );
 };
