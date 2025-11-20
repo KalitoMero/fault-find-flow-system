@@ -71,6 +71,13 @@ const Index = () => {
     }
   }, [loading, isAuthenticated, profile]);
 
+  // Automatically show login dialog if user is not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      setShowLogin(true);
+    }
+  }, [loading, isAuthenticated]);
+
   const loadData = async () => {
     try {
       if (profile && (profile.role === 'teamleader' || profile.role === 'admin' || profile.role === 'management')) {
