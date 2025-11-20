@@ -14,6 +14,8 @@ import {
   getEmployeesByDepartment,
   uploadAudioFile 
 } from '@/lib/storage';
+import { extractResourcesFromExcel } from '@/lib/resourceUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AudioRecorder from './AudioRecorder';
 import SearchableCombobox from './SearchableCombobox';
@@ -44,6 +46,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [lastCreatedReportId, setLastCreatedReportId] = useState<string | null>(null);
+  const [selectedResource, setSelectedResource] = useState('');
+  const [availableResources, setAvailableResources] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
@@ -54,6 +58,10 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
       loadEmployees(selectedDepartment);
     }
   }, [selectedDepartment]);
+
+  useEffect(() => {
+    loadAvailableResources();
+  }, []);
 
   // Auto-hide success message after 2 minutes
   useEffect(() => {
@@ -88,6 +96,23 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error);
       toast.error('Fehler beim Laden der Mitarbeiter');
+    }
+  };
+
+  const loadAvailableResources = async () => {
+    try {
+      const { data: settings } = await supabase
+        .from('excel_settings')
+        .select('resource_column')
+        .limit(1)
+        .maybeSingle();
+      
+      if (settings?.resource_column) {
+        const resources = await extractResourcesFromExcel(settings.resource_column);
+        setAvailableResources(resources);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Ressourcen:', error);
     }
   };
 
@@ -132,7 +157,8 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
         createdAt: new Date().toISOString(),
         approvalStatus: 'pending' as const,
         assignedTeamLeader: '',
-        excelDepartment: selectedDepartment
+        excelDepartment: selectedDepartment,
+        resourceName: selectedResource || undefined
       };
 
       const savedReport = await saveErrorReport(reportData);
@@ -165,6 +191,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
     setProblemDescription('');
     setCorrectiveAction('');
     setSelectedDepartment('');
+    setSelectedResource('');
     setAudioBlobs({});
     setShowSuccess(false);
     setLastCreatedReportId(null);
@@ -340,6 +367,21 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
               onValueChange={setMachine}
               placeholder="Feststellort auswählen"
               searchPlaceholder="Feststellort suchen..."
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="resource">Ressource</Label>
+            <SearchableCombobox
+              options={availableResources.map(resource => ({ 
+                value: resource, 
+                label: resource 
+              }))}
+              value={selectedResource}
+              onValueChange={setSelectedResource}
+              placeholder="Ressource auswählen (optional)"
+              searchPlaceholder="Ressource suchen..."
               className="w-full"
             />
           </div>
