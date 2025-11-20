@@ -438,6 +438,7 @@ export type Database = {
           p_department_column?: string
           p_order_column: string
           p_order_number: string
+          p_resource_column?: string
         }
         Returns: Json
       }
