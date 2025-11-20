@@ -207,24 +207,19 @@ export const generateErrorReportId = async (): Promise<string> => {
     const { data, error } = await supabase
       .from('error_reports')
       .select('id')
-      .order('created_at', { ascending: false })
-      .limit(20); // Get more records to ensure we find the highest numeric ID
+      .order('id', { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error('Error fetching report IDs:', error);
       throw error;
     }
 
-    // Find the highest numeric ID
     let highestId = 0;
     if (data && data.length > 0) {
-      const numericIds = data
-        .map((report: any) => parseInt(report.id))
-        .filter((id: number) => !isNaN(id))
-        .sort((a: number, b: number) => b - a);
-      
-      if (numericIds.length > 0) {
-        highestId = numericIds[0];
+      const id = parseInt(data[0].id);
+      if (!isNaN(id)) {
+        highestId = id;
       }
     }
 
