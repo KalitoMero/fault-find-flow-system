@@ -22,7 +22,7 @@ import AdminDashboard from '@/components/AdminDashboard';
 import ManagementDashboard from '@/components/ManagementDashboard';
 import DeputySelection from '@/components/DeputySelection';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import Logo from '@/components/Logo';
+
 import TeamLeaderStatistics from '@/components/TeamLeaderStatistics';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -623,9 +623,6 @@ const Index = () => {
         isOpen={showSettings}
         onClose={handleSettingsClose}
       />
-
-      {/* Logo Component - Fixed to bottom right */}
-      <Logo />
     </div>
   );
 };

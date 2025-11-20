@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.manage-employees]
 verify_jwt = true
+
+[functions.create-error-report]
+verify_jwt = false
