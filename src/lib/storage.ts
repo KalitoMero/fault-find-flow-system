@@ -137,13 +137,14 @@ const saveErrorReportWithRetry = async (
         return; // Success!
       }
 
-      // If it's a duplicate key error and not the last attempt, generate new ID
+      // If it's a duplicate key error and not the last attempt, use UUID
       if (error.code === '23505' && attempt < maxRetries) {
-        console.log(`🔄 Duplicate key detected, retrying with new ID (attempt ${attempt}/${maxRetries})...`);
-        const newId = await generateErrorReportId();
+        console.log(`🔄 Duplicate key detected, using UUID (attempt ${attempt}/${maxRetries})...`);
+        // Use timestamp + random for unique ID instead of querying DB again
+        const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         report.id = newId;
         lastError = error;
-        continue; // Retry with new ID
+        continue; // Retry with UUID
       }
 
       // Other error or last attempt
