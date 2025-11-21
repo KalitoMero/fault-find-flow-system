@@ -6,11 +6,12 @@ import { Button } from './ui/button';
 
 interface VirtualKeyboardProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, newCursorPosition: number) => void;
   onClose: () => void;
+  cursorPosition: number;
 }
 
-const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onClose }) => {
+const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onClose, cursorPosition }) => {
   const keyboardRef = useRef<any>(null);
 
   useEffect(() => {
@@ -20,16 +21,28 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
   }, [value]);
 
   const handleKeyPress = (button: string) => {
-    if (button === '{bksp}' && value.length > 0) {
-      onChange(value.slice(0, -1));
+    const pos = cursorPosition;
+    
+    if (button === '{bksp}' && pos > 0) {
+      // Zeichen VOR dem Cursor löschen
+      const newValue = value.substring(0, pos - 1) + value.substring(pos);
+      onChange(newValue, pos - 1);
     } else if (button === '{space}') {
-      onChange(value + ' ');
+      // Leerzeichen an Cursor-Position einfügen
+      const newValue = value.substring(0, pos) + ' ' + value.substring(pos);
+      onChange(newValue, pos + 1);
     } else if (button === '{enter}') {
-      onChange(value + '\n');
+      // Zeilenumbruch an Cursor-Position einfügen
+      const newValue = value.substring(0, pos) + '\n' + value.substring(pos);
+      onChange(newValue, pos + 1);
     } else if (button === '{tab}') {
-      onChange(value + '\t');
+      // Tab an Cursor-Position einfügen
+      const newValue = value.substring(0, pos) + '\t' + value.substring(pos);
+      onChange(newValue, pos + 1);
     } else if (!button.startsWith('{')) {
-      onChange(value + button);
+      // Zeichen an Cursor-Position einfügen
+      const newValue = value.substring(0, pos) + button + value.substring(pos);
+      onChange(newValue, pos + 1);
     }
   };
 
