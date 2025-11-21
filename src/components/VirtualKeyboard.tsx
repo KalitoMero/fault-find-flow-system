@@ -68,9 +68,9 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
               ? {
                   default: [
                     '7 8 9 {bksp}',
-                    '4 5 6',
-                    '1 2 3',
-                    '0 . -'
+                    '4 5 6 {bksp}',
+                    '1 2 3 {bksp}',
+                    '. 0 - {bksp}'
                   ]
                 }
               : {
