@@ -165,13 +165,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   
   // Virtual Keyboard State
   const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
-  const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | 'afoNumber' | 'defectiveQuantity' | null>(null);
+  const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | 'orderNumber' | 'afoNumber' | 'defectiveQuantity' | null>(null);
   const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Cursor Position State
   const [cursorPositions, setCursorPositions] = useState({
     problemDescription: 0,
     correctiveAction: 0,
+    orderNumber: 0,
     afoNumber: 0,
     defectiveQuantity: 0
   });
@@ -179,6 +180,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   // Refs für Textarea-Elemente
   const problemDescriptionRef = React.useRef<HTMLTextAreaElement>(null);
   const correctiveActionRef = React.useRef<HTMLTextAreaElement>(null);
+  const orderNumberRef = React.useRef<HTMLInputElement>(null);
   const afoNumberRef = React.useRef<HTMLInputElement>(null);
   const defectiveQuantityRef = React.useRef<HTMLInputElement>(null);
   
@@ -677,10 +679,31 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FloatingLabelInput
+                ref={orderNumberRef}
                 id="orderNumber"
                 label="Ba-Nr."
                 value={orderNumber}
                 onChange={handleOrderNumberChange}
+                onClick={() => {
+                  if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                  }
+                  setShowVirtualKeyboard(true);
+                  setActiveKeyboardField('orderNumber');
+                }}
+                onSelect={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  setCursorPositions(prev => ({ 
+                    ...prev, 
+                    orderNumber: target.selectionStart || 0
+                  }));
+                }}
+                onBlur={() => {
+                  blurTimeoutRef.current = setTimeout(() => {
+                    setShowVirtualKeyboard(false);
+                    setActiveKeyboardField(null);
+                  }, 300);
+                }}
                 placeholder="z.B. 20250"
                 required
                 icon={<Hash className="h-4 w-4" />}
@@ -968,13 +991,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
           value={
             activeKeyboardField === 'problemDescription' ? problemDescription :
             activeKeyboardField === 'correctiveAction' ? correctiveAction :
+            activeKeyboardField === 'orderNumber' ? orderNumber :
             activeKeyboardField === 'afoNumber' ? afoNumber :
             activeKeyboardField === 'defectiveQuantity' ? defectiveQuantity :
             ''
           }
           cursorPosition={cursorPositions[activeKeyboardField]}
           layoutType={
-            activeKeyboardField === 'afoNumber' || activeKeyboardField === 'defectiveQuantity' 
+            activeKeyboardField === 'orderNumber' || activeKeyboardField === 'afoNumber' || activeKeyboardField === 'defectiveQuantity' 
               ? 'numeric' 
               : 'default'
           }
@@ -995,6 +1019,15 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 if (correctiveActionRef.current) {
                   correctiveActionRef.current.setSelectionRange(newCursorPos, newCursorPos);
                   correctiveActionRef.current.focus();
+                }
+              }, 0);
+            } else if (activeKeyboardField === 'orderNumber') {
+              handleOrderNumberChange(value);
+              setCursorPositions(prev => ({ ...prev, orderNumber: newCursorPos }));
+              setTimeout(() => {
+                if (orderNumberRef.current) {
+                  orderNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  orderNumberRef.current.focus();
                 }
               }, 0);
             } else if (activeKeyboardField === 'afoNumber') {
