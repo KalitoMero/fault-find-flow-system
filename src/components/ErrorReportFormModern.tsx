@@ -301,48 +301,59 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
     }
   }, []);
 
-  // Search for Excel data
-  const searchExcelData = useCallback(async () => {
-    if (!orderNumber || !afoNumber) {
-      return;
-    }
-    
-    setIsSearchingExcel(true);
-    try {
-      const excelData = await getExcelDataByOrderNumber(orderNumber);
-      
-      if (excelData) {
-        setExcelDataFound(true);
-        toast.success('Excel-Daten gefunden! ✓', {
-          description: `Auftrag ${orderNumber} wurde in der Datenbank gefunden.`
-        });
-      } else {
-        setExcelDataFound(false);
-        toast.warning('Keine Excel-Daten gefunden', {
-          description: `Für Auftragsnummer ${orderNumber} wurden keine Daten gefunden. Sie können trotzdem fortfahren.`
-        });
-      }
-    } catch (error) {
-      console.error('Fehler beim Suchen der Excel-Daten:', error);
-      toast.error('Fehler bei der Excel-Daten-Suche');
-      setExcelDataFound(false);
-    } finally {
-      setIsSearchingExcel(false);
-    }
-  }, [orderNumber, afoNumber]);
-
-  // Auto-search when both fields are filled (for barcode scanner)
+  // Auto-search when both fields are filled (for barcode scanner or manual input)
   useEffect(() => {
-    if (orderNumber && afoNumber && excelDataFound === null) {
-      searchExcelData();
-    }
-  }, [orderNumber, afoNumber, excelDataFound, searchExcelData]);
+    const performSearch = async () => {
+      if (!orderNumber || !afoNumber || excelDataFound !== null) {
+        console.log('🔍 Excel search skipped:', { 
+          orderNumber, 
+          afoNumber, 
+          excelDataFound,
+          hasOrderNumber: !!orderNumber,
+          hasAfoNumber: !!afoNumber,
+          isNull: excelDataFound === null
+        });
+        return;
+      }
+      
+      console.log('🚀 Starting Excel data search for:', { orderNumber, afoNumber });
+      setIsSearchingExcel(true);
+      
+      try {
+        const excelData = await getExcelDataByOrderNumber(orderNumber);
+        console.log('📊 Excel data result:', excelData ? 'Found' : 'Not found');
+        
+        if (excelData) {
+          setExcelDataFound(true);
+          toast.success('Excel-Daten gefunden! ✓', {
+            description: `Auftrag ${orderNumber} wurde in der Datenbank gefunden.`
+          });
+        } else {
+          setExcelDataFound(false);
+          toast.warning('Keine Excel-Daten gefunden', {
+            description: `Für Auftragsnummer ${orderNumber} wurden keine Daten gefunden. Sie können trotzdem fortfahren.`
+          });
+        }
+      } catch (error) {
+        console.error('❌ Fehler beim Suchen der Excel-Daten:', error);
+        toast.error('Fehler bei der Excel-Daten-Suche');
+        setExcelDataFound(false);
+      } finally {
+        setIsSearchingExcel(false);
+      }
+    };
+    
+    performSearch();
+  }, [orderNumber, afoNumber, excelDataFound]);
 
   // Handle Enter key on AFO-Nummer field
   const handleAfoNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    console.log('⌨️ Key pressed in AFO field:', e.key, { orderNumber, afoNumber, excelDataFound });
+    
     if (e.key === 'Enter' && orderNumber && afoNumber) {
+      console.log('🔄 Enter pressed - triggering manual search');
       e.preventDefault();
-      searchExcelData();
+      setExcelDataFound(null); // Reset to trigger search
     }
   };
 
