@@ -1065,7 +1065,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({
                 clearTimeout(blurTimeoutRef.current);
               }
               handleNext();
-            }} className="px-8 py-3 text-lg" size="lg" disabled={isSearching}>
+            }} size="lg" disabled={isSearching} className="text-lg py-[50px] px-[100px]">
                   {isSearching ? 'Suche läuft...' : 'Weiter'}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>}
