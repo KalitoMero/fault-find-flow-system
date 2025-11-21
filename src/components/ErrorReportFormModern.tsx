@@ -1034,7 +1034,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 }
                 handleSubmit();
               }} 
-              className={`w-full h-14 text-lg ${isFormComplete() ? 'gradient-button' : 'bg-muted text-muted-foreground'}`}
+              className={`w-full h-18 text-xl ${isFormComplete() ? 'gradient-button' : 'bg-muted text-muted-foreground'}`}
               disabled={isSubmitting || !isFormComplete()}
               size="lg"
             >
