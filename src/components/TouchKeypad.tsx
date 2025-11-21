@@ -19,30 +19,37 @@ const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDe
 
   return (
     <div className={`grid grid-cols-3 gap-4 p-6 bg-white rounded-lg shadow-lg border ${className}`}>
-      {numbers.map((row, rowIndex) => 
-        row.map((key, keyIndex) => {
-          // Skip empty keys (when decimal is not allowed)
-          if (key === '') return null;
-          
+    {numbers.map((row, rowIndex) => 
+      row.map((key, keyIndex) => {
+        // Render invisible placeholder for empty keys to maintain grid layout
+        if (key === '') {
           return (
-            <Button
+            <div 
               key={`${rowIndex}-${keyIndex}`}
-              variant="outline"
-              className="h-20 aspect-square text-2xl font-semibold"
-              onClick={() => {
-                console.log('TouchKeypad clicked:', key); // Debug log
-                if (key === 'DEL') {
-                  onBackspace();
-                } else {
-                  onInput(key);
-                }
-              }}
-            >
-              {key === 'DEL' ? <Delete className="h-6 w-6" /> : key}
-            </Button>
+              className="h-20 aspect-square"
+            />
           );
-        }).filter(Boolean)
-      )}
+        }
+        
+        return (
+          <Button
+            key={`${rowIndex}-${keyIndex}`}
+            variant="outline"
+            className="h-20 aspect-square text-2xl font-semibold"
+            onClick={() => {
+              console.log('TouchKeypad clicked:', key); // Debug log
+              if (key === 'DEL') {
+                onBackspace();
+              } else {
+                onInput(key);
+              }
+            }}
+          >
+            {key === 'DEL' ? <Delete className="h-6 w-6" /> : key}
+          </Button>
+        );
+      })
+    )}
     </div>
   );
 };
