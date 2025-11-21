@@ -274,12 +274,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return;
       }
       
+      // Nicht suchen wenn bereits eine Suche läuft oder bereits Daten gefunden wurden
+      if (isSearching) {
+        console.log('⏭️ Manual search skipped - search already in progress');
+        return;
+      }
+      
       console.log('🔍 Manual Excel search triggered for:', {
         orderNumber: orderField.value,
         afoNumber: afoField.value
       });
       
-      // Markiere diese Kombination als durchsucht
+      // Markiere diese Kombination als durchsucht BEVOR die Suche startet
       setLastSearchedCombination(currentCombination);
       
       // Starte Excel-Suche
@@ -297,7 +303,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     };
     
     performManualSearch();
-  }, [fields, lastSearchedCombination, checkExcelData]);
+  }, [fields, lastSearchedCombination, isSearching]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
