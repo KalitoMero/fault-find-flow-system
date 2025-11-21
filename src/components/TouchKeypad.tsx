@@ -11,10 +11,10 @@ interface TouchKeypadProps {
 
 const TouchKeypad: React.FC<TouchKeypadProps> = ({ onInput, onBackspace, allowDecimal = false, className = "" }) => {
   const numbers = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
     ['7', '8', '9'],
-    [allowDecimal ? '.' : '', '0', 'DEL']
+    ['4', '5', '6'],
+    ['1', '2', '3'],
+    ['', '0', 'DEL']
   ];
 
   return (
