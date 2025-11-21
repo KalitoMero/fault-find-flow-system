@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -246,26 +246,25 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   }, [fields, lastSearchedCombination, checkExcelData, excelDepartmentName]);
 
+  // Extract order and AFO values with useMemo to prevent unnecessary re-renders
+  const orderNumber = useMemo(() => fields.find(f => f.id === 'orderNumber')?.value || '', [fields]);
+  const afoNumber = useMemo(() => fields.find(f => f.id === 'afoNumber')?.value || '', [fields]);
+
   // Manual Excel data search when both fields are filled
   useEffect(() => {
-    const orderField = fields.find(f => f.id === 'orderNumber');
-    const afoField = fields.find(f => f.id === 'afoNumber');
-    const orderValue = orderField?.value || '';
-    const afoValue = afoField?.value || '';
-    
     // Nur suchen wenn beide Felder ausgefüllt sind
-    if (!orderValue || !afoValue) {
+    if (!orderNumber || !afoNumber) {
       return;
     }
     
     // Prüfe ob schon für diese Kombination gesucht wurde
-    const currentCombination = `${orderValue}|${afoValue}`;
+    const currentCombination = `${orderNumber}|${afoNumber}`;
     if (lastSearchedCombination === currentCombination) {
       return;
     }
     
     // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
-    if (orderValue.includes('.')) {
+    if (orderNumber.includes('.')) {
       return;
     }
     
@@ -274,17 +273,14 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       return;
     }
     
-    console.log('🔍 Manual Excel search triggered for:', {
-      orderNumber: orderValue,
-      afoNumber: afoValue
-    });
+    console.log('🔍 Manual Excel search triggered for:', { orderNumber, afoNumber });
     
     // Markiere diese Kombination als durchsucht BEVOR die Suche startet
     setLastSearchedCombination(currentCombination);
     
     // Starte Excel-Suche asynchron
     const performSearch = async () => {
-      const foundDepartmentName = await checkExcelData(orderValue, afoValue);
+      const foundDepartmentName = await checkExcelData(orderNumber, afoNumber);
       
       if (foundDepartmentName) {
         console.log('✅ Excel data found for manual entry!');
@@ -296,7 +292,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     };
     
     performSearch();
-  }, [fields.find(f => f.id === 'orderNumber')?.value, fields.find(f => f.id === 'afoNumber')?.value, lastSearchedCombination, isSearching]);
+  }, [orderNumber, afoNumber, lastSearchedCombination, isSearching]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
