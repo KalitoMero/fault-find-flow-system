@@ -9,9 +9,10 @@ interface VirtualKeyboardProps {
   onChange: (value: string, newCursorPosition: number) => void;
   onClose: () => void;
   cursorPosition: number;
+  layoutType?: 'default' | 'numeric';
 }
 
-const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onClose, cursorPosition }) => {
+const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onClose, cursorPosition, layoutType = 'default' }) => {
   const keyboardRef = useRef<any>(null);
 
   useEffect(() => {
@@ -62,22 +63,33 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
       <div className="p-1 keyboard-container">
         <Keyboard
           keyboardRef={(r: any) => (keyboardRef.current = r)}
-          layout={{
-            default: [
-              '1 2 3 4 5 6 7 8 9 0 ß {bksp}',
-              'q w e r t z u i o p ü +',
-              'a s d f g h j k l ö ä #',
-              '{shift} y x c v b n m , . - {shift}',
-              '{space}'
-            ],
-            shift: [
-              '! " § $ % & / ( ) = ? {bksp}',
-              'Q W E R T Z U I O P Ü *',
-              'A S D F G H J K L Ö Ä \'',
-              '{shift} Y X C V B N M ; : _ {shift}',
-              '{space}'
-            ]
-          }}
+          layout={
+            layoutType === 'numeric' 
+              ? {
+                  default: [
+                    '7 8 9 {bksp}',
+                    '4 5 6',
+                    '1 2 3',
+                    '0 . -'
+                  ]
+                }
+              : {
+                  default: [
+                    '1 2 3 4 5 6 7 8 9 0 ß {bksp}',
+                    'q w e r t z u i o p ü +',
+                    'a s d f g h j k l ö ä #',
+                    '{shift} y x c v b n m , . - {shift}',
+                    '{space}'
+                  ],
+                  shift: [
+                    '! " § $ % & / ( ) = ? {bksp}',
+                    'Q W E R T Z U I O P Ü *',
+                    'A S D F G H J K L Ö Ä \'',
+                    '{shift} Y X C V B N M ; : _ {shift}',
+                    '{space}'
+                  ]
+                }
+          }
           display={{
             '{bksp}': '⌫',
             '{shift}': '⇧',
