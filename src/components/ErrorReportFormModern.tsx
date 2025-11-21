@@ -39,7 +39,7 @@ interface ErrorReportFormModernProps {
   refreshDepartments: boolean;
 }
 
-const FloatingLabelInput: React.FC<{
+const FloatingLabelInput = React.forwardRef<HTMLInputElement, {
   id: string;
   label: string;
   value: string;
@@ -48,7 +48,10 @@ const FloatingLabelInput: React.FC<{
   required?: boolean;
   type?: string;
   icon?: React.ReactNode;
-}> = ({ id, label, value, onChange, placeholder, required, type = "text", icon }) => {
+  onClick?: () => void;
+  onBlur?: () => void;
+  onSelect?: (e: React.SyntheticEvent<HTMLInputElement>) => void;
+}>(({ id, label, value, onChange, placeholder, required, type = "text", icon, onClick, onBlur, onSelect }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
@@ -60,12 +63,21 @@ const FloatingLabelInput: React.FC<{
           </div>
         )}
         <Input
+          ref={ref}
           id={id}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onClick={(e) => {
+            onClick?.();
+            onSelect?.(e);
+          }}
+          onSelect={onSelect}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
           placeholder=""
           required={required}
           className={`modern-input pt-4 ${icon ? 'pl-10' : 'pl-3'}`}
@@ -76,7 +88,7 @@ const FloatingLabelInput: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, {
   id: string;
@@ -153,18 +165,22 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   
   // Virtual Keyboard State
   const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
-  const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | null>(null);
+  const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | 'afoNumber' | 'defectiveQuantity' | null>(null);
   const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Cursor Position State
   const [cursorPositions, setCursorPositions] = useState({
     problemDescription: 0,
-    correctiveAction: 0
+    correctiveAction: 0,
+    afoNumber: 0,
+    defectiveQuantity: 0
   });
   
   // Refs für Textarea-Elemente
   const problemDescriptionRef = React.useRef<HTMLTextAreaElement>(null);
   const correctiveActionRef = React.useRef<HTMLTextAreaElement>(null);
+  const afoNumberRef = React.useRef<HTMLInputElement>(null);
+  const defectiveQuantityRef = React.useRef<HTMLInputElement>(null);
   
   const steps = [
     { id: 1, title: 'Grunddaten', icon: Package, description: 'Auftrag & Menge' },
@@ -670,10 +686,31 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 icon={<Hash className="h-4 w-4" />}
               />
               <FloatingLabelInput
+                ref={afoNumberRef}
                 id="afoNumber"
                 label="AFO-Nummer"
                 value={afoNumber}
                 onChange={setAfoNumber}
+                onClick={() => {
+                  if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                  }
+                  setShowVirtualKeyboard(true);
+                  setActiveKeyboardField('afoNumber');
+                }}
+                onSelect={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  setCursorPositions(prev => ({ 
+                    ...prev, 
+                    afoNumber: target.selectionStart || 0
+                  }));
+                }}
+                onBlur={() => {
+                  blurTimeoutRef.current = setTimeout(() => {
+                    setShowVirtualKeyboard(false);
+                    setActiveKeyboardField(null);
+                  }, 300);
+                }}
                 placeholder="z.B. AFO-12345"
                 required
                 icon={<Hash className="h-4 w-4" />}
@@ -681,11 +718,32 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             </div>
             
             <FloatingLabelInput
+              ref={defectiveQuantityRef}
               id="defectiveQuantity"
               label="Menge"
               type="number"
               value={defectiveQuantity}
               onChange={setDefectiveQuantity}
+              onClick={() => {
+                if (blurTimeoutRef.current) {
+                  clearTimeout(blurTimeoutRef.current);
+                }
+                setShowVirtualKeyboard(true);
+                setActiveKeyboardField('defectiveQuantity');
+              }}
+              onSelect={(e) => {
+                const target = e.target as HTMLInputElement;
+                setCursorPositions(prev => ({ 
+                  ...prev, 
+                  defectiveQuantity: target.selectionStart || 0
+                }));
+              }}
+              onBlur={() => {
+                blurTimeoutRef.current = setTimeout(() => {
+                  setShowVirtualKeyboard(false);
+                  setActiveKeyboardField(null);
+                }, 300);
+              }}
               placeholder="Anzahl"
               required
               icon={<Package className="h-4 w-4" />}
@@ -907,17 +965,23 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       {/* Virtual Keyboard */}
       {showVirtualKeyboard && activeKeyboardField && (
         <VirtualKeyboard
-          value={activeKeyboardField === 'problemDescription' ? problemDescription : correctiveAction}
-          cursorPosition={
-            activeKeyboardField === 'problemDescription' 
-              ? cursorPositions.problemDescription 
-              : cursorPositions.correctiveAction
+          value={
+            activeKeyboardField === 'problemDescription' ? problemDescription :
+            activeKeyboardField === 'correctiveAction' ? correctiveAction :
+            activeKeyboardField === 'afoNumber' ? afoNumber :
+            activeKeyboardField === 'defectiveQuantity' ? defectiveQuantity :
+            ''
+          }
+          cursorPosition={cursorPositions[activeKeyboardField]}
+          layoutType={
+            activeKeyboardField === 'afoNumber' || activeKeyboardField === 'defectiveQuantity' 
+              ? 'numeric' 
+              : 'default'
           }
           onChange={(value, newCursorPos) => {
             if (activeKeyboardField === 'problemDescription') {
               setProblemDescription(value);
               setCursorPositions(prev => ({ ...prev, problemDescription: newCursorPos }));
-              // Cursor-Position im DOM setzen
               setTimeout(() => {
                 if (problemDescriptionRef.current) {
                   problemDescriptionRef.current.setSelectionRange(newCursorPos, newCursorPos);
@@ -927,11 +991,28 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
             } else if (activeKeyboardField === 'correctiveAction') {
               setCorrectiveAction(value);
               setCursorPositions(prev => ({ ...prev, correctiveAction: newCursorPos }));
-              // Cursor-Position im DOM setzen
               setTimeout(() => {
                 if (correctiveActionRef.current) {
                   correctiveActionRef.current.setSelectionRange(newCursorPos, newCursorPos);
                   correctiveActionRef.current.focus();
+                }
+              }, 0);
+            } else if (activeKeyboardField === 'afoNumber') {
+              setAfoNumber(value);
+              setCursorPositions(prev => ({ ...prev, afoNumber: newCursorPos }));
+              setTimeout(() => {
+                if (afoNumberRef.current) {
+                  afoNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  afoNumberRef.current.focus();
+                }
+              }, 0);
+            } else if (activeKeyboardField === 'defectiveQuantity') {
+              setDefectiveQuantity(value);
+              setCursorPositions(prev => ({ ...prev, defectiveQuantity: newCursorPos }));
+              setTimeout(() => {
+                if (defectiveQuantityRef.current) {
+                  defectiveQuantityRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  defectiveQuantityRef.current.focus();
                 }
               }, 0);
             }
