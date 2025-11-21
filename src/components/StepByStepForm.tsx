@@ -161,195 +161,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   }, []);
 
-  useEffect(() => {
-    const loadEmployees = async () => {
-      const emps = await getEmployees();
-      setEmployees(emps);
-    };
-    loadEmployees();
-    loadN8nSettings();
-    
-    // Listen for N8N settings changes
-    const handleN8nSettingsUpdate = () => {
-      console.log('📡 StepByStepForm - N8N settings update event received');
-      loadN8nSettings();
-    };
-
-    window.addEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
-
-    return () => {
-      window.removeEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
-    };
-  }, [loadN8nSettings]);
-
-  // Removed automatic Excel check on AFO change - now only on order number parsing
-
-  // Auto-detect barcode scan with dot separator in order number field
-  useEffect(() => {
-    const orderField = fields[0]; // BA-Nummer ist immer Feld 0
-    
-    // Sobald im BA-Feld ein Punkt vorkommt, Barcode automatisch verarbeiten
-    if (orderField?.value?.includes('.')) {
-      const value = orderField.value;
-      const currentCombination = value.replace('.', '-');
-      
-      // Verhindere mehrfache Verarbeitung derselben Kombination
-      if (currentCombination === lastSearchedCombinationRef.current) {
-        return;
-      }
-      
-      console.log('🔍 Barcode mit Punkt erkannt:', value);
-      
-      // Kleine Verzögerung (debounce), damit der Scanner fertig ist
-      const timer = setTimeout(async () => {
-        const dotIndex = value.indexOf('.');
-        const orderPart = value.substring(0, dotIndex).trim();
-        const afoPart = value.substring(dotIndex + 1).trim();
-        
-        // Nur verarbeiten, wenn beide Teile vorhanden sind
-        if (orderPart && afoPart) {
-          console.log('📊 Teile Barcode auf:', { orderPart, afoPart });
-          toast.info('🔍 Barcode wird verarbeitet...');
-          
-          // Update fields immediately
-          setFields(prev => prev.map(field => {
-            if (field.id === 'orderNumber') {
-              return { ...field, value: orderPart, completed: true };
-            }
-            if (field.id === 'afoNumber') {
-              return { ...field, value: afoPart, completed: true };
-            }
-            return field;
-          }));
-          
-          // Starte Excel-Suche im Hintergrund
-          const foundDepartmentName = await checkExcelData(orderPart, afoPart);
-          
-          // Unabhängig vom Excel-Ergebnis immer direkt zur Personalnummer springen
-          if (foundDepartmentName) {
-            console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
-          } else {
-            console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
-          }
-
-          // Merke verarbeitete Kombination, damit sie nicht doppelt verarbeitet wird
-          lastSearchedCombinationRef.current = currentCombination;
-
-          // Immer direkt zur Personalnummer wechseln
-          setCurrentStep(2);
-        }
-      }, 300); // 300ms Verzögerung nach letzter Eingabe
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fields, checkExcelData, excelDepartmentName]);
-
-  // Extract order and AFO values with useMemo to prevent unnecessary re-renders
-  const orderNumber = useMemo(() => fields.find(f => f.id === 'orderNumber')?.value || '', [fields]);
-  const afoNumber = useMemo(() => fields.find(f => f.id === 'afoNumber')?.value || '', [fields]);
-
-  // Manual Excel data search when both fields are filled
-  useEffect(() => {
-    // Nur suchen wenn beide Felder ausgefüllt sind
-    if (!orderNumber || !afoNumber) {
-      return;
-    }
-    
-    // Prüfe ob schon für diese Kombination gesucht wurde
-    const currentCombination = `${orderNumber}|${afoNumber}`;
-    if (lastSearchedCombinationRef.current === currentCombination) {
-      return;
-    }
-    
-    // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
-    if (orderNumber.includes('.')) {
-      return;
-    }
-    
-    // Nicht suchen wenn bereits eine Suche läuft
-    if (isSearching) {
-      return;
-    }
-    
-    console.log('🔍 Manual Excel search triggered for:', { orderNumber, afoNumber });
-    
-    // Markiere diese Kombination als durchsucht BEVOR die Suche startet
-    lastSearchedCombinationRef.current = currentCombination;
-    
-    // Starte Excel-Suche asynchron
-    const performSearch = async () => {
-      const foundDepartmentName = await checkExcelData(orderNumber, afoNumber);
-      
-      if (foundDepartmentName) {
-        console.log('✅ Excel data found for manual entry!');
-      } else {
-        console.log('⚠️ No Excel data found for manual entry');
-      }
-    };
-    
-    performSearch();
-  }, [orderNumber, afoNumber, checkExcelData]);
-
-  // Auto-focus input field when step changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const currentField = fields[currentStep];
-      if (!currentField) return;
-      
-      // Focus on textarea for text fields
-      if (currentField.type === 'textarea') {
-        const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-        if (textarea) {
-          textarea.focus();
-        }
-      } 
-      // Focus on input for text and quantity fields
-      else if (currentField.type === 'text' || currentField.type === 'quantity') {
-        const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-        if (input) {
-          input.focus();
-        }
-      }
-    }, 150);
-    
-    return () => clearTimeout(timer);
-  }, [currentStep, fields]);
-
-  // Finde den passenden Teamleiter basierend auf Ressource (priorisiert) oder Abteilung
-  const findTeamLeaderForDepartmentOrResource = async (
-    departmentId: string | null,
-    resourceName: string | null
-  ): Promise<string> => {
-    try {
-      console.log('🔍 Searching team leader for:', { resourceName, departmentId });
-      
-      // Verwende die Funktion aus resourceStorage, die Ressource priorisiert
-      const teamLeaderId = await findTeamLeaderForResourceOrDepartment(
-        resourceName,
-        departmentId
-      );
-      
-      if (teamLeaderId) {
-        console.log('✅ Team leader found:', teamLeaderId, 'for resource:', resourceName || 'none', 'department:', departmentId || 'none');
-        return teamLeaderId;
-      }
-      
-      console.log('⚠️ No team leader found, using System');
-      return 'System';
-    } catch (error) {
-      // If access is denied (e.g., team leader trying to access admin function), return System
-      if (error instanceof Error && error.message.includes('Forbidden')) {
-        console.log('Access denied to employee list, using System as default');
-        return 'System';
-      }
-      throw error;
-    }
-  };
-
-  // Removed parseOrderNumber - logic moved to handleNext
-
   // Check Excel data using server-side search - returns department name if found
-  async function checkExcelData(orderNumber: string, afoNumber?: string): Promise<string | null> {
+  const checkExcelData = useCallback(async (orderNumber: string, afoNumber?: string): Promise<string | null> => {
     console.log('🔍 checkExcelData called with:', {
       orderNumber,
       afoNumber,
@@ -527,8 +340,189 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       setIsSearching(false);
       return null;
     }
-  }
+  }, []);
 
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const emps = await getEmployees();
+      setEmployees(emps);
+    };
+    loadEmployees();
+    loadN8nSettings();
+    
+    // Listen for N8N settings changes
+    const handleN8nSettingsUpdate = () => {
+      console.log('📡 StepByStepForm - N8N settings update event received');
+      loadN8nSettings();
+    };
+
+    window.addEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('n8n-settings-updated', handleN8nSettingsUpdate);
+    };
+  }, [loadN8nSettings]);
+
+  // Removed automatic Excel check on AFO change - now only on order number parsing
+
+  // Auto-detect barcode scan with dot separator in order number field
+  useEffect(() => {
+    const orderField = fields[0]; // BA-Nummer ist immer Feld 0
+    
+    // Sobald im BA-Feld ein Punkt vorkommt, Barcode automatisch verarbeiten
+    if (orderField?.value?.includes('.')) {
+      const value = orderField.value;
+      const currentCombination = value.replace('.', '-');
+      
+      // Verhindere mehrfache Verarbeitung derselben Kombination
+      if (currentCombination === lastSearchedCombinationRef.current) {
+        return;
+      }
+      
+      console.log('🔍 Barcode mit Punkt erkannt:', value);
+      
+      // Kleine Verzögerung (debounce), damit der Scanner fertig ist
+      const timer = setTimeout(async () => {
+        const dotIndex = value.indexOf('.');
+        const orderPart = value.substring(0, dotIndex).trim();
+        const afoPart = value.substring(dotIndex + 1).trim();
+        
+        // Nur verarbeiten, wenn beide Teile vorhanden sind
+        if (orderPart && afoPart) {
+          console.log('📊 Teile Barcode auf:', { orderPart, afoPart });
+          toast.info('🔍 Barcode wird verarbeitet...');
+          
+          // Update fields immediately
+          setFields(prev => prev.map(field => {
+            if (field.id === 'orderNumber') {
+              return { ...field, value: orderPart, completed: true };
+            }
+            if (field.id === 'afoNumber') {
+              return { ...field, value: afoPart, completed: true };
+            }
+            return field;
+          }));
+          
+          // Starte Excel-Suche im Hintergrund
+          const foundDepartmentName = await checkExcelData(orderPart, afoPart);
+          
+          // Unabhängig vom Excel-Ergebnis immer direkt zur Personalnummer springen
+          if (foundDepartmentName) {
+            console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
+          } else {
+            console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
+          }
+
+          // Merke verarbeitete Kombination, damit sie nicht doppelt verarbeitet wird
+          lastSearchedCombinationRef.current = currentCombination;
+
+          // Immer direkt zur Personalnummer wechseln
+          setCurrentStep(2);
+        }
+      }, 300); // 300ms Verzögerung nach letzter Eingabe
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fields, checkExcelData, excelDepartmentName]);
+
+  // Extract order and AFO values with useMemo to prevent unnecessary re-renders
+  const orderNumber = useMemo(() => fields.find(f => f.id === 'orderNumber')?.value || '', [fields]);
+  const afoNumber = useMemo(() => fields.find(f => f.id === 'afoNumber')?.value || '', [fields]);
+
+  // Manual Excel data search when both fields are filled
+  useEffect(() => {
+    // Nur suchen wenn beide Felder ausgefüllt sind
+    if (!orderNumber || !afoNumber) {
+      return;
+    }
+    
+    // Prüfe ob schon für diese Kombination gesucht wurde
+    const currentCombination = `${orderNumber}|${afoNumber}`;
+    if (lastSearchedCombinationRef.current === currentCombination) {
+      return;
+    }
+    
+    // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
+    if (orderNumber.includes('.')) {
+      return;
+    }
+    
+    console.log('🔍 Manual Excel search triggered for:', { orderNumber, afoNumber });
+    
+    // Markiere diese Kombination als durchsucht BEVOR die Suche startet
+    lastSearchedCombinationRef.current = currentCombination;
+    
+    // Starte Excel-Suche asynchron
+    const performSearch = async () => {
+      const foundDepartmentName = await checkExcelData(orderNumber, afoNumber);
+      
+      if (foundDepartmentName) {
+        console.log('✅ Excel data found for manual entry!');
+      } else {
+        console.log('⚠️ No Excel data found for manual entry');
+      }
+    };
+    
+    performSearch();
+  }, [orderNumber, afoNumber, checkExcelData]);
+
+  // Auto-focus input field when step changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentField = fields[currentStep];
+      if (!currentField) return;
+      
+      // Focus on textarea for text fields
+      if (currentField.type === 'textarea') {
+        const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+        if (textarea) {
+          textarea.focus();
+        }
+      } 
+      // Focus on input for text and quantity fields
+      else if (currentField.type === 'text' || currentField.type === 'quantity') {
+        const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+      }
+    }, 150);
+    
+    return () => clearTimeout(timer);
+  }, [currentStep, fields]);
+
+  // Finde den passenden Teamleiter basierend auf Ressource (priorisiert) oder Abteilung
+  const findTeamLeaderForDepartmentOrResource = async (
+    departmentId: string | null,
+    resourceName: string | null
+  ): Promise<string> => {
+    try {
+      console.log('🔍 Searching team leader for:', { resourceName, departmentId });
+      
+      // Verwende die Funktion aus resourceStorage, die Ressource priorisiert
+      const teamLeaderId = await findTeamLeaderForResourceOrDepartment(
+        resourceName,
+        departmentId
+      );
+      
+      if (teamLeaderId) {
+        console.log('✅ Team leader found:', teamLeaderId, 'for resource:', resourceName || 'none', 'department:', departmentId || 'none');
+        return teamLeaderId;
+      }
+      
+      console.log('⚠️ No team leader found, using System');
+      return 'System';
+    } catch (error) {
+      // If access is denied (e.g., team leader trying to access admin function), return System
+      if (error instanceof Error && error.message.includes('Forbidden')) {
+        console.log('Access denied to employee list, using System as default');
+        return 'System';
+      }
+      throw error;
+    }
+  };
+
+  // Removed parseOrderNumber - logic moved to handleNext
   // Performance optimized form validation
   const isFormComplete = useCallback(() => {
     const requiredFields = fields.filter(f => f.required);
