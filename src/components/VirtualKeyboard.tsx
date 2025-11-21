@@ -23,6 +23,7 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
 
   const handleKeyPress = (button: string) => {
     const pos = cursorPosition;
+    console.log('🎹 Key pressed:', button, 'at position:', pos, 'value length:', value.length);
     
     if (button === '{bksp}' && pos > 0) {
       // Zeichen VOR dem Cursor löschen
@@ -48,7 +49,13 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-primary shadow-xl animate-slide-in-bottom max-h-[280px]">
+    <div 
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-primary shadow-xl animate-slide-in-bottom max-h-[280px] keyboard-container"
+      onMouseDown={(e) => {
+        // Prevent text field from losing focus when clicking keyboard
+        e.preventDefault();
+      }}
+    >
       <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/50">
         <h3 className="text-xs font-semibold text-foreground">Tastatur</h3>
         <Button
