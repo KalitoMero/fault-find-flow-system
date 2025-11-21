@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +54,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   const [showReview, setShowReview] = useState(false);
   const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [lastSearchedCombination, setLastSearchedCombination] = useState<string>('');
+  const lastSearchedCombinationRef = useRef<string>('');
   
   // N8N Settings State - Always enabled
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
@@ -194,7 +194,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       const currentCombination = value.replace('.', '-');
       
       // Verhindere mehrfache Verarbeitung derselben Kombination
-      if (currentCombination === lastSearchedCombination) {
+      if (currentCombination === lastSearchedCombinationRef.current) {
         return;
       }
       
@@ -235,7 +235,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           }
 
           // Merke verarbeitete Kombination, damit sie nicht doppelt verarbeitet wird
-          setLastSearchedCombination(currentCombination);
+          lastSearchedCombinationRef.current = currentCombination;
 
           // Immer direkt zur Personalnummer wechseln
           setCurrentStep(2);
@@ -244,7 +244,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       return () => clearTimeout(timer);
     }
-  }, [fields, lastSearchedCombination, checkExcelData, excelDepartmentName]);
+  }, [fields, checkExcelData, excelDepartmentName]);
 
   // Extract order and AFO values with useMemo to prevent unnecessary re-renders
   const orderNumber = useMemo(() => fields.find(f => f.id === 'orderNumber')?.value || '', [fields]);
@@ -259,7 +259,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     
     // Prüfe ob schon für diese Kombination gesucht wurde
     const currentCombination = `${orderNumber}|${afoNumber}`;
-    if (lastSearchedCombination === currentCombination) {
+    if (lastSearchedCombinationRef.current === currentCombination) {
       return;
     }
     
@@ -276,7 +276,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     console.log('🔍 Manual Excel search triggered for:', { orderNumber, afoNumber });
     
     // Markiere diese Kombination als durchsucht BEVOR die Suche startet
-    setLastSearchedCombination(currentCombination);
+    lastSearchedCombinationRef.current = currentCombination;
     
     // Starte Excel-Suche asynchron
     const performSearch = async () => {
@@ -292,7 +292,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     };
     
     performSearch();
-  }, [orderNumber, afoNumber, lastSearchedCombination]);
+  }, [orderNumber, afoNumber, checkExcelData]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
@@ -498,7 +498,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             }
             
             // Track this successful search combination
-            setLastSearchedCombination(`${orderNumber}-${afoNumber}`);
+            lastSearchedCombinationRef.current = `${orderNumber}-${afoNumber}`;
           } else {
             setExcelDepartment('');
             setExcelDepartmentName('');
@@ -553,7 +553,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     
     // Reset Excel search tracking when order or AFO number changes
     if (fieldId === 'orderNumber' || fieldId === 'afoNumber') {
-      setLastSearchedCombination('');
+      lastSearchedCombinationRef.current = '';
       setExcelDataFound(null);
     }
     
@@ -1241,7 +1241,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                             console.log('⌨️ Enter pressed on AFO field - triggering manual Excel search');
                             
                             // Reset last searched combination to force new search
-                            setLastSearchedCombination('');
+                            lastSearchedCombinationRef.current = '';
                             
                             // Die Suche wird dann durch den useEffect ausgelöst
                             toast.info('🔍 Suche Excel-Daten...');
