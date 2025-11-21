@@ -20,7 +20,8 @@ import {
   Building2,
   Edit,
   Send,
-  Check
+  Check,
+  Loader
 } from 'lucide-react';
 import { saveErrorReport, generateErrorReportId } from '@/lib/storage';
 import { getDepartments, getEmployees, getMachines, Department, Employee, Machine } from '@/lib/settingsStorage';
@@ -51,7 +52,8 @@ const FloatingLabelInput = React.forwardRef<HTMLInputElement, {
   onClick?: () => void;
   onBlur?: () => void;
   onSelect?: (e: React.SyntheticEvent<HTMLInputElement>) => void;
-}>(({ id, label, value, onChange, placeholder, required, type = "text", icon, onClick, onBlur, onSelect }, ref) => {
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+}>(({ id, label, value, onChange, placeholder, required, type = "text", icon, onClick, onBlur, onSelect, onKeyDown }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
@@ -74,6 +76,7 @@ const FloatingLabelInput = React.forwardRef<HTMLInputElement, {
             onSelect?.(e);
           }}
           onSelect={onSelect}
+          onKeyDown={onKeyDown}
           onBlur={() => {
             setIsFocused(false);
             onBlur?.();
@@ -159,6 +162,10 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [showReview, setShowReview] = useState(false);
   const [useN8nWebhook, setUseN8nWebhook] = useState(false);
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
+  
+  // Excel data validation states
+  const [excelDataFound, setExcelDataFound] = useState<boolean | null>(null);
+  const [isSearchingExcel, setIsSearchingExcel] = useState(false);
   
   // Step tracking
   const [currentStep, setCurrentStep] = useState(1);
@@ -287,10 +294,57 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       
       setOrderNumber(orderPart);
       setAfoNumber(afoPart);
+      setExcelDataFound(null); // Reset validation status
     } else {
       setOrderNumber(value);
+      setExcelDataFound(null); // Reset validation status
     }
   }, []);
+
+  // Search for Excel data
+  const searchExcelData = useCallback(async () => {
+    if (!orderNumber || !afoNumber) {
+      return;
+    }
+    
+    setIsSearchingExcel(true);
+    try {
+      const excelData = await getExcelDataByOrderNumber(orderNumber);
+      
+      if (excelData) {
+        setExcelDataFound(true);
+        toast.success('Excel-Daten gefunden! ✓', {
+          description: `Auftrag ${orderNumber} wurde in der Datenbank gefunden.`
+        });
+      } else {
+        setExcelDataFound(false);
+        toast.warning('Keine Excel-Daten gefunden', {
+          description: `Für Auftragsnummer ${orderNumber} wurden keine Daten gefunden. Sie können trotzdem fortfahren.`
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Suchen der Excel-Daten:', error);
+      toast.error('Fehler bei der Excel-Daten-Suche');
+      setExcelDataFound(false);
+    } finally {
+      setIsSearchingExcel(false);
+    }
+  }, [orderNumber, afoNumber]);
+
+  // Auto-search when both fields are filled (for barcode scanner)
+  useEffect(() => {
+    if (orderNumber && afoNumber && excelDataFound === null) {
+      searchExcelData();
+    }
+  }, [orderNumber, afoNumber, excelDataFound, searchExcelData]);
+
+  // Handle Enter key on AFO-Nummer field
+  const handleAfoNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && orderNumber && afoNumber) {
+      e.preventDefault();
+      searchExcelData();
+    }
+  };
 
   const handleSubmit = useCallback(async () => {
     const selectedEmp = employees.find(emp => emp.id === selectedEmployee);
@@ -713,7 +767,11 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 id="afoNumber"
                 label="AFO-Nummer"
                 value={afoNumber}
-                onChange={setAfoNumber}
+                onChange={(value) => {
+                  setAfoNumber(value);
+                  setExcelDataFound(null); // Reset validation status
+                }}
+                onKeyDown={handleAfoNumberKeyDown}
                 onClick={() => {
                   if (blurTimeoutRef.current) {
                     clearTimeout(blurTimeoutRef.current);
@@ -736,7 +794,12 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                 }}
                 placeholder="z.B. AFO-12345"
                 required
-                icon={<Hash className="h-4 w-4" />}
+                icon={
+                  isSearchingExcel ? <Loader className="h-4 w-4 animate-spin text-blue-500" /> :
+                  excelDataFound === true ? <CheckCircle className="h-4 w-4 text-green-500" /> :
+                  excelDataFound === false ? <AlertTriangle className="h-4 w-4 text-yellow-500" /> :
+                  <Hash className="h-4 w-4" />
+                }
               />
             </div>
             
@@ -1032,6 +1095,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               }, 0);
             } else if (activeKeyboardField === 'afoNumber') {
               setAfoNumber(value);
+              setExcelDataFound(null); // Reset validation status
               setCursorPositions(prev => ({ ...prev, afoNumber: newCursorPos }));
               setTimeout(() => {
                 if (afoNumberRef.current) {
