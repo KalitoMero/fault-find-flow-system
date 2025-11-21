@@ -78,7 +78,7 @@ const FloatingLabelInput: React.FC<{
   );
 };
 
-const FloatingLabelTextarea: React.FC<{
+const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, {
   id: string;
   label: string;
   value: string;
@@ -88,22 +88,26 @@ const FloatingLabelTextarea: React.FC<{
   rows?: number;
   onClick?: () => void;
   onBlur?: () => void;
-}> = ({ id, label, value, onChange, placeholder, required, rows = 3, onClick, onBlur }) => {
+  onSelect?: (e: React.SyntheticEvent<HTMLTextAreaElement>) => void;
+}>(({ id, label, value, onChange, placeholder, required, rows = 3, onClick, onBlur, onSelect }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
     <div className={`floating-label-input ${value || isFocused ? 'has-value' : ''}`}>
       <div className="relative">
         <Textarea
+          ref={ref}
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => {
             setIsFocused(true);
           }}
-          onClick={() => {
+          onClick={(e) => {
             onClick?.();
+            onSelect?.(e);
           }}
+          onSelect={onSelect}
           onBlur={() => {
             setIsFocused(false);
             onBlur?.();
@@ -119,7 +123,7 @@ const FloatingLabelTextarea: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportCreated, refreshDepartments }) => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -151,6 +155,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
   const [activeKeyboardField, setActiveKeyboardField] = useState<'problemDescription' | 'correctiveAction' | null>(null);
   const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  // Cursor Position State
+  const [cursorPositions, setCursorPositions] = useState({
+    problemDescription: 0,
+    correctiveAction: 0
+  });
+  
+  // Refs für Textarea-Elemente
+  const problemDescriptionRef = React.useRef<HTMLTextAreaElement>(null);
+  const correctiveActionRef = React.useRef<HTMLTextAreaElement>(null);
   
   const steps = [
     { id: 1, title: 'Grunddaten', icon: Package, description: 'Auftrag & Menge' },
@@ -765,6 +779,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <FloatingLabelTextarea
+                    ref={problemDescriptionRef}
                     id="problemDescription"
                     label="Problembeschreibung"
                     value={problemDescription}
@@ -775,6 +790,13 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                       }
                       setShowVirtualKeyboard(true);
                       setActiveKeyboardField('problemDescription');
+                    }}
+                    onSelect={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      setCursorPositions(prev => ({ 
+                        ...prev, 
+                        problemDescription: target.selectionStart 
+                      }));
                     }}
                     onBlur={() => {
                       blurTimeoutRef.current = setTimeout(() => {
@@ -802,6 +824,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <FloatingLabelTextarea
+                    ref={correctiveActionRef}
                     id="correctiveAction"
                     label="Korrekturmaßnahme"
                     value={correctiveAction}
@@ -812,6 +835,13 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                       }
                       setShowVirtualKeyboard(true);
                       setActiveKeyboardField('correctiveAction');
+                    }}
+                    onSelect={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      setCursorPositions(prev => ({ 
+                        ...prev, 
+                        correctiveAction: target.selectionStart 
+                      }));
                     }}
                     onBlur={() => {
                       blurTimeoutRef.current = setTimeout(() => {
@@ -878,11 +908,32 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       {showVirtualKeyboard && activeKeyboardField && (
         <VirtualKeyboard
           value={activeKeyboardField === 'problemDescription' ? problemDescription : correctiveAction}
-          onChange={(value) => {
+          cursorPosition={
+            activeKeyboardField === 'problemDescription' 
+              ? cursorPositions.problemDescription 
+              : cursorPositions.correctiveAction
+          }
+          onChange={(value, newCursorPos) => {
             if (activeKeyboardField === 'problemDescription') {
               setProblemDescription(value);
+              setCursorPositions(prev => ({ ...prev, problemDescription: newCursorPos }));
+              // Cursor-Position im DOM setzen
+              setTimeout(() => {
+                if (problemDescriptionRef.current) {
+                  problemDescriptionRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  problemDescriptionRef.current.focus();
+                }
+              }, 0);
             } else if (activeKeyboardField === 'correctiveAction') {
               setCorrectiveAction(value);
+              setCursorPositions(prev => ({ ...prev, correctiveAction: newCursorPos }));
+              // Cursor-Position im DOM setzen
+              setTimeout(() => {
+                if (correctiveActionRef.current) {
+                  correctiveActionRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  correctiveActionRef.current.focus();
+                }
+              }, 0);
             }
           }}
           onClose={() => {

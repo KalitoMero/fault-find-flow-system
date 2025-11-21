@@ -66,6 +66,9 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   
   // Ref for textarea to track cursor position
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  
+  // Cursor Position State
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   // Helper function to get team leader display name
   const getTeamLeaderDisplayName = (teamLeaderId: string): string => {
@@ -1016,6 +1019,10 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         setShowVirtualKeyboard(true);
                         setActiveKeyboardField(currentField.id);
                       }}
+                      onSelect={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        setCursorPosition(target.selectionStart);
+                      }}
                       onBlur={() => {
                         blurTimeoutRef.current = setTimeout(() => {
                           setShowVirtualKeyboard(false);
@@ -1251,7 +1258,18 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       {showVirtualKeyboard && activeKeyboardField && (
         <VirtualKeyboard
           value={fields.find(f => f.id === activeKeyboardField)?.value || ''}
-          onChange={(value) => handleFieldUpdate(activeKeyboardField, value)}
+          cursorPosition={cursorPosition}
+          onChange={(value, newCursorPos) => {
+            handleFieldUpdate(activeKeyboardField, value);
+            setCursorPosition(newCursorPos);
+            // Cursor-Position im DOM setzen
+            setTimeout(() => {
+              if (textareaRef.current) {
+                textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                textareaRef.current.focus();
+              }
+            }, 0);
+          }}
           onClose={() => {
             setShowVirtualKeyboard(false);
             setActiveKeyboardField(null);
