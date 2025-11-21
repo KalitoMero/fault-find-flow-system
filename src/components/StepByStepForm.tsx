@@ -228,10 +228,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
           // Unabhängig vom Excel-Ergebnis immer direkt zur Personalnummer springen
           if (foundDepartmentName) {
             console.log('✅ Abteilung gefunden, springe zu Personalnummer (Schritt 2)');
-            toast.success(`✅ Auftrag gefunden! Abteilung: ${foundDepartmentName}`);
           } else {
             console.log('⚠️ Keine Abteilung gefunden in Excel-Daten');
-            toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
           }
 
           // Merke verarbeitete Kombination, damit sie nicht doppelt verarbeitet wird
@@ -284,10 +282,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
       
       if (foundDepartmentName) {
         console.log('✅ Excel data found for manual entry!');
-        toast.success(`✅ Auftrag gefunden! Abteilung: ${foundDepartmentName}`);
       } else {
         console.log('⚠️ No Excel data found for manual entry');
-        toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
       }
     };
     
