@@ -246,6 +246,59 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     }
   }, [fields, lastSearchedCombination, checkExcelData, excelDepartmentName]);
 
+  // Manual Excel data search when both fields are filled
+  useEffect(() => {
+    const performManualSearch = async () => {
+      const orderField = fields.find(f => f.id === 'orderNumber');
+      const afoField = fields.find(f => f.id === 'afoNumber');
+      
+      // Nur suchen wenn beide Felder ausgefüllt sind
+      if (!orderField?.value || !afoField?.value) {
+        console.log('⏭️ Manual search skipped - fields not filled:', {
+          order: orderField?.value,
+          afo: afoField?.value
+        });
+        return;
+      }
+      
+      // Prüfe ob schon für diese Kombination gesucht wurde
+      const currentCombination = `${orderField.value}|${afoField.value}`;
+      if (lastSearchedCombination === currentCombination) {
+        console.log('⏭️ Manual search skipped - already searched for this combination');
+        return;
+      }
+      
+      // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
+      if (orderField.value.includes('.')) {
+        console.log('⏭️ Manual search skipped - barcode with dot detected');
+        return;
+      }
+      
+      console.log('🔍 Manual Excel search triggered for:', {
+        orderNumber: orderField.value,
+        afoNumber: afoField.value
+      });
+      
+      // Markiere diese Kombination als durchsucht
+      setLastSearchedCombination(currentCombination);
+      
+      // Starte Excel-Suche
+      const foundDepartmentName = await checkExcelData(orderField.value, afoField.value);
+      
+      if (foundDepartmentName) {
+        console.log('✅ Excel data found for manual entry!');
+        toast.success(`✅ Auftrag gefunden! Abteilung: ${foundDepartmentName}`);
+        setExcelDataFound(true);
+      } else {
+        console.log('⚠️ No Excel data found for manual entry');
+        toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
+        setExcelDataFound(false);
+      }
+    };
+    
+    performManualSearch();
+  }, [fields, lastSearchedCombination, checkExcelData]);
+
   // Auto-focus input field when step changes
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -306,6 +359,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Check Excel data using server-side search - returns department name if found
   async function checkExcelData(orderNumber: string, afoNumber?: string): Promise<string | null> {
+    console.log('🔍 checkExcelData called with:', {
+      orderNumber,
+      afoNumber,
+      source: 'manual or barcode'
+    });
+    
     if (!afoNumber) {
       console.log('No AFO number provided, skipping Excel check');
       setIsSearching(false);
@@ -1175,9 +1234,25 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     type="text"
                     value={currentField.value}
                     onChange={(e) => handleFieldUpdate(currentField.id, e.target.value)}
-                    onKeyDown={(e) => {
+                    onKeyDown={async (e) => {
                       if (e.key === 'Enter' && currentField.value.trim()) {
                         e.preventDefault();
+                        
+                        // Special handling for AFO-Nummer field
+                        if (currentField.id === 'afoNumber') {
+                          const orderField = fields.find(f => f.id === 'orderNumber');
+                          
+                          if (orderField?.value && currentField.value) {
+                            console.log('⌨️ Enter pressed on AFO field - triggering manual Excel search');
+                            
+                            // Reset last searched combination to force new search
+                            setLastSearchedCombination('');
+                            
+                            // Die Suche wird dann durch den useEffect ausgelöst
+                            toast.info('🔍 Suche Excel-Daten...');
+                          }
+                        }
+                        
                         handleNext();
                       }
                     }}
