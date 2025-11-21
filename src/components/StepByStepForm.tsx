@@ -248,62 +248,55 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
 
   // Manual Excel data search when both fields are filled
   useEffect(() => {
-    const performManualSearch = async () => {
-      const orderField = fields.find(f => f.id === 'orderNumber');
-      const afoField = fields.find(f => f.id === 'afoNumber');
-      
-      // Nur suchen wenn beide Felder ausgefüllt sind
-      if (!orderField?.value || !afoField?.value) {
-        console.log('⏭️ Manual search skipped - fields not filled:', {
-          order: orderField?.value,
-          afo: afoField?.value
-        });
-        return;
-      }
-      
-      // Prüfe ob schon für diese Kombination gesucht wurde
-      const currentCombination = `${orderField.value}|${afoField.value}`;
-      if (lastSearchedCombination === currentCombination) {
-        console.log('⏭️ Manual search skipped - already searched for this combination');
-        return;
-      }
-      
-      // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
-      if (orderField.value.includes('.')) {
-        console.log('⏭️ Manual search skipped - barcode with dot detected');
-        return;
-      }
-      
-      // Nicht suchen wenn bereits eine Suche läuft oder bereits Daten gefunden wurden
-      if (isSearching) {
-        console.log('⏭️ Manual search skipped - search already in progress');
-        return;
-      }
-      
-      console.log('🔍 Manual Excel search triggered for:', {
-        orderNumber: orderField.value,
-        afoNumber: afoField.value
-      });
-      
-      // Markiere diese Kombination als durchsucht BEVOR die Suche startet
-      setLastSearchedCombination(currentCombination);
-      
-      // Starte Excel-Suche
-      const foundDepartmentName = await checkExcelData(orderField.value, afoField.value);
+    const orderField = fields.find(f => f.id === 'orderNumber');
+    const afoField = fields.find(f => f.id === 'afoNumber');
+    const orderValue = orderField?.value || '';
+    const afoValue = afoField?.value || '';
+    
+    // Nur suchen wenn beide Felder ausgefüllt sind
+    if (!orderValue || !afoValue) {
+      return;
+    }
+    
+    // Prüfe ob schon für diese Kombination gesucht wurde
+    const currentCombination = `${orderValue}|${afoValue}`;
+    if (lastSearchedCombination === currentCombination) {
+      return;
+    }
+    
+    // Nur suchen wenn der Barcode KEINEN Punkt enthält (manuelle Eingabe)
+    if (orderValue.includes('.')) {
+      return;
+    }
+    
+    // Nicht suchen wenn bereits eine Suche läuft
+    if (isSearching) {
+      return;
+    }
+    
+    console.log('🔍 Manual Excel search triggered for:', {
+      orderNumber: orderValue,
+      afoNumber: afoValue
+    });
+    
+    // Markiere diese Kombination als durchsucht BEVOR die Suche startet
+    setLastSearchedCombination(currentCombination);
+    
+    // Starte Excel-Suche asynchron
+    const performSearch = async () => {
+      const foundDepartmentName = await checkExcelData(orderValue, afoValue);
       
       if (foundDepartmentName) {
         console.log('✅ Excel data found for manual entry!');
         toast.success(`✅ Auftrag gefunden! Abteilung: ${foundDepartmentName}`);
-        setExcelDataFound(true);
       } else {
         console.log('⚠️ No Excel data found for manual entry');
         toast.warning('⚠️ Auftrag nicht in Excel-Daten gefunden');
-        setExcelDataFound(false);
       }
     };
     
-    performManualSearch();
-  }, [fields, lastSearchedCombination, isSearching]);
+    performSearch();
+  }, [fields.find(f => f.id === 'orderNumber')?.value, fields.find(f => f.id === 'afoNumber')?.value, lastSearchedCombination, isSearching]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
