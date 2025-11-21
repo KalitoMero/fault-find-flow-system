@@ -292,7 +292,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
     };
     
     performSearch();
-  }, [orderNumber, afoNumber, lastSearchedCombination, isSearching]);
+  }, [orderNumber, afoNumber, lastSearchedCombination]);
 
   // Auto-focus input field when step changes
   useEffect(() => {
