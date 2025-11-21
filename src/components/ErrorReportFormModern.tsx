@@ -101,8 +101,8 @@ const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, {
   placeholder?: string;
   required?: boolean;
   rows?: number;
-  onClick?: () => void;
-  onBlur?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLTextAreaElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   onSelect?: (e: React.SyntheticEvent<HTMLTextAreaElement>) => void;
 }>(({ id, label, value, onChange, placeholder, required, rows = 3, onClick, onBlur, onSelect }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -119,13 +119,13 @@ const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, {
             setIsFocused(true);
           }}
           onClick={(e) => {
-            onClick?.();
+            onClick?.(e);
             onSelect?.(e);
           }}
           onSelect={onSelect}
-          onBlur={() => {
+          onBlur={(e) => {
             setIsFocused(false);
-            onBlur?.();
+            onBlur?.(e);
           }}
           placeholder=""
           required={required}
@@ -939,10 +939,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Problembeschreibung"
                     value={problemDescription}
                     onChange={setProblemDescription}
-                    onClick={() => {
+                    onClick={(e) => {
                       if (blurTimeoutRef.current) {
                         clearTimeout(blurTimeoutRef.current);
                       }
+                      const target = e.target as HTMLTextAreaElement;
+                      const currentPos = target.selectionStart || 0;
+                      setCursorPositions(prev => ({ 
+                        ...prev, 
+                        problemDescription: currentPos 
+                      }));
                       setShowVirtualKeyboard(true);
                       setActiveKeyboardField('problemDescription');
                     }}
@@ -953,7 +959,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                         problemDescription: target.selectionStart 
                       }));
                     }}
-                    onBlur={() => {
+                    onBlur={(e) => {
+                      // Check if the new focus target is the keyboard
+                      const relatedTarget = e.relatedTarget as HTMLElement;
+                      if (relatedTarget?.closest('.keyboard-container')) {
+                        // Focus stays with keyboard, don't close
+                        return;
+                      }
+                      
                       blurTimeoutRef.current = setTimeout(() => {
                         setShowVirtualKeyboard(false);
                         setActiveKeyboardField(null);
@@ -984,10 +997,16 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                     label="Korrekturmaßnahme"
                     value={correctiveAction}
                     onChange={setCorrectiveAction}
-                    onClick={() => {
+                    onClick={(e) => {
                       if (blurTimeoutRef.current) {
                         clearTimeout(blurTimeoutRef.current);
                       }
+                      const target = e.target as HTMLTextAreaElement;
+                      const currentPos = target.selectionStart || 0;
+                      setCursorPositions(prev => ({ 
+                        ...prev, 
+                        correctiveAction: currentPos 
+                      }));
                       setShowVirtualKeyboard(true);
                       setActiveKeyboardField('correctiveAction');
                     }}
@@ -998,7 +1017,14 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
                         correctiveAction: target.selectionStart 
                       }));
                     }}
-                    onBlur={() => {
+                    onBlur={(e) => {
+                      // Check if the new focus target is the keyboard
+                      const relatedTarget = e.relatedTarget as HTMLElement;
+                      if (relatedTarget?.closest('.keyboard-container')) {
+                        // Focus stays with keyboard, don't close
+                        return;
+                      }
+                      
                       blurTimeoutRef.current = setTimeout(() => {
                         setShowVirtualKeyboard(false);
                         setActiveKeyboardField(null);
@@ -1077,52 +1103,69 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
               : 'default'
           }
           onChange={(value, newCursorPos) => {
+            console.log('📝 onChange:', { field: activeKeyboardField, valueLength: value.length, newCursorPos });
+            
             if (activeKeyboardField === 'problemDescription') {
               setProblemDescription(value);
               setCursorPositions(prev => ({ ...prev, problemDescription: newCursorPos }));
-              setTimeout(() => {
-                if (problemDescriptionRef.current) {
-                  problemDescriptionRef.current.setSelectionRange(newCursorPos, newCursorPos);
-                  problemDescriptionRef.current.focus();
-                }
-              }, 0);
+              
+              if (problemDescriptionRef.current) {
+                problemDescriptionRef.current.focus();
+                requestAnimationFrame(() => {
+                  if (problemDescriptionRef.current) {
+                    problemDescriptionRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  }
+                });
+              }
             } else if (activeKeyboardField === 'correctiveAction') {
               setCorrectiveAction(value);
               setCursorPositions(prev => ({ ...prev, correctiveAction: newCursorPos }));
-              setTimeout(() => {
-                if (correctiveActionRef.current) {
-                  correctiveActionRef.current.setSelectionRange(newCursorPos, newCursorPos);
-                  correctiveActionRef.current.focus();
-                }
-              }, 0);
+              
+              if (correctiveActionRef.current) {
+                correctiveActionRef.current.focus();
+                requestAnimationFrame(() => {
+                  if (correctiveActionRef.current) {
+                    correctiveActionRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  }
+                });
+              }
             } else if (activeKeyboardField === 'orderNumber') {
               handleOrderNumberChange(value);
               setCursorPositions(prev => ({ ...prev, orderNumber: newCursorPos }));
-              setTimeout(() => {
-                if (orderNumberRef.current) {
-                  orderNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
-                  orderNumberRef.current.focus();
-                }
-              }, 0);
+              
+              if (orderNumberRef.current) {
+                orderNumberRef.current.focus();
+                requestAnimationFrame(() => {
+                  if (orderNumberRef.current) {
+                    orderNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  }
+                });
+              }
             } else if (activeKeyboardField === 'afoNumber') {
               setAfoNumber(value);
-              setExcelDataFound(null); // Reset validation status
+              setExcelDataFound(null);
               setCursorPositions(prev => ({ ...prev, afoNumber: newCursorPos }));
-              setTimeout(() => {
-                if (afoNumberRef.current) {
-                  afoNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
-                  afoNumberRef.current.focus();
-                }
-              }, 0);
+              
+              if (afoNumberRef.current) {
+                afoNumberRef.current.focus();
+                requestAnimationFrame(() => {
+                  if (afoNumberRef.current) {
+                    afoNumberRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  }
+                });
+              }
             } else if (activeKeyboardField === 'defectiveQuantity') {
               setDefectiveQuantity(value);
               setCursorPositions(prev => ({ ...prev, defectiveQuantity: newCursorPos }));
-              setTimeout(() => {
-                if (defectiveQuantityRef.current) {
-                  defectiveQuantityRef.current.setSelectionRange(newCursorPos, newCursorPos);
-                  defectiveQuantityRef.current.focus();
-                }
-              }, 0);
+              
+              if (defectiveQuantityRef.current) {
+                defectiveQuantityRef.current.focus();
+                requestAnimationFrame(() => {
+                  if (defectiveQuantityRef.current) {
+                    defectiveQuantityRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                  }
+                });
+              }
             }
           }}
           onClose={() => {
