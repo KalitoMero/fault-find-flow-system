@@ -291,12 +291,20 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 }}
                 onFocus={(e) => {
                   setShowKeyboard(true);
-                  setCursorPosition(e.target.selectionStart || 0);
+                  const endPosition = e.target.value.length;
+                  setCursorPosition(endPosition);
+                  setTimeout(() => {
+                    e.target.setSelectionRange(endPosition, endPosition);
+                  }, 0);
                 }}
                 onClick={(e) => {
                   setShowKeyboard(true);
                   const input = e.target as HTMLInputElement;
-                  setCursorPosition(input.selectionStart || 0);
+                  const endPosition = input.value.length;
+                  setCursorPosition(endPosition);
+                  setTimeout(() => {
+                    input.setSelectionRange(endPosition, endPosition);
+                  }, 0);
                 }}
                 onKeyDown={handleKeyPress}
                 inputMode="none"
