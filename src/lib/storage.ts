@@ -396,10 +396,12 @@ export const isUserDeputy = async (userId: string): Promise<boolean> => {
 };
 
 export const searchErrorReportsByOrderNumber = async (searchTerm: string): Promise<ErrorReport[]> => {
+  const normalized = searchTerm.replace(/\s+/g, '').trim();
+
   const { data, error } = await supabase
     .from('error_reports')
     .select('*')
-    .ilike('order_number', `%${searchTerm}%`)
+    .ilike('order_number', `%${normalized}%`)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
