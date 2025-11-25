@@ -22,31 +22,30 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
   }, [value]);
 
   const handleKeyPress = (button: string) => {
-    const pos = cursorPosition;
-    
-    if (button === '{bksp}' && pos > 0) {
-      // Zeichen VOR dem Cursor löschen
-      const newValue = value.substring(0, pos - 1) + value.substring(pos);
-      onChange(newValue, pos - 1);
+    const currentValue = value || '';
+
+    if (button === '{bksp}') {
+      // Letztes Zeichen löschen
+      const newValue = currentValue.slice(0, -1);
+      onChange(newValue, newValue.length);
     } else if (button === '{space}') {
-      // Leerzeichen an Cursor-Position einfügen
-      const newValue = value.substring(0, pos) + ' ' + value.substring(pos);
-      onChange(newValue, pos + 1);
+      // Leerzeichen am Ende anhängen
+      const newValue = currentValue + ' ';
+      onChange(newValue, newValue.length);
     } else if (button === '{enter}') {
-      // Zeilenumbruch an Cursor-Position einfügen
-      const newValue = value.substring(0, pos) + '\n' + value.substring(pos);
-      onChange(newValue, pos + 1);
+      // Zeilenumbruch am Ende anhängen
+      const newValue = currentValue + '\n';
+      onChange(newValue, newValue.length);
     } else if (button === '{tab}') {
-      // Tab an Cursor-Position einfügen
-      const newValue = value.substring(0, pos) + '\t' + value.substring(pos);
-      onChange(newValue, pos + 1);
+      // Tab am Ende anhängen
+      const newValue = currentValue + '\t';
+      onChange(newValue, newValue.length);
     } else if (!button.startsWith('{')) {
-      // Zeichen an Cursor-Position einfügen
-      const newValue = value.substring(0, pos) + button + value.substring(pos);
-      onChange(newValue, pos + 1);
+      // Zeichen immer am Ende anhängen
+      const newValue = currentValue + button;
+      onChange(newValue, newValue.length);
     }
   };
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-primary shadow-xl animate-slide-in-bottom max-h-[280px]">
       <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/50">
