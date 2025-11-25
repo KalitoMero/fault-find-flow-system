@@ -65,17 +65,22 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       
       if (visibleReports.length === 0) {
         toast.error('Keine Meldungen gefunden');
-      } else if (visibleReports.length === 1) {
-        // Bei abgelehnten oder pending Meldungen direkt bearbeiten, sonst nur ansehen
-        if (visibleReports[0].approvalStatus === 'rejected' || visibleReports[0].approvalStatus === 'pending') {
-          onReportFound(visibleReports[0]);
-        } else {
-          setSelectedReport(visibleReports[0]);
-        }
-        toast.success('Fehlermeldung gefunden!');
       } else {
-        setSearchResults(visibleReports);
-        toast.success(`${visibleReports.length} Meldungen gefunden`);
+        // Tastatur ausblenden wenn Ergebnisse gefunden wurden
+        setShowKeyboard(false);
+        
+        if (visibleReports.length === 1) {
+          // Bei abgelehnten oder pending Meldungen direkt bearbeiten, sonst nur ansehen
+          if (visibleReports[0].approvalStatus === 'rejected' || visibleReports[0].approvalStatus === 'pending') {
+            onReportFound(visibleReports[0]);
+          } else {
+            setSelectedReport(visibleReports[0]);
+          }
+          toast.success('Fehlermeldung gefunden!');
+        } else {
+          setSearchResults(visibleReports);
+          toast.success(`${visibleReports.length} Meldungen gefunden`);
+        }
       }
     } catch (error) {
       console.error('Fehler beim Suchen der Meldung:', error);
