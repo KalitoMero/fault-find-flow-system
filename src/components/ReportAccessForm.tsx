@@ -271,7 +271,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             </div>
           </div>
 
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
               <Input
                 ref={searchInputRef}
@@ -279,13 +279,22 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 type="text"
                 placeholder={getSearchPlaceholder()}
                 value={searchTerm}
-                readOnly
-                onFocus={() => setShowKeyboard(true)}
-                onClick={() => {
-                  setShowKeyboard(true);
-                  setCursorPosition(searchTerm.length);
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCursorPosition(e.target.selectionStart || 0);
                 }}
-                className="text-center text-lg font-mono cursor-pointer"
+                onFocus={(e) => {
+                  setShowKeyboard(true);
+                  setCursorPosition(e.target.selectionStart || 0);
+                }}
+                onClick={(e) => {
+                  setShowKeyboard(true);
+                  const input = e.target as HTMLInputElement;
+                  setCursorPosition(input.selectionStart || 0);
+                }}
+                onKeyDown={handleKeyPress}
+                inputMode="none"
+                className="text-center text-lg font-mono"
               />
             </div>
             
