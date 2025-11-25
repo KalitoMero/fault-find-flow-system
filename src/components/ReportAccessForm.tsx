@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from '@/lib/storage';
 import { toast } from "sonner";
 import ErrorReportDetail from './ErrorReportDetail';
+import VirtualKeyboard from './VirtualKeyboard';
 
 interface ReportAccessFormProps {
   onReportFound: (report: ErrorReport) => void;
@@ -30,6 +31,9 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ErrorReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -270,12 +274,18 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="searchTerm">{getSearchLabel()}</Label>
               <Input
+                ref={searchInputRef}
                 id="searchTerm"
                 type="text"
                 placeholder={getSearchPlaceholder()}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCursorPosition(e.target.selectionStart || 0);
+                }}
                 onKeyPress={handleKeyPress}
+                onFocus={() => setShowKeyboard(true)}
+                onClick={(e) => setCursorPosition((e.target as HTMLInputElement).selectionStart || 0)}
                 className="text-center text-lg font-mono"
               />
             </div>
@@ -290,6 +300,24 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
             </Button>
           </CardContent>
         </Card>
+      )}
+      
+      {showKeyboard && (
+        <VirtualKeyboard
+          value={searchTerm}
+          onChange={(newValue, newCursorPosition) => {
+            setSearchTerm(newValue);
+            setCursorPosition(newCursorPosition);
+            if (searchInputRef.current) {
+              searchInputRef.current.focus();
+              setTimeout(() => {
+                searchInputRef.current?.setSelectionRange(newCursorPosition, newCursorPosition);
+              }, 0);
+            }
+          }}
+          onClose={() => setShowKeyboard(false)}
+          cursorPosition={cursorPosition}
+        />
       )}
     </div>
   );
