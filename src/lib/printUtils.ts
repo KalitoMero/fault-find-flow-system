@@ -56,9 +56,8 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
           visibility: visible;
         }
         #print-content {
-          position: absolute;
-          left: 0;
-          top: 0;
+          position: static;
+          margin: 0 auto;
           width: 100%;
         }
       }
@@ -190,18 +189,17 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       }
       
       #print-content .main-content {
-        padding-bottom: 80px;
+        padding-bottom: 90px;
       }
       
       #print-content .footer {
         display: flex;
         justify-content: space-between;
-        padding: 10px 20px;
+        padding: 8px 20px;
         font-size: 10px;
         color: #666;
         border-top: 1px solid #ddd;
         background-color: white;
-        margin-top: 30px;
         page-break-inside: avoid;
       }
       
@@ -227,9 +225,16 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
           margin: 0;
         }
         
+        #print-content {
+          position: relative;
+          min-height: 100vh;
+        }
+        
         #print-content .footer {
-          break-inside: avoid;
-          page-break-inside: avoid;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
         }
       }
     </style>
