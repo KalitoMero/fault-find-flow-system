@@ -189,11 +189,11 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         margin: 20px 0;
       }
       
+      #print-content .main-content {
+        padding-bottom: 80px;
+      }
+      
       #print-content .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
         display: flex;
         justify-content: space-between;
         padding: 10px 20px;
@@ -201,6 +201,8 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         color: #666;
         border-top: 1px solid #ddd;
         background-color: white;
+        margin-top: 30px;
+        page-break-inside: avoid;
       }
       
       #print-content .footer-item {
@@ -217,14 +219,23 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       }
       
       @media print {
+        @page {
+          margin: 20mm;
+        }
+        
+        body {
+          margin: 0;
+        }
+        
         #print-content .footer {
-          position: fixed;
-          bottom: 0;
+          break-inside: avoid;
+          page-break-inside: avoid;
         }
       }
     </style>
     
     <div id="print-content">
+      <div class="main-content">
       <h1>QF14-03 Fehlermeldung</h1>
       
       ${report.approvalStatus === 'approved' && approvedByName && report.approvedAt ? `
@@ -348,6 +359,7 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       <div class="section">
         <div class="section-title">Korrekturmaßnahme</div>
         <div class="text-content">${report.correctiveAction}</div>
+      </div>
       </div>
       
       <div class="footer">
