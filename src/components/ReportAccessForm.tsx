@@ -279,14 +279,13 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 type="text"
                 placeholder={getSearchPlaceholder()}
                 value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCursorPosition(e.target.selectionStart || 0);
-                }}
-                onKeyPress={handleKeyPress}
+                readOnly
                 onFocus={() => setShowKeyboard(true)}
-                onClick={(e) => setCursorPosition((e.target as HTMLInputElement).selectionStart || 0)}
-                className="text-center text-lg font-mono"
+                onClick={() => {
+                  setShowKeyboard(true);
+                  setCursorPosition(searchTerm.length);
+                }}
+                className="text-center text-lg font-mono cursor-pointer"
               />
             </div>
             
