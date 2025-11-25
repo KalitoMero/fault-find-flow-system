@@ -36,7 +36,8 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) {
+    const normalizedTerm = searchTerm.replace(/\s+/g, '').trim();
+    if (!normalizedTerm) {
       toast.error('Bitte geben Sie einen Suchbegriff ein');
       return;
     }
@@ -49,7 +50,7 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
       
       switch (searchType) {
         case 'orderNumber':
-          reports = await searchErrorReportsByOrderNumber(searchTerm.trim());
+          reports = await searchErrorReportsByOrderNumber(normalizedTerm);
           break;
         case 'articleNumber':
           reports = await searchErrorReportsByArticleNumber(searchTerm.trim());
