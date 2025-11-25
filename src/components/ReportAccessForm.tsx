@@ -287,7 +287,6 @@ const ReportAccessForm: React.FC<ReportAccessFormProps> = ({
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setCursorPosition(e.target.selectionStart || 0);
                 }}
                 onFocus={(e) => {
                   setShowKeyboard(true);
