@@ -230,7 +230,7 @@ const AudioRecorderN8n: React.FC<AudioRecorderN8nProps> = ({
             className="w-16 p-0 flex flex-col items-center justify-center"
             style={{ height: '100px' }}
           >
-            <span className="text-xs font-medium text-center leading-tight">Aufnahme beenden</span>
+            <span className="text-xs font-medium text-center leading-tight">Aufnahme<br />beenden</span>
           </Button>
           <div className="audio-recording flex items-center justify-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-lg w-16" style={{ height: '96px' }}>
             <div className="flex flex-col gap-1 items-center">
