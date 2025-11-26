@@ -75,6 +75,9 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         #print-content {
           margin: 0 auto !important;
           padding: 0 !important;
+          min-height: 100vh !important;
+          display: flex !important;
+          flex-direction: column !important;
         }
       }
       
@@ -204,6 +207,7 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       
       #print-content .main-content {
         padding-bottom: 10px;
+        flex: 1 0 auto;
       }
       
       #print-content .footer {
