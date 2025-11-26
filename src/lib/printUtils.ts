@@ -49,11 +49,32 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
   const htmlContent = `
     <style>
       @media print {
-        body * {
-          visibility: hidden;
+        @page {
+          margin: 10mm;
+          size: A4;
         }
-        #print-content, #print-content * {
-          visibility: visible;
+
+        body {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* Nur den Print-Container anzeigen */
+        body > *:not(#print-container) {
+          display: none !important;
+        }
+
+        #print-container {
+          display: block !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+        }
+
+        #print-content {
+          margin: 0 auto !important;
+          padding: 0 !important;
         }
       }
       
@@ -122,7 +143,7 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       }
       
       #print-content .section {
-        margin-bottom: 25px;
+        margin-bottom: 15px;
       }
       
       #print-content .section-title {
@@ -171,26 +192,26 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       #print-content .additional-data {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin-top: 10px;
+        gap: 12px;
+        margin-top: 8px;
       }
       
       #print-content .separator {
         border: 0;
         border-top: 1px solid #ddd;
-        margin: 20px 0;
+        margin: 15px 0;
       }
       
       #print-content .main-content {
-        padding-bottom: 20px;
+        padding-bottom: 10px;
       }
       
       #print-content .footer {
         display: flex;
         justify-content: space-between;
-        padding: 15px 20px;
-        margin-top: 30px;
-        font-size: 10px;
+        padding: 10px 15px;
+        margin-top: 15px;
+        font-size: 9px;
         color: #666;
         border-top: 1px solid #ddd;
       }
@@ -208,15 +229,6 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         text-align: right;
       }
       
-      @media print {
-        @page {
-          margin: 15mm;
-        }
-        
-        body {
-          margin: 0;
-        }
-      }
     </style>
     
     <div id="print-content">
@@ -389,7 +401,7 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
   // Cleanup und Navigation nach weiteren 3 Sekunden (insgesamt 5 Sek)
   setTimeout(() => {
     // Cleanup: Print-Container entfernen
-    const printContainer = document.getElementById('print-content');
+    const printContainer = document.getElementById('print-container');
     if (printContainer) {
       printContainer.remove();
     }
