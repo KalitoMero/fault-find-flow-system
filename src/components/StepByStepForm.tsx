@@ -1039,7 +1039,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         </Card>
 
         {/* Current Field */}
-        <Card className="bg-white shadow-xl min-h-[600px] flex flex-col justify-center">
+        <Card className={`bg-white shadow-xl ${currentField.type === 'textarea' ? 'min-h-[700px]' : 'min-h-[600px]'} flex flex-col justify-center`}>
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl flex items-center justify-center gap-3">
               {currentField.icon}
