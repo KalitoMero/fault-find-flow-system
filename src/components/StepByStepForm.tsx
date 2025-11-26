@@ -1301,7 +1301,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                     }
                     handleNext();
                   }}
-                  className="px-8 py-3 text-xl w-full max-w-md"
+                  className="px-8 py-3 text-xl w-[322px]"
                   disabled={isSearching}
                 >
                   {isSearching ? 'Suche läuft...' : 'Weiter'}
