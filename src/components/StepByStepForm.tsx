@@ -954,7 +954,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       key={field.id}
                       onClick={() => isCompleted ? handleFieldClick(index) : undefined}
                       className={`
-                        flex items-center gap-2 rounded-lg transition-colors duration-300 p-4 border-2 min-h-[88px] ${
+                        flex items-center gap-2 rounded-lg transition-colors duration-300 p-4 border-2 ${
                           isCurrentField 
                             ? 'bg-blue-100 border-blue-400 shadow-lg cursor-default' 
                             : isCompleted
@@ -999,7 +999,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       key={field.id}
                       onClick={() => isCompleted ? handleFieldClick(fieldIndex) : undefined}
                       className={`
-                        flex items-start gap-3 rounded-lg transition-colors duration-300 p-4 border-2 min-h-[88px] ${
+                        flex items-start gap-3 rounded-lg transition-colors duration-300 p-4 border-2 ${
                           isCurrentField 
                             ? 'bg-blue-100 border-blue-400 shadow-lg cursor-default' 
                             : isCompleted
