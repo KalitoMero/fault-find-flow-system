@@ -1067,12 +1067,6 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                         const target = e.target as HTMLTextAreaElement;
                         setCursorPosition(target.selectionStart);
                       }}
-                      onBlur={() => {
-                        blurTimeoutRef.current = setTimeout(() => {
-                          setShowVirtualKeyboard(false);
-                          setActiveKeyboardField(null);
-                        }, 300);
-                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.ctrlKey && currentField.value.trim()) {
                           e.preventDefault();
