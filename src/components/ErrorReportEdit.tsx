@@ -278,8 +278,12 @@ const ErrorReportEdit = ({ report, onBack, onSave, onViewReport, fromSearch = fa
   // Hole den Namen des Freigabenden/Ablehnenden
   const [employees, setEmployees] = React.useState<any[]>([]);
   const [machines, setMachines] = React.useState<any[]>([]);
-  const [approvedByName, setApprovedByName] = React.useState<string | undefined>(report.approvedBy);
-  const [rejectedByName, setRejectedByName] = React.useState<string | undefined>(report.rejectedBy);
+  const [approvedByName, setApprovedByName] = React.useState<string | undefined>(
+    report.approverName || report.approvedBy
+  );
+  const [rejectedByName, setRejectedByName] = React.useState<string | undefined>(
+    report.approverName || report.rejectedBy
+  );
   
   React.useEffect(() => {
     const loadData = async () => {
