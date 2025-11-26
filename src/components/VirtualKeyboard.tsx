@@ -31,21 +31,21 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
         onChange(newValue, cursorPosition - 1);
       }
     } else if (button === '{space}') {
-      // Leerzeichen am Ende anhängen
-      const newValue = currentValue + ' ';
-      onChange(newValue, newValue.length);
+      // Leerzeichen an Cursor-Position einfügen
+      const newValue = currentValue.slice(0, cursorPosition) + ' ' + currentValue.slice(cursorPosition);
+      onChange(newValue, cursorPosition + 1);
     } else if (button === '{enter}') {
-      // Zeilenumbruch am Ende anhängen
-      const newValue = currentValue + '\n';
-      onChange(newValue, newValue.length);
+      // Zeilenumbruch an Cursor-Position einfügen
+      const newValue = currentValue.slice(0, cursorPosition) + '\n' + currentValue.slice(cursorPosition);
+      onChange(newValue, cursorPosition + 1);
     } else if (button === '{tab}') {
-      // Tab am Ende anhängen
-      const newValue = currentValue + '\t';
-      onChange(newValue, newValue.length);
+      // Tab an Cursor-Position einfügen
+      const newValue = currentValue.slice(0, cursorPosition) + '\t' + currentValue.slice(cursorPosition);
+      onChange(newValue, cursorPosition + 1);
     } else if (!button.startsWith('{')) {
-      // Zeichen immer am Ende anhängen
-      const newValue = currentValue + button;
-      onChange(newValue, newValue.length);
+      // Zeichen an Cursor-Position einfügen
+      const newValue = currentValue.slice(0, cursorPosition) + button + currentValue.slice(cursorPosition);
+      onChange(newValue, cursorPosition + button.length);
     }
   };
   return (
