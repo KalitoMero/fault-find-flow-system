@@ -116,7 +116,35 @@ export const getErrorReports = async (): Promise<ErrorReport[]> => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(toCamelCase);
+  
+  const reports = (data || []).map(toCamelCase);
+  
+  // Load approver/rejecter names
+  const userIds = new Set<string>();
+  reports.forEach(r => {
+    if (r.approvedBy) userIds.add(r.approvedBy);
+    if (r.rejectedBy) userIds.add(r.rejectedBy);
+  });
+  
+  if (userIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', Array.from(userIds));
+    
+    const nameMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+    
+    reports.forEach(r => {
+      if (r.approvedBy && nameMap.has(r.approvedBy)) {
+        r.approverName = nameMap.get(r.approvedBy);
+      }
+      if (r.rejectedBy && nameMap.has(r.rejectedBy) && !r.approverName) {
+        r.approverName = nameMap.get(r.rejectedBy);
+      }
+    });
+  }
+  
+  return reports;
 };
 
 const saveErrorReportWithRetry = async (
@@ -346,7 +374,35 @@ export const getErrorReportsForTeamLeader = async (userId: string): Promise<Erro
   const { data, error } = await query;
 
   if (error) throw error;
-  return (data || []).map(toCamelCase);
+  
+  const reports = (data || []).map(toCamelCase);
+  
+  // Load approver/rejecter names
+  const userIds = new Set<string>();
+  reports.forEach(r => {
+    if (r.approvedBy) userIds.add(r.approvedBy);
+    if (r.rejectedBy) userIds.add(r.rejectedBy);
+  });
+  
+  if (userIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', Array.from(userIds));
+    
+    const nameMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+    
+    reports.forEach(r => {
+      if (r.approvedBy && nameMap.has(r.approvedBy)) {
+        r.approverName = nameMap.get(r.approvedBy);
+      }
+      if (r.rejectedBy && nameMap.has(r.rejectedBy) && !r.approverName) {
+        r.approverName = nameMap.get(r.rejectedBy);
+      }
+    });
+  }
+  
+  return reports;
 };
 
 export const getErrorReportsForDeputy = async (deputyUserId: string): Promise<ErrorReport[]> => {
