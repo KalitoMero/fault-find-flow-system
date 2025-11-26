@@ -87,7 +87,6 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         padding: 20px;
         border-radius: 8px;
         border: 2px solid;
-        page-break-inside: avoid;
       }
       
       #print-content .status-card.approved {
@@ -124,7 +123,6 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       
       #print-content .section {
         margin-bottom: 25px;
-        page-break-inside: avoid;
       }
       
       #print-content .section-title {
@@ -195,7 +193,6 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         font-size: 10px;
         color: #666;
         border-top: 1px solid #ddd;
-        page-break-inside: avoid;
       }
       
       #print-content .footer-item {
