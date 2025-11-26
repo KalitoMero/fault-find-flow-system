@@ -25,9 +25,11 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ value, onChange, onCl
     const currentValue = value || '';
 
     if (button === '{bksp}') {
-      // Letztes Zeichen löschen
-      const newValue = currentValue.slice(0, -1);
-      onChange(newValue, newValue.length);
+      // Zeichen links vom Cursor löschen
+      if (cursorPosition > 0) {
+        const newValue = currentValue.slice(0, cursorPosition - 1) + currentValue.slice(cursorPosition);
+        onChange(newValue, cursorPosition - 1);
+      }
     } else if (button === '{space}') {
       // Leerzeichen am Ende anhängen
       const newValue = currentValue + ' ';
