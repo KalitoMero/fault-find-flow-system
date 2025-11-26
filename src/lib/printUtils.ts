@@ -64,9 +64,6 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
         max-width: 900px;
         margin: 0 auto;
         padding: 20px;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
       }
       
       #print-content h1 {
@@ -187,18 +184,17 @@ export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () =>
       }
       
       #print-content .main-content {
-        padding-bottom: 40px;
-        flex: 1;
+        padding-bottom: 20px;
       }
       
       #print-content .footer {
         display: flex;
         justify-content: space-between;
-        padding: 8px 20px;
+        padding: 15px 20px;
+        margin-top: 30px;
         font-size: 10px;
         color: #666;
         border-top: 1px solid #ddd;
-        background-color: white;
         page-break-inside: avoid;
       }
       
