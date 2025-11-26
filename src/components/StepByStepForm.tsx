@@ -1075,7 +1075,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       }}
                       placeholder={currentField.placeholder}
                       rows={8}
-                      className="text-center text-lg flex-1"
+                      className="text-center text-lg flex-1 h-[282px]"
                       disabled={isSearching && currentStep === 0}
                     />
                     {(currentField.id === 'problemDescription' || currentField.id === 'correctiveAction') && (
