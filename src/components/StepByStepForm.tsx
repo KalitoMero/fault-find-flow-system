@@ -954,12 +954,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       key={field.id}
                       onClick={() => isCompleted ? handleFieldClick(index) : undefined}
                       className={`
-                        flex items-center gap-2 rounded-lg transition-all duration-300 ${
+                        flex items-center gap-2 rounded-lg transition-colors duration-300 p-4 border-2 ${
                           isCurrentField 
-                            ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg cursor-default' 
+                            ? 'bg-blue-100 border-blue-400 shadow-lg cursor-default' 
                             : isCompleted
-                            ? 'p-2 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
-                            : 'p-2 bg-gray-50 border border-gray-200'
+                            ? 'bg-green-50 border-green-200 cursor-pointer hover:bg-green-100'
+                            : 'bg-gray-50 border-gray-200'
                         }
                       `}
                     >
@@ -999,12 +999,12 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
                       key={field.id}
                       onClick={() => isCompleted ? handleFieldClick(fieldIndex) : undefined}
                       className={`
-                        flex items-start gap-3 rounded-lg transition-all duration-300 ${
+                        flex items-start gap-3 rounded-lg transition-colors duration-300 p-4 border-2 ${
                           isCurrentField 
-                            ? 'p-4 bg-blue-100 border-2 border-blue-400 shadow-lg cursor-default' 
+                            ? 'bg-blue-100 border-blue-400 shadow-lg cursor-default' 
                             : isCompleted
-                            ? 'p-3 bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100'
-                            : 'p-3 bg-gray-50 border border-gray-200'
+                            ? 'bg-green-50 border-green-200 cursor-pointer hover:bg-green-100'
+                            : 'bg-gray-50 border-gray-200'
                         }
                       `}
                     >
