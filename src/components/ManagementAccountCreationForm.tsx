@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { addUserRole } from '@/lib/storage';
 import { z } from 'zod';
 
@@ -63,26 +63,21 @@ const ManagementAccountCreationForm: React.FC<ManagementAccountCreationFormProps
     setIsCreating(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Nicht angemeldet');
-      }
-
-      const response = await supabase.functions.invoke('create-management-account', {
-        body: {
-          username: username.trim().toLowerCase(),
-          password: password.trim(),
-          name: name.trim()
-        }
+      const data = await api.post('/api/auth/register', {
+        email: `${username.trim().toLowerCase()}@app.internal`,
+        password: password.trim(),
+        name: name.trim(),
       });
 
-      if (response.error) throw response.error;
-      if (!response.data?.success) {
-        throw new Error(response.data?.error || 'Fehler beim Erstellen des Accounts');
+      if (!data.user) {
+        throw new Error('Fehler beim Erstellen des Accounts');
       }
 
+      // Add management role
+      await addUserRole(data.user.id, 'management');
+
       toast.success('Management-Account erfolgreich erstellt', {
-        description: `Benutzername: ${response.data.username}`
+        description: `Benutzername: ${username.trim().toLowerCase()}`
       });
       onAccountCreated();
       

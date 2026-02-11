@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 export interface Employee {
   id: string;
@@ -14,35 +14,16 @@ export interface Employee {
   };
 }
 
-const EDGE_FUNCTION_URL = 'https://fzyohssalaivehujkngi.supabase.co/functions/v1/manage-employees';
-
-async function callEdgeFunction(action: string, data?: any) {
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await fetch(EDGE_FUNCTION_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ action, data }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Request failed');
-  }
-
-  return response.json();
-}
-
 export async function getEmployees(): Promise<Employee[]> {
-  const result = await callEdgeFunction('list');
-  return result.employees;
+  const profiles = await api.get('/api/profiles');
+  return profiles.map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    departmentId: p.department_id || '',
+    personalNumber: p.personal_number,
+    isTeamLeader: p.isTeamLeader || false,
+    isAdmin: p.isAdmin || false,
+  }));
 }
 
 export async function createEmployee(employee: {
@@ -54,8 +35,32 @@ export async function createEmployee(employee: {
   isTeamLeader?: boolean;
   isAdmin?: boolean;
 }): Promise<string> {
-  const result = await callEdgeFunction('create', employee);
-  return result.userId;
+  // Register user via auth endpoint
+  const data = await api.post('/api/auth/register', {
+    email: employee.email,
+    password: employee.password,
+    name: employee.name,
+    personalNumber: employee.personalNumber,
+  });
+
+  const userId = data.user.id;
+
+  // Update department
+  await api.put(`/api/profiles/${userId}`, {
+    name: employee.name,
+    personal_number: employee.personalNumber || null,
+    department_id: employee.departmentId || null,
+  });
+
+  // Add roles
+  if (employee.isTeamLeader) {
+    await api.post('/api/roles', { userId, role: 'teamleader' });
+  }
+  if (employee.isAdmin) {
+    await api.post('/api/roles', { userId, role: 'admin' });
+  }
+
+  return userId;
 }
 
 export async function updateEmployee(employee: {
@@ -66,9 +71,14 @@ export async function updateEmployee(employee: {
   isTeamLeader?: boolean;
   isAdmin?: boolean;
 }): Promise<void> {
-  await callEdgeFunction('update', employee);
+  await api.put(`/api/profiles/${employee.id}`, {
+    name: employee.name,
+    personal_number: employee.personalNumber || null,
+    department_id: employee.departmentId || null,
+  });
 }
 
 export async function deleteEmployee(employeeId: string): Promise<void> {
-  await callEdgeFunction('delete', { id: employeeId });
+  // Note: Requires admin endpoint on backend to delete user
+  await api.delete(`/api/profiles/${employeeId}`);
 }

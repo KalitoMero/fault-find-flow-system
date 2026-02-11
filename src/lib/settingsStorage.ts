@@ -1,8 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  getEmployees as getEmployeesFromEdge,
-  updateEmployee as updateEmployeeViaEdge,
-  deleteEmployee as deleteEmployeeViaEdge,
+import api from '@/lib/apiClient';
+import {
+  getEmployees as getEmployeesFromMgmt,
+  updateEmployee as updateEmployeeViaApi,
+  deleteEmployee as deleteEmployeeViaApi,
   type Employee as EmployeeType
 } from './employeeManagement';
 
@@ -21,83 +21,39 @@ export interface Machine {
 
 // Departments
 export const getDepartments = async (): Promise<Department[]> => {
-  try {
-    console.log('🔍 Fetching departments from Supabase...');
-    const { data, error } = await supabase
-      .from('departments')
-      .select('*')
-      .order('name');
-
-    if (error) {
-      console.error('❌ Error fetching departments:', error);
-      throw error;
-    }
-    
-    console.log('✅ Departments fetched:', data?.length || 0, 'departments found');
-    if (data && data.length > 0) {
-      console.log('📋 Department list:', data.map(d => ({ id: d.id, name: d.name, code: d.code })));
-    }
-    return data || [];
-  } catch (error) {
-    console.error('❌ Exception in getDepartments:', error);
-    throw error;
-  }
+  return api.get('/api/departments');
 };
 
 export const saveDepartment = async (department: Department): Promise<void> => {
-  const { error } = await supabase
-    .from('departments')
-    .upsert({ 
-      id: department.id, 
-      name: department.name,
-      code: department.code 
-    });
-
-  if (error) throw error;
+  if (department.id) {
+    await api.put(`/api/departments/${department.id}`, { name: department.name, code: department.code });
+  } else {
+    await api.post('/api/departments', { name: department.name, code: department.code });
+  }
 };
 
 export const deleteDepartment = async (departmentId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('departments')
-    .delete()
-    .eq('id', departmentId);
-
-  if (error) throw error;
+  await api.delete(`/api/departments/${departmentId}`);
 };
 
-// Employees (now via Edge Function for proper auth handling)
+// Employees
 export const getEmployees = async (): Promise<Employee[]> => {
-  try {
-    return await getEmployeesFromEdge();
-  } catch (error) {
-    console.error('Error fetching employees:', error);
-    throw error;
-  }
+  return getEmployeesFromMgmt();
 };
 
 export const saveEmployee = async (employee: Employee): Promise<void> => {
-  try {
-    await updateEmployeeViaEdge({
-      id: employee.id,
-      name: employee.name,
-      departmentId: employee.departmentId,
-      personalNumber: employee.account?.username,
-      isTeamLeader: employee.isTeamLeader,
-      isAdmin: employee.isAdmin
-    });
-  } catch (error) {
-    console.error('Error saving employee:', error);
-    throw error;
-  }
+  await updateEmployeeViaApi({
+    id: employee.id,
+    name: employee.name,
+    departmentId: employee.departmentId,
+    personalNumber: employee.account?.username,
+    isTeamLeader: employee.isTeamLeader,
+    isAdmin: employee.isAdmin,
+  });
 };
 
 export const deleteEmployee = async (employeeId: string): Promise<void> => {
-  try {
-    await deleteEmployeeViaEdge(employeeId);
-  } catch (error) {
-    console.error('Error deleting employee:', error);
-    throw error;
-  }
+  await deleteEmployeeViaApi(employeeId);
 };
 
 export const getEmployeesByDepartment = async (departmentId: string): Promise<Employee[]> => {
@@ -112,36 +68,23 @@ export const getTeamLeadersByDepartment = async (departmentId: string): Promise<
 
 // Machines
 export const getMachines = async (): Promise<Machine[]> => {
-  const { data, error } = await supabase
-    .from('machines')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  return data || [];
+  return api.get('/api/machines');
 };
 
 export const saveMachine = async (machine: Machine): Promise<void> => {
-  const { error } = await supabase
-    .from('machines')
-    .upsert({ id: machine.id, name: machine.name });
-
-  if (error) throw error;
+  if (machine.id) {
+    await api.put(`/api/machines/${machine.id}`, { name: machine.name });
+  } else {
+    await api.post('/api/machines', { name: machine.name });
+  }
 };
 
 export const deleteMachine = async (machineId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('machines')
-    .delete()
-    .eq('id', machineId);
-
-  if (error) throw error;
+  await api.delete(`/api/machines/${machineId}`);
 };
 
-// Utility functions
-export const generateId = () => {
-  return crypto.randomUUID();
-};
+// Utility
+export const generateId = () => crypto.randomUUID();
 
 export const generatePassword = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -152,31 +95,20 @@ export const generatePassword = () => {
   return result;
 };
 
-// Logo management
+// Logo
 export const getLogo = async (): Promise<string | null> => {
-  const { data, error } = await supabase
-    .from('app_settings')
-    .select('value')
-    .eq('key', 'logo')
-    .maybeSingle();
-
-  if (error) throw error;
-  return data?.value || null;
+  try {
+    const data = await api.get('/api/settings/logo');
+    return data?.value || null;
+  } catch {
+    return null;
+  }
 };
 
 export const setLogo = async (logoDataUrl: string): Promise<void> => {
-  const { error } = await supabase
-    .from('app_settings')
-    .upsert({ key: 'logo', value: logoDataUrl });
-
-  if (error) throw error;
+  await api.put('/api/settings/logo', { value: logoDataUrl });
 };
 
 export const removeLogo = async (): Promise<void> => {
-  const { error } = await supabase
-    .from('app_settings')
-    .delete()
-    .eq('key', 'logo');
-
-  if (error) throw error;
+  await api.delete('/api/settings/logo');
 };

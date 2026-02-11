@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Webhook, Settings, TestTube } from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 interface N8nWebhookSettingsProps {
   onSettingsChange: (enabled: boolean, url: string) => void;
@@ -21,11 +21,7 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const { data: settings } = await supabase
-          .from('n8n_settings')
-          .select('webhook_url, is_enabled')
-          .is('user_id', null)
-          .maybeSingle();
+        const settings = await api.get('/api/settings/n8n');
         
         const url = settings?.webhook_url || '';
         const enabled = settings?.is_enabled || false;
@@ -47,32 +43,10 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     onSettingsChange(isEnabled, value);
     
     try {
-      // Check if global settings exist
-      const { data: existing } = await supabase
-        .from('n8n_settings')
-        .select('id')
-        .is('user_id', null)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing global settings
-        await supabase
-          .from('n8n_settings')
-          .update({
-            webhook_url: value,
-            is_enabled: isEnabled
-          })
-          .eq('id', existing.id);
-      } else {
-        // Insert new global settings
-        await supabase
-          .from('n8n_settings')
-          .insert({
-            user_id: null,
-            webhook_url: value,
-            is_enabled: isEnabled
-          });
-      }
+      await api.put('/api/settings/n8n', {
+        webhook_url: value,
+        is_enabled: isEnabled,
+      });
       
       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
       console.log('🔧 Global N8N URL updated:', value);
@@ -87,32 +61,10 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({ onSettingsChang
     onSettingsChange(enabled, webhookUrl);
     
     try {
-      // Check if global settings exist
-      const { data: existing } = await supabase
-        .from('n8n_settings')
-        .select('id')
-        .is('user_id', null)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing global settings
-        await supabase
-          .from('n8n_settings')
-          .update({
-            webhook_url: webhookUrl,
-            is_enabled: enabled
-          })
-          .eq('id', existing.id);
-      } else {
-        // Insert new global settings
-        await supabase
-          .from('n8n_settings')
-          .insert({
-            user_id: null,
-            webhook_url: webhookUrl,
-            is_enabled: enabled
-          });
-      }
+      await api.put('/api/settings/n8n', {
+        webhook_url: webhookUrl,
+        is_enabled: enabled,
+      });
       
       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
       console.log('🔧 Global N8N enabled state changed:', enabled);

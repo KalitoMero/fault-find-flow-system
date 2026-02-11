@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Upload, X, Plus, FileSpreadsheet, Save, Trash2, Loader2 } from 'lucide-react';
 import { saveExcelData, saveExcelSettings, getExcelSettings, clearExcelData } from '@/lib/excelStorage';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { toast } from "sonner";
 import ExcelJS from 'exceljs';
 import { extractResourcesFromExcel } from '@/lib/resourceUtils';
@@ -176,17 +176,17 @@ const ExcelUploadSettings: React.FC = () => {
           columnNames = settings.columnOrder;
           setColumns(columnNames);
         } else {
-          // Fallback: Load at least one row of Excel data to get column names
-          const { data: excelRows, error } = await supabase
-            .from('excel_data')
-            .select('row_data')
-            .limit(1);
-          
-          if (!error && excelRows && excelRows.length > 0) {
-            const firstRow = excelRows[0].row_data;
-            columnNames = Object.keys(firstRow);
-            setColumns(columnNames);
-          } else {
+          // Fallback: Load first row of Excel data to get column names
+          try {
+            const excelData = await api.get('/api/excel/data?limit=1');
+            if (excelData && excelData.length > 0) {
+              const firstRow = excelData[0].row_data;
+              columnNames = Object.keys(firstRow);
+              setColumns(columnNames);
+            } else {
+              return;
+            }
+          } catch {
             return;
           }
         }

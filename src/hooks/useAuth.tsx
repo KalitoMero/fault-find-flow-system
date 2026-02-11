@@ -1,18 +1,24 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 interface UserProfile {
   id: string;
   name: string;
+  email?: string;
   personal_number?: string;
   department_id?: string;
   role: 'admin' | 'teamleader' | 'employee' | 'management';
 }
 
+// Kompatibilitäts-Interface (ersetzt Supabase User)
+interface AppUser {
+  id: string;
+  email?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AppUser | null;
+  session: any | null;
   profile: UserProfile | null;
   login: (username: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
@@ -23,132 +29,94 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = async (userId: string) => {
+  const loadCurrentUser = async () => {
     try {
-      const { data: profileData, error: profileError } = await (supabase as any)
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      const token = api.getToken();
+      if (!token) {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
 
-      if (profileError) throw profileError;
-      if (!profileData) return;
+      const data = await api.get('/api/auth/me');
+      const u = data.user;
+      const roles: string[] = data.roles || [];
 
-      const { data: roleData, error: roleError } = await (supabase as any)
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roleError) console.error('Error loading role:', roleError);
-
-      const userRole = (roleData as any)?.role || 'employee';
-
+      setUser({ id: u.id, email: u.email });
       setProfile({
-        id: (profileData as any).id,
-        name: (profileData as any).name,
-        personal_number: (profileData as any).personal_number || undefined,
-        department_id: (profileData as any).department_id || undefined,
-        role: userRole as 'admin' | 'teamleader' | 'employee' | 'management'
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        personal_number: u.personal_number || undefined,
+        department_id: u.department_id || undefined,
+        role: (roles[0] || 'employee') as any,
       });
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('Error loading user:', error);
+      // Token ungültig → ausloggen
+      api.setToken(null);
+      setUser(null);
       setProfile(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            loadUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    loadCurrentUser();
   }, []);
 
   const login = async (usernameOrPersonalNumber: string, password: string) => {
     const credential = usernameOrPersonalNumber.trim();
-    
-    // Check if it looks like a personal number (only digits) or contains special characters
-    // If it's not a simple alphanumeric username, try the edge function
     const isLikelyPersonalNumber = /^\d+$/.test(credential) || credential.includes('-') || credential.includes('_');
-    
-    if (isLikelyPersonalNumber) {
-      // Use edge function for personal number or non-standard credentials
-      try {
-        const { data, error } = await supabase.functions.invoke('login-with-credential', {
-          body: { credential, password }
+
+    try {
+      let data: any;
+
+      if (isLikelyPersonalNumber) {
+        data = await api.post('/api/auth/login-with-credential', {
+          personalNumber: credential,
+          name: password, // Bei Personalnummer-Login ist password = Name
         });
-        
-        if (error) throw error;
-        
-        if (data?.session) {
-          // Set the session manually
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-          
-          return { error: sessionError };
-        }
-        
-        return { error: new Error('No session returned') };
-      } catch (error) {
-        console.error('Login with credential failed:', error);
-        return { error };
+      } else {
+        // Standard-Login mit Email
+        const email = credential.includes('@') ? credential : `${credential.toLowerCase()}@app.internal`;
+        data = await api.post('/api/auth/login', { email, password });
       }
-    } else {
-      // Standard username login - convert to email format
-      const email = `${credential.toLowerCase()}@app.internal`;
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+
+      if (data.token) {
+        api.setToken(data.token);
+        setUser({ id: data.user.id, email: data.user.email });
+        setProfile({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: (data.user.roles?.[0] || 'employee') as any,
+        });
+        return { error: null };
+      }
+
+      return { error: new Error('Kein Token erhalten') };
+    } catch (error) {
       return { error };
     }
   };
 
-
   const logout = async () => {
-    await supabase.auth.signOut();
+    api.setToken(null);
+    setUser(null);
     setProfile(null);
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      session,
+      session: user ? { token: api.getToken() } : null,
       profile,
       login,
       logout,

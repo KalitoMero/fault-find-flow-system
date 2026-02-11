@@ -33,7 +33,7 @@ import SimpleCombobox from './SimpleCombobox';
 import VirtualKeyboard from './VirtualKeyboard';
 import { printErrorReport } from '@/lib/printUtils';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 interface ErrorReportFormModernProps {
   onReportCreated: () => void;
@@ -200,11 +200,7 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
   // Load global N8N webhook settings and listen for changes
   const loadN8nSettings = useCallback(async () => {
     try {
-      const { data: settings } = await supabase
-        .from('n8n_settings')
-        .select('webhook_url, is_enabled')
-        .is('user_id', null)
-        .maybeSingle();
+      const settings = await api.get('/api/settings/n8n');
       
       const url = settings?.webhook_url || '';
       const enabled = settings?.is_enabled ?? true;
@@ -442,11 +438,8 @@ const ErrorReportFormModern: React.FC<ErrorReportFormModernProps> = ({ onReportC
       }
 
       // Teamleiter-Daten laden
-      const { data: teamLeaderProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', teamLeaderId)
-        .single();
+      const profiles = await api.get('/api/profiles');
+      const teamLeaderProfile = profiles?.find((p: any) => p.id === teamLeaderId);
 
       const teamLeaderName = teamLeaderProfile?.username || teamLeaderProfile?.name || 'Unbekannter Teamleiter';
 
