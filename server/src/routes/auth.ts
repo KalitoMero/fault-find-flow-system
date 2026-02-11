@@ -182,4 +182,32 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /api/auth/change-password
+router.post('/change-password', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Neues Passwort muss mindestens 6 Zeichen lang sein' });
+    }
+
+    const userResult = await query('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+
+    if (currentPassword) {
+      const valid = await bcrypt.compare(currentPassword, userResult.rows[0].password_hash);
+      if (!valid) {
+        return res.status(401).json({ error: 'Aktuelles Passwort ist falsch' });
+      }
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, req.userId]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler beim Ändern des Passworts' });
+  }
+});
+
 export default router;

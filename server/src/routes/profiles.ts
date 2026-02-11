@@ -60,4 +60,14 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// DELETE /api/profiles/:id (admin only - deletes user entirely)
+router.delete('/:id', authenticate, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    await query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler beim Löschen des Benutzers' });
+  }
+});
+
 export default router;
