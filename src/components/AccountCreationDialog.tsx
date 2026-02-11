@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { addUserRole } from '@/lib/storage';
 import { accountCreationSchema } from '@/lib/validation';
 
@@ -63,24 +63,17 @@ const AccountCreationDialog: React.FC<AccountCreationDialogProps> = ({
     setIsCreating(true);
     
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const data = await api.post('/api/auth/register', {
         email: email.trim(),
         password: password.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: profileName
-          }
-        }
+        name: profileName,
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
+      if (!data.user) {
         throw new Error('Benutzer konnte nicht erstellt werden');
       }
 
-      await addUserRole(authData.user.id, role);
+      await addUserRole(data.user.id, role);
 
       toast.success('Account erfolgreich erstellt');
       onAccountCreated();

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { isAdmin } from '@/lib/authz';
 
 interface AdminAuthDialogProps {
   isOpen: boolean;
@@ -18,26 +18,9 @@ const AdminAuthDialog: React.FC<AdminAuthDialogProps> = ({ isOpen, onClose, onSu
     setIsChecking(true);
     
     try {
-      // Check if user has an active session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        toast.error('Bitte zuerst einloggen.');
-        setIsChecking(false);
-        return;
-      }
+      const admin = await isAdmin();
 
-      // Check if user has admin role via server-side RPC
-      const { data: isAdmin, error: rpcError } = await (supabase as any).rpc('is_admin');
-      
-      if (rpcError) {
-        console.error('Admin check error:', rpcError);
-        toast.error('Fehler bei der Überprüfung. Bitte versuchen Sie es erneut.');
-        setIsChecking(false);
-        return;
-      }
-
-      if (isAdmin === true) {
+      if (admin) {
         onSuccess();
         onClose();
       } else {

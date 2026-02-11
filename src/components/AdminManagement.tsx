@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Trash2, Shield } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { getProfiles, addUserRole, removeUserRole } from '@/lib/storage';
 import { requireAdminOrThrow } from '@/lib/authz';
 import { accountCreationSchema } from '@/lib/validation';
@@ -69,24 +69,17 @@ const AdminManagement: React.FC = () => {
     }
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const data = await api.post('/api/auth/register', {
         email: newAdminEmail.trim(),
         password: newAdminPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: newAdminName.trim()
-          }
-        }
+        name: newAdminName.trim(),
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
+      if (!data.user) {
         throw new Error('Benutzer konnte nicht erstellt werden');
       }
 
-      await addUserRole(authData.user.id, 'admin');
+      await addUserRole(data.user.id, 'admin');
 
       toast.success('Admin erfolgreich erstellt');
       setNewAdminEmail('');
@@ -136,9 +129,7 @@ const AdminManagement: React.FC = () => {
       // Admin authorization check
       await requireAdminOrThrow();
 
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (error) throw error;
+      await api.delete(`/api/profiles/${userId}`);
 
       toast.success('Account erfolgreich gelöscht');
       loadProfiles();

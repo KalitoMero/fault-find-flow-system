@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { extractResourcesFromExcel, normalizeResourceName } from '@/lib/resourceUtils';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 export const ResourceManagement = () => {
   const [resources, setResources] = useState<string[]>([]);
@@ -20,55 +20,50 @@ export const ResourceManagement = () => {
     try {
       setIsLoading(true);
       
-      // Ressourcen aus Excel laden
-      const { data: settings } = await supabase
-        .from('excel_settings')
-        .select('resource_column')
-        .limit(1)
-        .maybeSingle();
+      const settings = await api.get('/api/excel/settings');
       
       let excelResources: string[] = [];
       if (settings?.resource_column) {
         excelResources = await extractResourcesFromExcel(settings.resource_column);
       }
       
-      // Manuell hinzugefügte Ressourcen laden (alle aus teamleader_resources)
-      const { data: manualResourcesData } = await supabase
-        .from('teamleader_resources')
-        .select('resource_name');
+      // Load manually added resources
+      const profiles = await api.get('/api/profiles');
+      const teamLeaderIds = profiles?.filter((p: any) => p.isTeamLeader).map((p: any) => p.id) || [];
       
-      const manualResources = [...new Set(manualResourcesData?.map(r => r.resource_name) || [])];
+      const manualResources: string[] = [];
+      for (const tlId of teamLeaderIds) {
+        const res = await api.get(`/api/settings/resources/${tlId}`);
+        res?.forEach((r: any) => {
+          if (!manualResources.includes(r.resource_name)) {
+            manualResources.push(r.resource_name);
+          }
+        });
+      }
       
-      // Kombinieren und deduplizieren
       const allResources = [...new Set([...excelResources, ...manualResources])].sort();
       setResources(allResources);
       
-      // Zuordnungen laden
-      await loadResourceAssignments(allResources);
+      // Load assignments
+      const assignments = new Map<string, string[]>();
+      for (const resource of allResources) {
+        // Find team leaders for this resource
+        const tls = profiles?.filter((p: any) => p.isTeamLeader) || [];
+        const assignedNames: string[] = [];
+        for (const tl of tls) {
+          const tlResources = await api.get(`/api/settings/resources/${tl.id}`);
+          if (tlResources?.some((r: any) => r.resource_name === resource)) {
+            assignedNames.push(tl.name);
+          }
+        }
+        assignments.set(resource, assignedNames);
+      }
+      setResourceAssignments(assignments);
     } catch (error) {
       console.error('Fehler beim Laden der Ressourcen:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const loadResourceAssignments = async (resourceList: string[]) => {
-    const assignments = new Map<string, string[]>();
-    
-    for (const resource of resourceList) {
-      const { data } = await supabase
-        .from('teamleader_resources')
-        .select(`
-          teamleader_id,
-          profiles!teamleader_resources_teamleader_id_fkey(name)
-        `)
-        .eq('resource_name', resource);
-      
-      const teamLeaderNames = data?.map((d: any) => d.profiles?.name).filter(Boolean) || [];
-      assignments.set(resource, teamLeaderNames);
-    }
-    
-    setResourceAssignments(assignments);
   };
   
   const handleAddResource = () => {
@@ -96,7 +91,6 @@ export const ResourceManagement = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Neue Ressource hinzufügen */}
           <div className="flex gap-2 mb-4">
             <Input
               value={newResource}
@@ -107,7 +101,6 @@ export const ResourceManagement = () => {
             <Button onClick={handleAddResource}>Hinzufügen</Button>
           </div>
           
-          {/* Ressourcen-Liste */}
           <div className="space-y-2">
             {resources.length === 0 ? (
               <p className="text-sm text-muted-foreground">

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getTeamLeaderResources, saveTeamLeaderResources } from '@/lib/resourceStorage';
 import { extractResourcesFromExcel, normalizeResourceName } from '@/lib/resourceUtils';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import type { Employee } from '@/lib/employeeManagement';
 
 interface TeamleaderResourceManagerProps {
@@ -37,11 +37,7 @@ export const TeamleaderResourceManager = ({ teamLeaders }: TeamleaderResourceMan
   
   const loadAvailableResources = async () => {
     try {
-      const { data: settings } = await supabase
-        .from('excel_settings')
-        .select('resource_column')
-        .limit(1)
-        .maybeSingle();
+      const settings = await api.get('/api/excel/settings');
       
       if (settings?.resource_column) {
         const resources = await extractResourcesFromExcel(settings.resource_column);

@@ -16,7 +16,7 @@ import AudioRecorderN8n from './AudioRecorderN8n';
 import TouchKeypad from './TouchKeypad';
 import VirtualKeyboard from './VirtualKeyboard';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { findTeamLeaderForResourceOrDepartment } from '@/lib/resourceStorage';
 
 interface StepByStepFormProps {
@@ -147,11 +147,7 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
   // Load global N8N settings on component mount
   const loadN8nSettings = useCallback(async () => {
     try {
-      const { data: settings } = await supabase
-        .from('n8n_settings')
-        .select('webhook_url, is_enabled')
-        .is('user_id', null)
-        .maybeSingle();
+      const settings = await api.get('/api/settings/n8n');
       
       const url = settings?.webhook_url || '';
       setN8nWebhookUrl(url);
@@ -193,18 +189,19 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
         return null;
       }
 
-      // Call server-side search function  
-      const { data: result, error } = await supabase.rpc('search_excel_row', {
-        p_order_number: orderNumber,
-        p_afo_number: afoNumber,
-        p_order_column: settings.orderNumberColumn,  // Now contains column name like "bab_nr"
-        p_afo_column: settings.afoNumberColumn,      // Now contains column name like "afo_nr"
-        p_article_column: settings.articleNumberColumn || null,
-        p_article_desc_column: settings.articleDescriptionColumn || null,
-        p_department_column: settings.departmentColumn || null,
-        p_resource_column: settings.resourceColumn || null,
-        p_additional_columns: JSON.parse(JSON.stringify(settings.additionalColumns || []))
+      // Call server-side search function
+      const result = await api.post('/api/excel/search', {
+        orderNumber,
+        afoNumber,
+        orderColumn: settings.orderNumberColumn,
+        afoColumn: settings.afoNumberColumn,
+        articleColumn: settings.articleNumberColumn || null,
+        articleDescColumn: settings.articleDescriptionColumn || null,
+        departmentColumn: settings.departmentColumn || null,
+        resourceColumn: settings.resourceColumn || null,
+        additionalColumns: settings.additionalColumns || [],
       });
+      const error = null;
       
       console.log('🔍 RPC search params:', {
         order_col: settings.orderNumberColumn,
@@ -279,11 +276,8 @@ const StepByStepForm: React.FC<StepByStepFormProps> = ({ onReportCreated, onClos
             
             // Jetzt die Abteilung des Teamleiters laden und anzeigen (nicht die aus Excel)
             if (teamLeader && teamLeader !== 'System') {
-              const { data: teamLeaderProfile } = await supabase
-                .from('profiles')
-                .select('department_id, departments(name)')
-                .eq('id', teamLeader)
-                .single();
+              const profiles = await api.get('/api/profiles');
+              const teamLeaderProfile = profiles?.find((p: any) => p.id === teamLeader);
               
               if (teamLeaderProfile?.department_id) {
                 const teamLeaderDeptName = (teamLeaderProfile as any).departments?.name;

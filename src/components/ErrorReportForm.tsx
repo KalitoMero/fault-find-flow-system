@@ -15,7 +15,7 @@ import {
   uploadAudioFile 
 } from '@/lib/storage';
 import { extractResourcesFromExcel } from '@/lib/resourceUtils';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { useAuth } from '@/hooks/useAuth';
 import AudioRecorder from './AudioRecorder';
 import SearchableCombobox from './SearchableCombobox';
@@ -102,11 +102,7 @@ const ErrorReportForm: React.FC<ErrorReportFormProps> = ({ onReportCreated, refr
 
   const loadAvailableResources = async () => {
     try {
-      const { data: settings } = await supabase
-        .from('excel_settings')
-        .select('resource_column')
-        .limit(1)
-        .maybeSingle();
+      const settings = await api.get('/api/excel/settings');
       
       if (settings?.resource_column) {
         const resources = await extractResourcesFromExcel(settings.resource_column);

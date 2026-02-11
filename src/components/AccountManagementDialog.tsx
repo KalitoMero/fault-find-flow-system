@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Save, User } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { updateEmployee } from '@/lib/employeeManagement';
 import { getDepartments, type Department } from '@/lib/settingsStorage';
 
@@ -94,24 +94,10 @@ const AccountManagementDialog: React.FC<AccountManagementDialogProps> = ({
 
       // Update password if provided
       if (newPassword) {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('Nicht authentifiziert');
-        }
-
-        // Use admin client via edge function for password update
-        const { error: passwordError } = await supabase.functions.invoke('manage-employees', {
-          body: {
-            action: 'update-password',
-            data: {
-              userId: employee.id,
-              password: newPassword
-            }
-          }
+        // Update password via API
+        await api.put(`/api/profiles/${employee.id}/password`, {
+          password: newPassword,
         });
-
-        if (passwordError) throw passwordError;
       }
 
       toast.success('Mitarbeiter erfolgreich aktualisiert');

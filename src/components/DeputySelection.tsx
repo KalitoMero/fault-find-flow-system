@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, Users } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 interface Employee {
   id: string;
@@ -20,11 +20,9 @@ interface DeputySelectionProps {
 const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldShow }) => {
   const [availableDeputies, setAvailableDeputies] = useState<Employee[]>([]);
   const [selectedDeputy, setSelectedDeputy] = useState<string>('none');
-  const [currentUserDepartment, setCurrentUserDepartment] = useState<string>('');
 
   useEffect(() => {
     if (shouldShow) {
-      console.log('DeputySelection: Loading deputies for user:', currentUser);
       loadDeputies();
       loadSelectedDeputy();
     }
@@ -32,32 +30,18 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
 
   const loadDeputies = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const meData = await api.get('/api/auth/me');
+      if (!meData?.user) return;
 
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('id, name, department_id')
-        .eq('id', user.id)
-        .single();
+      const profiles = await api.get('/api/profiles');
+      const myProfile = profiles?.find((p: any) => p.id === meData.user.id);
       
-      if (currentProfile) {
-        console.log('DeputySelection: Current employee found:', currentProfile.name);
-        setCurrentUserDepartment(currentProfile.department_id);
+      if (myProfile?.department_id) {
+        const deputies = profiles
+          ?.filter((p: any) => p.department_id === myProfile.department_id && p.id !== meData.user.id)
+          .map((d: any) => ({ id: d.id, name: d.name, departmentId: d.department_id })) || [];
         
-        // Get other employees from the same department with user roles
-        const { data: deputies } = await supabase
-          .from('profiles')
-          .select('id, name, department_id')
-          .eq('department_id', currentProfile.department_id)
-          .neq('id', user.id);
-        
-        console.log('DeputySelection: Available deputies:', deputies?.length || 0);
-        setAvailableDeputies(deputies?.map(d => ({
-          id: d.id,
-          name: d.name,
-          departmentId: d.department_id
-        })) || []);
+        setAvailableDeputies(deputies);
       }
     } catch (error) {
       console.error('DeputySelection: Error loading deputies:', error);
@@ -67,22 +51,9 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
 
   const loadSelectedDeputy = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: assignment } = await supabase
-        .from('deputy_assignments')
-        .select('deputy_id')
-        .eq('team_leader_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (assignment?.deputy_id) {
-        console.log('DeputySelection: Loaded saved deputy:', assignment.deputy_id);
-        setSelectedDeputy(assignment.deputy_id);
-      } else {
-        setSelectedDeputy('none');
-      }
+      const deputies = await api.get('/api/settings/deputies/list');
+      const active = deputies?.find((d: any) => d.is_active);
+      setSelectedDeputy(active?.deputy_id || 'none');
     } catch (error) {
       console.error('DeputySelection: Error loading saved deputy:', error);
       setSelectedDeputy('none');
@@ -90,44 +61,18 @@ const DeputySelection: React.FC<DeputySelectionProps> = ({ currentUser, shouldSh
   };
 
   const handleDeputyChange = async (deputyId: string) => {
-    console.log('DeputySelection: Deputy changed to:', deputyId);
     setSelectedDeputy(deputyId);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      if (deputyId && deputyId !== 'none') {
-        // Deactivate old assignments
-        await supabase
-          .from('deputy_assignments')
-          .update({ is_active: false })
-          .eq('team_leader_id', user.id);
-        
-        // Create new assignment
-        await supabase
-          .from('deputy_assignments')
-          .insert({
-            team_leader_id: user.id,
-            deputy_id: deputyId,
-            is_active: true
-          });
-      } else {
-        // Deactivate all assignments
-        await supabase
-          .from('deputy_assignments')
-          .update({ is_active: false })
-          .eq('team_leader_id', user.id);
-      }
+      await api.put('/api/settings/deputies', {
+        deputyId: deputyId !== 'none' ? deputyId : null,
+      });
     } catch (error) {
       console.error('DeputySelection: Error updating deputy:', error);
     }
   };
 
-  // Nicht anzeigen wenn shouldShow false ist
-  if (!shouldShow) {
-    return null;
-  }
+  if (!shouldShow) return null;
 
   if (availableDeputies.length === 0) {
     return (
