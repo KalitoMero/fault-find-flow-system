@@ -1,6 +1,6 @@
 import { ErrorReport } from './storage';
 import { getMachines } from './settingsStorage';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -14,35 +14,25 @@ const getStatusText = (status: string) => {
 };
 
 export const printErrorReport = async (report: ErrorReport, onAfterPrint?: () => void) => {
-  // Hole den richtigen Feststellort-Namen
   const machines = await getMachines();
   const machine = machines.find(m => m.id === report.machine);
   const machineName = machine ? machine.name : report.machine;
 
-  // Hole die Namen des Freigabenden/Ablehnenden aus der Datenbank
   let approvedByName = report.approvedBy;
   let rejectedByName = report.rejectedBy;
 
   if (report.approvedBy) {
-    const { data: approvedByProfile } = await supabase
-      .from('profiles')
-      .select('name')
-      .eq('id', report.approvedBy)
-      .single();
-    if (approvedByProfile) {
-      approvedByName = approvedByProfile.name;
-    }
+    try {
+      const profile = await api.get<{ name: string }>(`/api/profiles/${report.approvedBy}`);
+      if (profile) approvedByName = profile.name;
+    } catch (e) { /* ignore */ }
   }
 
   if (report.rejectedBy) {
-    const { data: rejectedByProfile } = await supabase
-      .from('profiles')
-      .select('name')
-      .eq('id', report.rejectedBy)
-      .single();
-    if (rejectedByProfile) {
-      rejectedByName = rejectedByProfile.name;
-    }
+    try {
+      const profile = await api.get<{ name: string }>(`/api/profiles/${report.rejectedBy}`);
+      if (profile) rejectedByName = profile.name;
+    } catch (e) { /* ignore */ }
   }
 
   // Build HTML content

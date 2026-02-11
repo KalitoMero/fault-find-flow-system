@@ -10,7 +10,7 @@ import { Download, FileSpreadsheet, Database, Filter, Calendar } from 'lucide-re
 import { ErrorReport } from '@/lib/storage';
 import { exportToExcel, exportToCSV } from '@/lib/export';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 
 interface ExportSectionProps {
   reports: ErrorReport[];
@@ -33,12 +33,10 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
   const getFilteredReports = () => {
     let filtered = [...reports];
 
-    // Status-Filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(report => report.approvalStatus === filterStatus);
     }
 
-    // Datums-Filter
     if (dateFrom) {
       filtered = filtered.filter(report => 
         new Date(report.createdAt) >= dateFrom
@@ -56,22 +54,14 @@ const ExportSection: React.FC<ExportSectionProps> = ({ reports }) => {
 
   const enrichReportsWithNames = async (reports: ErrorReport[]): Promise<ErrorReport[]> => {
     try {
-      // Get all unique approver IDs and department names
       const approverIds = [...new Set(reports.map(r => r.approvedBy).filter(Boolean))];
       
-      // Fetch approver names from profiles
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .in('id', approverIds);
-      
+      // Fetch approver names from API
+      const profiles = await api.get<any[]>('/api/profiles');
       const approverMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
       
       // Fetch department names
-      const { data: departments } = await supabase
-        .from('departments')
-        .select('id, name');
-      
+      const departments = await api.get<any[]>('/api/departments');
       const departmentMap = new Map(departments?.map(d => [d.id, d.name]) || []);
       
       // Enrich reports with names

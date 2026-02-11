@@ -10,7 +10,7 @@ interface UserProfile {
   role: 'admin' | 'teamleader' | 'employee' | 'management';
 }
 
-// Kompatibilitäts-Interface (ersetzt Supabase User)
+// App User interface
 interface AppUser {
   id: string;
   email?: string;

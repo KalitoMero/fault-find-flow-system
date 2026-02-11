@@ -29,6 +29,17 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/profiles/:id (single profile by ID)
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await query('SELECT id, name, username, personal_number, department_id FROM profiles WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Profil nicht gefunden' });
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler beim Laden des Profils' });
+  }
+});
+
 // GET /api/profiles/by-department/:departmentId
 router.get('/by-department/:departmentId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
