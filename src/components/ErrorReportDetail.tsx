@@ -101,7 +101,7 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
 
     setIsDeleting(true);
     try {
-      // Delete the report from Supabase
+      // Delete the report
       await deleteErrorReport(report.id);
       
       toast.success('Fehlermeldung wurde erfolgreich gelöscht!');
@@ -309,33 +309,25 @@ const ErrorReportDetail = ({ report, onBack, onStatusChange, onEdit, onViewRepor
   React.useEffect(() => {
     const loadData = async () => {
       const { getDepartments } = await import('@/lib/settingsStorage');
-      const { supabase } = await import('@/integrations/supabase/client');
+      const { default: api } = await import('@/lib/apiClient');
       
       setEmployees(await getEmployees());
       setMachines(await getMachines());
       setDepartments(await getDepartments());
 
-      // Lade Namen der Freigeber/Ablehnenden aus der profiles Tabelle
+      // Lade Namen der Freigeber/Ablehnenden aus der API
       if (report.approvedBy) {
-        const { data: approvedProfile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', report.approvedBy)
-          .maybeSingle();
-        if (approvedProfile) {
-          setApprovedByName(approvedProfile.name);
-        }
+        try {
+          const approvedProfile = await api.get<{ name: string }>(`/api/profiles/${report.approvedBy}`);
+          if (approvedProfile) setApprovedByName(approvedProfile.name);
+        } catch (e) { /* ignore */ }
       }
 
       if (report.rejectedBy) {
-        const { data: rejectedProfile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', report.rejectedBy)
-          .maybeSingle();
-        if (rejectedProfile) {
-          setRejectedByName(rejectedProfile.name);
-        }
+        try {
+          const rejectedProfile = await api.get<{ name: string }>(`/api/profiles/${report.rejectedBy}`);
+          if (rejectedProfile) setRejectedByName(rejectedProfile.name);
+        } catch (e) { /* ignore */ }
       }
     };
     loadData();

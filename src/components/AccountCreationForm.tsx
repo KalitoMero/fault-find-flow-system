@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/apiClient';
 import { addUserRole } from '@/lib/storage';
 import { z } from 'zod';
 
@@ -70,51 +70,20 @@ const AccountCreationForm: React.FC<AccountCreationFormProps> = ({ onAccountCrea
       const normalizedUsername = username.trim().toLowerCase();
       const email = `${normalizedUsername}@internal.local`;
 
-      // Check if username already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', normalizedUsername)
-        .maybeSingle();
-
-      if (existingProfile) {
-        toast.error('Dieser Benutzername ist bereits vergeben');
-        setIsCreating(false);
-        return;
-      }
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Create account via API
+      const data = await api.post('/api/auth/register', {
         email,
         password: password.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: name.trim(),
-            personal_number: personalNumber.trim(),
-            username: normalizedUsername
-          }
-        }
+        name: name.trim(),
+        personal_number: personalNumber.trim() || null,
+        username: normalizedUsername,
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
+      if (!data.user) {
         throw new Error('Benutzer konnte nicht erstellt werden');
       }
 
-      // Update profile with username
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          username: normalizedUsername,
-          name: name.trim(),
-          personal_number: personalNumber.trim() || null
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) throw profileError;
-
-      await addUserRole(authData.user.id, role);
+      await addUserRole(data.user.id, role);
 
       toast.success('Account erfolgreich erstellt', {
         description: `Benutzername: ${normalizedUsername}`
