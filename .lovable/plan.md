@@ -1,55 +1,48 @@
-# N8N-Einstellungen: Speichern reparieren
+# Teamleiter: Fehlender Dashboard-Button nach Login
 
 ## Diagnose (bestätigt durch Code-Reads)
 
-**Hauptursache – Backend-Route-Reihenfolge** in `server/src/routes/settings.ts`:
-- `PUT /:key` (Zeile 20) und `GET /:key` (Zeile 8) sind **vor** den spezifischen Routen `PUT /n8n` (Zeile 60) und `GET /n8n` (Zeile 47) registriert.
-- Express nimmt den **ersten** passenden Treffer: `PUT /api/settings/n8n` landet in `/:key` mit key = "n8n".
-  - Nicht-Admin: `requireRole('admin')` → **403 „Keine Berechtigung"**
-  - Admin: Handler trifft `if (['n8n','deputies','resources'].includes(req.params.key)) return;` → **keine Antwort gesendet, Request hängt ewig**
-- Die echte `/n8n`-Route wird nie erreicht. Gleiches beim **Laden** (`GET /:key` verschluckt `GET /n8n`) → Einstellungen wirken „zurückgesetzt".
-- Betroffen: `GET /n8n`, `PUT /n8n`, `PUT /deputies` (alle einsegmentigen Pfade, die mit `/:key` kollidieren).
-- Schema ist OK: Tabelle `n8n_settings` existiert in `server/schema.sql`.
+Der Dashboard-Button in `src/pages/Index.tsx` (Zeile 407) wird nur angezeigt, wenn `profile.role` `teamleader`, `admin` oder `management` ist.
 
-**Zweitursache – Frontend Auto-Save** in `src/components/N8nWebhookSettings.tsx`:
-- Kein Speichern-Button; `onChange` des URL-Inputs feuert auf **jeden Tastenanschlag** einen `api.put` → Dutzende Requests mit unvollständigen URLs, kein klares Feedback.
+Das Problem liegt in der Rollen-Auflösung in `src/hooks/useAuth.tsx`:
 
-## Änderungen
+1. **Jeder User bekommt bei Registrierung die Rolle `employee`** (`server/src/routes/auth.ts` Zeile 41–44).
+2. Die Teamleiter-Rolle wird **zusätzlich** vergeben (`src/lib/employeeManagement.ts` Zeile 57, `POST /api/roles`) → ein Teamleiter hat **zwei** Einträge in `user_roles`: `employee` und `teamleader`.
+3. Der Login lädt alle Rollen: `SELECT role FROM user_roles WHERE user_id = $1` (`auth.ts` Zeile 91–94) — **ohne ORDER BY**, Reihenfolge undefiniert.
+4. `useAuth.tsx` übernimmt nur die **erste** Rolle: `role: (roles[0] || 'employee')` in `loadCurrentUser` (Zeile 57) und in `login` (Zeile 99).
+5. Kommt `employee` zuerst zurück, hat der Teamleiter `profile.role === 'employee'` → Dashboard-Button fehlt, Auto-Open des Dashboards (Index.tsx Zeile 66–72) greift nicht, `loadData` lädt keine Teamleiter-Meldungen.
 
-### 1. `server/src/routes/settings.ts` – Routen neu ordnen
-- Alle **spezifischen** Routen vor die generischen `/:key`-Routen verschieben:
-  ```text
-  Reihenfolge neu:
-    GET  /n8n
-    PUT  /n8n
-    GET  /deputies/list
-    PUT  /deputies
-    GET  /resources/by-resource/:name
-    GET  /resources/:teamleaderId
-    PUT  /resources/:teamleaderId
-    ── danach erst generisch ──
-    GET  /:key
-    PUT  /:key
-    DELETE /:key
-  ```
-- Die Guard-Zeilen `if (['n8n','deputies','resources'].includes(req.params.key)) return;` in `GET /:key` und `PUT /:key` **entfernen** (nach Umordnung überflüssig).
-- Logik der einzelnen Routen bleibt unverändert.
+Das erklärt auch, warum es manchmal/zuweilen funktioniert: die Zeilenreihenfolge der DB ist nicht garantiert.
 
-### 2. `src/components/N8nWebhookSettings.tsx` – Expliziter Speichern-Button
-- `handleUrlChange`: nur noch `setWebhookUrl` + `onSettingsChange` – **kein** `api.put` mehr pro Tastenanschlag.
-- `handleEnabledChange`: nur noch `setIsEnabled` + `onSettingsChange` – **kein** sofortiges `api.put`.
-- Neue `saveSettings()`-Funktion: ein einziges `api.put('/api/settings/n8n', { webhook_url, is_enabled })` mit `isSaving`-State, Erfolgs-/Fehler-Toast und `n8n-settings-updated`-Event.
-- Neuer Button „Einstellungen speichern" unter dem URL-Feld.
+## Änderung: `src/hooks/useAuth.tsx`
 
-### 3. Hinweis zum lokalen Server
-Nach dem Pull der Server-Änderung den lokalen Server neu starten (`npm run dev` neu starten bzw. `npm run build && npm start`), damit die neue Route-Reihenfolge greift.
+Rollen-Priorisierung statt `roles[0]`:
+
+```ts
+const ROLE_PRIORITY = ['admin', 'management', 'teamleader', 'employee'] as const;
+
+const resolveRole = (roles: string[]): UserProfile['role'] => {
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
+  }
+  return 'employee';
+};
+```
+
+Einsetzen an beiden Stellen:
+- `loadCurrentUser` (Zeile 57): `role: resolveRole(roles)`
+- `login` (Zeile 99): `role: resolveRole(data.user.roles || [])`
+
+Priorität: `admin` > `management` > `teamleader` > `employee`. So bekommt ein User mit mehreren Rollen immer die höchste.
+
+## Optional (empfohlen, klein): `server/src/routes/auth.ts`
+
+In den drei Rollen-Abfragen (`register` hat keine, `login` Zeile 91, `login-with-credential` Zeile 141, `me` via middleware) ein deterministisches `ORDER BY role` ergänzen — als Absicherung, falls später noch Code `roles[0]` nutzt. Rein serverseitig, keine Logikänderung.
 
 ## Was sich nicht ändert
-- Datenbank-Schema (`n8n_settings` bleibt wie es ist).
-- `SettingsModal.tsx` und der `onSettingsChange`-Flow.
-- Der „Webhook testen"-Button.
+- Keine Änderungen an der Datenbank oder an den Rollen selbst.
+- Keine UI-Änderungen — der Button erscheint einfach wieder korrekt.
+- `src/lib/authz.ts` (`isAdmin` prüft bereits `roles.includes('admin')`) bleibt unverändert.
 
 ## Ergebnis
-- Speichern funktioniert für normale Benutzer (kein 403 mehr) und Admins (kein Hängen mehr).
-- Laden der Einstellungen funktioniert → Werte bleiben nach Tab-Wechsel erhalten.
-- Genau ein kontrollierter PUT beim Klick auf „Speichern" statt Auto-Save pro Tastenanschlag.
+Teamleiter sehen nach dem Login zuverlässig den Dashboard-Button, das Dashboard öffnet sich automatisch, und ihre zugewiesenen Meldungen werden geladen — unabhängig von der Datenbank-Zeilenreihenfolge.
