@@ -1,60 +1,55 @@
-# N8N-Einstellungen: Expliziter Speichern-Button statt Auto-Save
+# N8N-Einstellungen: Speichern reparieren
 
-## Problem
-In `src/components/N8nWebhookSettings.tsx` gibt es keinen „Speichern"-Button. Stattdessen speichert der Code **bei jeder Eingabe automatisch**:
-- `onChange` des URL-Inputs (Zeile 147) feuert auf **jeden Tastenanschlag** und ruft `handleUrlChange` → `api.put('/api/settings/n8n')` auf.
-- Der Switch feuert `handleEnabledChange` → ebenfalls sofort `api.put`.
+## Diagnose (bestätigt durch Code-Reads)
 
-Folgen:
-- Bei jedem Buchstaben wird eine unvollständige URL ans Backend geschickt.
-- Wenn der PUT fehlschlägt (z.B. Backend-Route-Reihenfolge-Bug, s. `server/src/routes/settings.ts`), bleibt die Änderung nur im lokalen State — beim Verlassen des Tabs lädt `useEffect` neu und überschreibt sie wieder mit dem alten Backend-Wert → „Einstellungen werden zurückgesetzt".
-- Kein sichtbares Feedback, dass gespeichert wurde (nur ein Toast im Fehlerfall).
+**Hauptursache – Backend-Route-Reihenfolge** in `server/src/routes/settings.ts`:
+- `PUT /:key` (Zeile 20) und `GET /:key` (Zeile 8) sind **vor** den spezifischen Routen `PUT /n8n` (Zeile 60) und `GET /n8n` (Zeile 47) registriert.
+- Express nimmt den **ersten** passenden Treffer: `PUT /api/settings/n8n` landet in `/:key` mit key = "n8n".
+  - Nicht-Admin: `requireRole('admin')` → **403 „Keine Berechtigung"**
+  - Admin: Handler trifft `if (['n8n','deputies','resources'].includes(req.params.key)) return;` → **keine Antwort gesendet, Request hängt ewig**
+- Die echte `/n8n`-Route wird nie erreicht. Gleiches beim **Laden** (`GET /:key` verschluckt `GET /n8n`) → Einstellungen wirken „zurückgesetzt".
+- Betroffen: `GET /n8n`, `PUT /n8n`, `PUT /deputies` (alle einsegmentigen Pfade, die mit `/:key` kollidieren).
+- Schema ist OK: Tabelle `n8n_settings` existiert in `server/schema.sql`.
 
-## Lösung
-Eingaben erst lokal halten und **erst beim Klick auf „Speichern"** ans Backend senden.
+**Zweitursache – Frontend Auto-Save** in `src/components/N8nWebhookSettings.tsx`:
+- Kein Speichern-Button; `onChange` des URL-Inputs feuert auf **jeden Tastenanschlag** einen `api.put` → Dutzende Requests mit unvollständigen URLs, kein klares Feedback.
 
-### Änderung in `src/components/N8nWebhookSettings.tsx`
+## Änderungen
 
-1. **Lokaler State bleibt, Auto-Save entfernen**
-   - `handleUrlChange` (Zeile 41–57): nur noch `setWebhookUrl(value)` + `onSettingsChange(...)`, **kein** `api.put`.
-   - `handleEnabledChange` (Zeile 59–81): nur noch `setIsEnabled(enabled)` + `onSettingsChange(...)`, **kein** `api.put` und keine Erfolgs-Toast. Stattdessen ggf. Hinweis, dass gespeichert werden muss.
+### 1. `server/src/routes/settings.ts` – Routen neu ordnen
+- Alle **spezifischen** Routen vor die generischen `/:key`-Routen verschieben:
+  ```text
+  Reihenfolge neu:
+    GET  /n8n
+    PUT  /n8n
+    GET  /deputies/list
+    PUT  /deputies
+    GET  /resources/by-resource/:name
+    GET  /resources/:teamleaderId
+    PUT  /resources/:teamleaderId
+    ── danach erst generisch ──
+    GET  /:key
+    PUT  /:key
+    DELETE /:key
+  ```
+- Die Guard-Zeilen `if (['n8n','deputies','resources'].includes(req.params.key)) return;` in `GET /:key` und `PUT /:key` **entfernen** (nach Umordnung überflüssig).
+- Logik der einzelnen Routen bleibt unverändert.
 
-2. **Neue `saveSettings`-Funktion**
-   ```tsx
-   const [isSaving, setIsSaving] = useState(false);
+### 2. `src/components/N8nWebhookSettings.tsx` – Expliziter Speichern-Button
+- `handleUrlChange`: nur noch `setWebhookUrl` + `onSettingsChange` – **kein** `api.put` mehr pro Tastenanschlag.
+- `handleEnabledChange`: nur noch `setIsEnabled` + `onSettingsChange` – **kein** sofortiges `api.put`.
+- Neue `saveSettings()`-Funktion: ein einziges `api.put('/api/settings/n8n', { webhook_url, is_enabled })` mit `isSaving`-State, Erfolgs-/Fehler-Toast und `n8n-settings-updated`-Event.
+- Neuer Button „Einstellungen speichern" unter dem URL-Feld.
 
-   const saveSettings = async () => {
-     setIsSaving(true);
-     try {
-       await api.put('/api/settings/n8n', {
-         webhook_url: webhookUrl,
-         is_enabled: isEnabled,
-       });
-       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-       toast.success('N8N-Einstellungen gespeichert');
-     } catch (error) {
-       console.error('Error saving N8N settings:', error);
-       toast.error('Fehler beim Speichern der Einstellungen');
-     } finally {
-       setIsSaving(false);
-     }
-   };
-   ```
-
-3. **Speichern-Button einfügen** (unter dem URL-Feld, vor dem Test-Button):
-   ```tsx
-   <Button onClick={saveSettings} disabled={isSaving} className="w-full">
-     <Settings className="h-4 w-4 mr-2" />
-     {isSaving ? 'Speichert...' : 'Einstellungen speichern'}
-   </Button>
-   ```
-
-4. **`onSettingsChange` aus der `useEffect`-Dependency entfernen** (stabilisieren), damit das Neuladen beim Verlassen/Wechseln des Tabs nicht versehentlich den lokalen State überschreibt, bevor gespeichert wurde. Entweder `useCallback` im Eltern-Element (`SettingsModal.tsx`) oder `onSettingsChange`-Ref verwenden. Parent `handleN8nSettingsChange` (SettingsModal Zeile 333) ist bereits stabil genug, aber da es nicht memoisiert ist, лучше per `useRef` sichern.
+### 3. Hinweis zum lokalen Server
+Nach dem Pull der Server-Änderung den lokalen Server neu starten (`npm run dev` neu starten bzw. `npm run build && npm start`), damit die neue Route-Reihenfolge greift.
 
 ## Was sich nicht ändert
-- Backend `server/src/routes/settings.ts` — du hast die Route-Reihenfolge lokal bereits angepasst; in dieser Projekt-Datei bleibt sie unverändert (du pflegst den lokalen Server selbst).
-- `onSettingsChange`-Prop und Parent-State-Flow in `SettingsModal.tsx` bleiben bestehen.
-- Der „Webhook testen"-Button bleibt wie er ist.
+- Datenbank-Schema (`n8n_settings` bleibt wie es ist).
+- `SettingsModal.tsx` und der `onSettingsChange`-Flow.
+- Der „Webhook testen"-Button.
 
-## Technischer Hinweis
-Der PUT geht an den lokalen Express-Server (`VITE_API_URL=http://localhost:3001`). In der Lovable-Preview läuft dieser Server nicht, deshalb schlägt das Speichern dort fehl — das ist erwartet. Lokal (wo dein Server läuft) funktioniert es nach dieser Änderung zuverlässig, weil nicht mehr bei jedem Tastenanschlag gespeichert wird und ein sichtbarer Speichern-Button das Speichern steuert.
+## Ergebnis
+- Speichern funktioniert für normale Benutzer (kein 403 mehr) und Admins (kein Hängen mehr).
+- Laden der Einstellungen funktioniert → Werte bleiben nach Tab-Wechsel erhalten.
+- Genau ein kontrollierter PUT beim Klick auf „Speichern" statt Auto-Save pro Tastenanschlag.
