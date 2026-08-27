@@ -1,30 +1,66 @@
-# N8N-Einstellungen speicherbar machen (Code zum Einfügen)
+# Teamleiter-Dashboard-Button anzeigen (+ offener N8N-Fix)
 
-Du hast den N8N-Block bereits nach oben verschoben und GET auf globale Einstellungen (`user_id IS NULL`) umgestellt. Hier der exakte Code für den Rest.
+## Problem
 
-## 1) Backend: `server/src/routes/settings.ts` — oberer Bereich
+Ein Teamleiter hat in `user_roles` meist **zwei** Rollen: `employee` (wird bei der Registrierung automatisch vergeben) und `teamleader`. In `src/hooks/useAuth.tsx` wird aber nur `roles[0]` genommen (Zeile 57 und Zeile 99), und die SQL-Abfrage in `server/src/middleware/auth.ts` hat kein `ORDER BY` — die Reihenfolge ist also zufällig. Kommt `employee` zuerst, wird der Teamleiter als Mitarbeiter behandelt und der Dashboard-Button in `src/pages/Index.tsx` (Prüfung `profile.role === 'teamleader'`) fehlt.
 
-Den Block von `const router = Router();` bis zum Start von `// === DEPUTY ASSIGNMENTS ===` **komplett ersetzen** durch:
+## Fix: `src/hooks/useAuth.tsx`
+
+### 1) Hilfsfunktion einfügen — direkt nach Zeile 29 (`const AuthContext = createContext...`)
 
 ```ts
-const router = Router();
+const ROLE_PRIORITY = ['admin', 'management', 'teamleader', 'employee'] as const;
 
-// === N8N SETTINGS ===
-// WICHTIG: Diese spezifischen Routen müssen VOR /:key stehen!
-
-// GET /api/settings/n8n
-router.get('/n8n', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { rows } = await query(
-      'SELECT * FROM n8n_settings WHERE user_id IS NULL ORDER BY id LIMIT 1'
-    );
-    res.json(rows[0] || null);
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Laden der N8N-Einstellungen' });
+const resolveRole = (roles: string[] = []): UserProfile['role'] => {
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
   }
-});
+  return 'employee';
+};
+```
 
-// PUT /api/settings/n8n
+### 2) In `loadCurrentUser` — Zeile 57 ersetzen
+
+```ts
+        role: (roles[0] || 'employee') as any,   // vorher
+        role: resolveRole(roles),                // nachher
+```
+
+### 3) In `login` — Zeile 99 ersetzen
+
+```ts
+          role: (data.user.roles?.[0] || 'employee') as any,   // vorher
+          role: resolveRole(data.user.roles),                  // nachher
+```
+
+Damit gewinnt immer die höchste Rolle: `admin` > `management` > `teamleader` > `employee`.
+
+### Danach
+
+Frontend neu bauen und ausliefern (`npm run build`), dann **neu einloggen** — das Profil wird nur beim Login bzw. Laden gesetzt.
+
+### Falls der Button danach immer noch fehlt
+
+Prüfen, ob die Teamleiter-Rolle in der DB überhaupt gesetzt ist:
+```sql
+SELECT p.name, ur.role FROM user_roles ur JOIN profiles p ON p.id = ur.user_id;
+```
+Fehlt `teamleader`, ergänzen:
+```sql
+INSERT INTO user_roles (user_id, role) VALUES ('<user-uuid>', 'teamleader')
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+---
+
+# Offen: N8N-Einstellungen speichern
+
+## Backend: `server/src/routes/settings.ts`
+
+Der N8N-GET-Block steht bereits oben. Der **PUT** muss ebenfalls oben stehen **und** global speichern (`user_id IS NULL`), passend zum GET:
+
+```ts
+// PUT /api/settings/n8n  -- muss VOR router.put('/:key', ...) stehen
 router.put('/n8n', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { webhook_url, is_enabled } = req.body;
@@ -45,69 +81,18 @@ router.put('/n8n', authenticate, async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Fehler beim Speichern der N8N-Einstellungen' });
   }
 });
-
-// === GENERISCHE EINSTELLUNGEN (müssen UNTER den spezifischen Routen stehen) ===
-
-// GET /api/settings/:key
-router.get('/:key', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { rows } = await query('SELECT * FROM app_settings WHERE key = $1', [req.params.key]);
-    res.json(rows[0] || null);
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Laden der Einstellung' });
-  }
-});
-
-// PUT /api/settings/:key
-router.put('/:key', authenticate, requireRole('admin'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { value } = req.body;
-    await query(
-      'INSERT INTO app_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
-      [req.params.key, value]
-    );
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Speichern der Einstellung' });
-  }
-});
-
-// DELETE /api/settings/:key
-router.delete('/:key', authenticate, requireRole('admin'), async (req: AuthRequest, res: Response) => {
-  try {
-    await query('DELETE FROM app_settings WHERE key = $1', [req.params.key]);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Löschen der Einstellung' });
-  }
-});
 ```
 
-Änderungen gegenüber vorher:
-- N8N-Block (GET + PUT) steht **oben**, generische `/:key`-Routen **darunter**.
-- Die `if (['n8n',...].includes(...)) return;`-Guard-Zeilen sind **entfallen**.
-- PUT speichert jetzt auch **global** (`user_id IS NULL`), passend zu deinem GET.
-- `DELETE /:key` bleibt unten (kollidiert nicht).
+Außerdem in den generischen Routen die Guard-Zeilen `if (['n8n', 'deputies', 'resources'].includes(req.params.key)) return;` löschen (Zeile 10 und 21) — sie lassen Requests hängen.
 
-> Hinweis: Falls `n8n_settings.user_id` eine `NOT NULL`-Constraint hat, schlägt `VALUES (NULL, ...)` fehl. Prüfe `server/schema.sql` — falls NOT NULL, ändere die Spalte: `ALTER TABLE n8n_settings ALTER COLUMN user_id DROP NOT NULL;`
+## Frontend: `src/components/N8nWebhookSettings.tsx`
 
-Der Rest der Datei (Deputy Assignments, Teamleader Resources ab `// === DEPUTY ASSIGNMENTS ===`) bleibt unverändert. Diese mehrteiligen Pfade (`/deputies/list`, `/resources/:id`) kollidieren nicht mit `/:key`, weil sie einen zweiten Pfadteil haben — die Reihenfolge zu `/:key` ist egal.
-
-Danach Server neu bauen/neu starten:
-```bash
-cd server && npm run build && pm2 restart fehlermeldesystem   # bzw. systemctl restart ...
-```
-
-## 2) Frontend: `src/components/N8nWebhookSettings.tsx`
-
-Auto-Save bei jedem Tastenanschlag → expliziter Speichern-Button.
-
-### a) State ergänzen (Zeile 18, nach `isTesting`)
+### a) State ergänzen (nach Zeile 18)
 ```ts
   const [isSaving, setIsSaving] = useState(false);
 ```
 
-### b) `handleUrlChange` (Zeilen 41-57) und `handleEnabledChange` (Zeilen 59-81) ersetzen durch:
+### b) `handleUrlChange` (41-57) und `handleEnabledChange` (59-81) ersetzen
 ```ts
   const handleUrlChange = (value: string) => {
     setWebhookUrl(value);
@@ -126,10 +111,7 @@ Auto-Save bei jedem Tastenanschlag → expliziter Speichern-Button.
     }
     setIsSaving(true);
     try {
-      await api.put('/api/settings/n8n', {
-        webhook_url: webhookUrl,
-        is_enabled: isEnabled,
-      });
+      await api.put('/api/settings/n8n', { webhook_url: webhookUrl, is_enabled: isEnabled });
       window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
       onSettingsChange(isEnabled, webhookUrl);
       toast.success('N8N Einstellungen gespeichert');
@@ -142,23 +124,14 @@ Auto-Save bei jedem Tastenanschlag → expliziter Speichern-Button.
   };
 ```
 
-### c) Input: `disabled` entfernen (Zeile 148)
-```tsx
-            // vorher:  disabled={!isEnabled}
-            // danach:  (Zeile ganz löschen)
-```
-Damit die URL auch vor dem Aktivieren eintragbar ist.
+### c) Input Zeile 148 `disabled={!isEnabled}` entfernen
 
-### d) Speichern-Button einfügen — nach dem `</div>` des URL-Blocks (Zeile 153), vor dem `{isEnabled && webhookUrl.trim() && (`-Block (Zeile 155):
+### d) Speichern-Button nach Zeile 153 (`</div>` des URL-Blocks) einfügen
 ```tsx
         <Button onClick={saveSettings} disabled={isSaving} className="w-full">
           <Settings className="h-4 w-4 mr-2" />
           {isSaving ? 'Speichert...' : 'Einstellungen speichern'}
         </Button>
 ```
-`Settings` wird oben bereits importiert (Zeile 8: `import { Webhook, Settings, TestTube } from "lucide-react";`) — kein neuer Import nötig.
 
-## Prüfen
-1. Einloggen (auch Nicht-Admin), N8N aktivieren, URL eintragen, **Einstellungen speichern** → Toast "gespeichert".
-2. Seite neu laden → Werte bleiben.
-3. DB: `SELECT * FROM n8n_settings;` → eine Zeile mit `user_id IS NULL`.
+Wichtig: Frontend-Änderungen erscheinen erst nach einem neuen Build/Deploy des React-Teils — ein Backend-Neustart genügt nicht.
