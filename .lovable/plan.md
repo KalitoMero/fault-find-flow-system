@@ -1,39 +1,88 @@
-# Fix: Dashboard-Statistiken zeigen immer 0
+# Fix: Admin-Dashboard zeigt bei allen Teamleitern 0
 
 ## Ursache (verifiziert)
 
-`getTeamLeaderStatistics()` in `src/lib/storage.ts:212-231` lädt alle Teamleiter und ruft pro Teamleiter `getErrorReportsForTeamLeader(leader.id)` auf. Diese Funktion (`storage.ts:173-176`) **ignoriert die übergebene ID** und ruft einfach `GET /api/error-reports/for-teamleader` auf.
+`getTeamLeaderStatistics()` (`src/lib/storage.ts:212-231`) ruft pro Teamleiter `getErrorReportsForTeamLeader(leader.id)` auf. Diese Funktion (`storage.ts:173-176`) **ignoriert die ID** und ruft `GET /api/error-reports/for-teamleader` auf. Der Server-Handler (`server/src/routes/errorReports.ts:43-105`) filtert ausschließlich nach `req.userId`, also nach dem eingeloggten Nutzer. Beim Teamleiter stimmt das zufällig — beim Admin liefert es 0, und zwar für jede Zeile.
 
-Der Server-Handler (`server/src/routes/errorReports.ts:43-105`) filtert ausschließlich nach `req.userId`, also nach dem **eingeloggten Benutzer** — nicht nach dem Teamleiter aus der Liste:
-- Ressourcen: `WHERE teamleader_id = req.userId`
-- Abteilung: `profiles.department_id` des eingeloggten Users
-- `er.assigned_team_leader_id = req.userId`
+Lösung: ein Server-Endpunkt, der die Zahlen pro Teamleiter aggregiert.
 
-Wenn ein Admin das Dashboard öffnet, hat dieser in der Regel keine Ressourcen, keine passende Abteilung und keine zugewiesenen Meldungen → das Ergebnis ist eine leere Liste, und zwar für **jede** Zeile der Statistik. Deshalb stehen überall Nullen.
+## 1. Backend — `server/src/routes/errorReports.ts`
 
-## Lösung
+Diesen Block **direkt vor** `// GET /api/error-reports/:id` einfügen (also vor Zeile 122, nach dem `next-id`-Handler):
 
-### Backend — neuer Endpunkt
+```ts
+// GET /api/error-reports/statistics/teamleaders
+router.get('/statistics/teamleaders', authenticate, requireRole('admin', 'management'), async (_req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        tl.id,
+        tl.name,
+        COALESCE(d.name, 'Unbekannte Abteilung') AS department,
+        COUNT(er.id)                                                        AS total,
+        COUNT(er.id) FILTER (WHERE er.approval_status = 'pending')          AS pending,
+        COUNT(er.id) FILTER (WHERE er.approval_status = 'approved')         AS approved,
+        COUNT(er.id) FILTER (WHERE er.approval_status = 'rejected')         AS rejected
+      FROM profiles tl
+      JOIN user_roles ur ON ur.user_id = tl.id AND ur.role = 'teamleader'
+      LEFT JOIN departments d ON d.id = tl.department_id
+      LEFT JOIN error_reports er ON (
+        er.assigned_team_leader_id = tl.id
+        OR (tl.department_id IS NOT NULL AND er.department_id = tl.department_id)
+        OR er.resource_name IN (
+          SELECT tr.resource_name FROM teamleader_resources tr WHERE tr.teamleader_id = tl.id
+        )
+      )
+      GROUP BY tl.id, tl.name, d.name
+      ORDER BY tl.name
+    `);
 
-In `server/src/routes/errorReports.ts` einen Endpunkt `GET /statistics/teamleaders` ergänzen (vor `/:id` einsortieren, damit er erreichbar bleibt), abgesichert mit `requireRole('admin', 'management')`. Er liefert in einer einzigen SQL-Abfrage pro Teamleiter die Zählwerte:
+    res.json(rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      department: r.department,
+      totalReports: Number(r.total),
+      pendingReports: Number(r.pending),
+      approvedReports: Number(r.approved),
+      rejectedReports: Number(r.rejected),
+    })));
+  } catch (error: any) {
+    console.error('Error fetching teamleader statistics:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Teamleiter-Statistiken' });
+  }
+});
+```
 
-- Basis: alle Profile, die in `user_roles` die Rolle `teamleader` haben, `LEFT JOIN departments` für den Abteilungsnamen.
-- Zuordnung der Meldungen mit derselben Logik wie `/for-teamleader`, aber pro Teamleiter statt für `req.userId`: `assigned_team_leader_id = tl.id` ODER `resource_name` in dessen `teamleader_resources` ODER `department_id = tl.department_id`.
-- Aggregation via `COUNT(*)` und `COUNT(*) FILTER (WHERE approval_status = ...)` für `total`, `pending`, `approved`, `rejected`.
-- Da `COUNT(...)` in Postgres `bigint` liefert, im Handler in Zahlen casten (oder im Frontend `Number(...)`), sonst kommen Strings an.
+Wichtig: Der Block muss **vor** `router.get('/:id', ...)` stehen, sonst wird er nie erreicht.
 
-### Frontend
+## 2. Frontend — `src/lib/storage.ts`
 
-`getTeamLeaderStatistics()` in `src/lib/storage.ts` auf den neuen Endpunkt umstellen: ein einziger `api.get('/api/error-reports/statistics/teamleaders')` und Mapping auf `{ id, name, department, totalReports, pendingReports, approvedReports, rejectedReports }` mit `Number()`-Konvertierung. Die N+1-Schleife über `getProfiles()` entfällt damit.
+Die komplette Funktion `getTeamLeaderStatistics` (Zeilen 212-231) durch diese ersetzen:
 
-`getErrorReportsForTeamLeader(_userId)` bleibt unverändert für den Teamleiter-eigenen Blick, bekommt aber einen Kommentar, dass der Parameter ignoriert wird und immer der eingeloggte Nutzer gilt — damit der Fehler nicht erneut entsteht.
+```ts
+export const getTeamLeaderStatistics = async () => {
+  const data = await api.get('/api/error-reports/statistics/teamleaders');
+  return (data || []).map((s: any) => ({
+    id: s.id,
+    username: s.id,
+    name: s.name,
+    department: s.department || 'Unbekannte Abteilung',
+    totalReports: Number(s.totalReports) || 0,
+    pendingReports: Number(s.pendingReports) || 0,
+    approvedReports: Number(s.approvedReports) || 0,
+    rejectedReports: Number(s.rejectedReports) || 0,
+  }));
+};
+```
 
-Konsumenten (`src/components/TeamLeaderStatistics.tsx`, `src/components/AdminDashboard.tsx`) müssen nicht angepasst werden, da die Feldnamen gleich bleiben.
+`src/components/AdminDashboard.tsx` und `src/components/TeamLeaderStatistics.tsx` bleiben unverändert, da die Feldnamen identisch sind.
 
-## Nach der Umsetzung
+## 3. Aktivieren
 
-Backend neu starten und Frontend neu bauen (`npm run build`), damit beide Änderungen auf dem Ubuntu-Server wirksam werden.
+```bash
+# im server/-Verzeichnis
+npm run build && sudo systemctl restart fehlermeldesystem   # bzw. Prozess neu starten
 
-## Offene Frage
-
-Falls die Zahlen für einen eingeloggten **Teamleiter** (nicht Admin) ebenfalls 0 sind, liegt zusätzlich das bekannte Rollenproblem vor (`roles[0]` in `src/hooks/useAuth.tsx:57`) — das ist im separaten Audit-Plan beschrieben und kann im selben Zug mitgefixt werden.
+# im Projekt-Root
+npm run build   # dist/ nach /var/www/... kopieren
+```
