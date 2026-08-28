@@ -1,137 +1,39 @@
-# Teamleiter-Dashboard-Button anzeigen (+ offener N8N-Fix)
+# Code-Audit: gefundene Fehler und Korrekturplan
 
-## Problem
+Ergebnis der Durchsuchung von Frontend (`src/`) und Backend (`server/src/`). Die SQL-Abfragen sind durchgehend parametrisiert (keine SQL-Injection gefunden), der JWT-Auth-Fluss ist korrekt. Es gibt jedoch mehrere echte Defekte.
 
-Ein Teamleiter hat in `user_roles` meist **zwei** Rollen: `employee` (wird bei der Registrierung automatisch vergeben) und `teamleader`. In `src/hooks/useAuth.tsx` wird aber nur `roles[0]` genommen (Zeile 57 und Zeile 99), und die SQL-Abfrage in `server/src/middleware/auth.ts` hat kein `ORDER BY` — die Reihenfolge ist also zufällig. Kommt `employee` zuerst, wird der Teamleiter als Mitarbeiter behandelt und der Dashboard-Button in `src/pages/Index.tsx` (Prüfung `profile.role === 'teamleader'`) fehlt.
+## Kritisch
 
-## Fix: `src/hooks/useAuth.tsx`
+1. **Hängende Requests in den Settings-Routen** (`server/src/routes/settings.ts:8-21`)
+   Die generische Route `/:key` steht vor `/n8n`. Bei `n8n`, `deputies`, `resources` wird `return;` ausgeführt — ohne Antwort und ohne `next()`. Der Request bleibt offen, die eigentlichen N8N-/Deputy-Handler werden nie erreicht. Das ist die Ursache dafür, dass N8N-Einstellungen nicht gespeichert werden können.
+   Fix: spezifische Routen (`/n8n`, `/deputies/*`, `/resources/*`) vor `/:key` verschieben und die `return;`-Guards entfernen.
 
-### 1) Hilfsfunktion einfügen — direkt nach Zeile 29 (`const AuthContext = createContext...`)
+2. **Ungeschützter Datei-Download mit Path-Traversal** (`server/src/routes/upload.ts:64-68`)
+   `GET /files/:filename` hat als einzige Route der Datei kein `authenticate` und fügt den Dateinamen ungeprüft per `path.join` an. Fix: `authenticate` ergänzen und den Dateinamen auf `path.basename()` reduzieren bzw. prüfen, dass der aufgelöste Pfad innerhalb von `uploadDir` liegt.
 
-```ts
-const ROLE_PRIORITY = ['admin', 'management', 'teamleader', 'employee'] as const;
+## Hoch
 
-const resolveRole = (roles: string[] = []): UserProfile['role'] => {
-  for (const role of ROLE_PRIORITY) {
-    if (roles.includes(role)) return role;
-  }
-  return 'employee';
-};
-```
+3. **Rollenauswahl ist zufällig** (`src/hooks/useAuth.tsx:57` und `:99`)
+   `roles[0]` ohne Sortierung; die SQL-Abfrage in `server/src/routes/auth.ts:91` hat kein `ORDER BY`. Bei Nutzern mit mehreren Rollen (z. B. `employee` + `teamleader`) fehlt daher der Dashboard-Button.
+   Fix: `resolveRole()` mit Priorität `admin > management > teamleader > employee` einführen und an beiden Stellen nutzen.
 
-### 2) In `loadCurrentUser` — Zeile 57 ersetzen
+4. **Ressourcen-Leck in den Audio-Recordern** (`src/components/AudioRecorder.tsx`, `AudioRecorderSimple.tsx`, `AudioRecorderN8n.tsx`)
+   Kein Cleanup beim Unmount: `setInterval`-Timer laufen weiter und das Mikrofon-`MediaStream` wird nicht gestoppt, wenn die Komponente während einer Aufnahme verschwindet.
+   Fix: `useEffect(() => () => { Timer clearen, Tracks stoppen, Recorder stoppen, Worker terminieren }, [])` in allen drei Komponenten.
 
-```ts
-        role: (roles[0] || 'employee') as any,   // vorher
-        role: resolveRole(roles),                // nachher
-```
+5. **Worker-Cleanup läuft ins Leere** (`src/components/AudioRecorder.tsx:409-412`)
+   `postMessage({type:'cleanup'})` direkt gefolgt von `terminate()` — die Nachricht wird nie verarbeitet.
+   Fix: entweder auf die Cleanup-Antwort warten oder direkt terminieren und den toten `cleanup`-Zweig entfernen.
 
-### 3) In `login` — Zeile 99 ersetzen
+## Mittel
 
-```ts
-          role: (data.user.roles?.[0] || 'employee') as any,   // vorher
-          role: resolveRole(data.user.roles),                  // nachher
-```
+6. **Toter Code**: `src/integrations/supabase/client.ts` exportiert `null as any` und wird nirgends importiert; `src/workers/transcriptionWorker.ts` ist durch `optimizedTranscriptionWorker.ts` ersetzt und hat keine Call-Sites. Beide entfernen (nach einem letzten Grep für Typ-Importe aus `integrations/supabase/types`).
 
-Damit gewinnt immer die höchste Rolle: `admin` > `management` > `teamleader` > `employee`.
+7. **Fehlende Eingabevalidierung** (`server/src/routes/excel.ts:23-24`)
+   `orderNumber.replace(...)` ohne Prüfung — fehlende Felder erzeugen einen TypeError und einen 500 statt eines 400. Fix: Felder validieren und mit 400 antworten.
 
-### Danach
+8. **Fragile Routen-Reihenfolge** in `server/src/routes/errorReports.ts` (`/:id` vor `/statistics/overview`). Aktuell funktionsfähig, sollte aber vorsorglich umsortiert werden; der irreführende Kommentar bei Zeile 273 wird korrigiert.
 
-Frontend neu bauen und ausliefern (`npm run build`), dann **neu einloggen** — das Profil wird nur beim Login bzw. Laden gesetzt.
+## Vorgehen
 
-### Falls der Button danach immer noch fehlt
-
-Prüfen, ob die Teamleiter-Rolle in der DB überhaupt gesetzt ist:
-```sql
-SELECT p.name, ur.role FROM user_roles ur JOIN profiles p ON p.id = ur.user_id;
-```
-Fehlt `teamleader`, ergänzen:
-```sql
-INSERT INTO user_roles (user_id, role) VALUES ('<user-uuid>', 'teamleader')
-ON CONFLICT (user_id, role) DO NOTHING;
-```
-
----
-
-# Offen: N8N-Einstellungen speichern
-
-## Backend: `server/src/routes/settings.ts`
-
-Der N8N-GET-Block steht bereits oben. Der **PUT** muss ebenfalls oben stehen **und** global speichern (`user_id IS NULL`), passend zum GET:
-
-```ts
-// PUT /api/settings/n8n  -- muss VOR router.put('/:key', ...) stehen
-router.put('/n8n', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { webhook_url, is_enabled } = req.body;
-    const existing = await query('SELECT id FROM n8n_settings WHERE user_id IS NULL');
-    if (existing.rows.length > 0) {
-      await query(
-        'UPDATE n8n_settings SET webhook_url = $1, is_enabled = $2 WHERE user_id IS NULL',
-        [webhook_url, is_enabled]
-      );
-    } else {
-      await query(
-        'INSERT INTO n8n_settings (user_id, webhook_url, is_enabled) VALUES (NULL, $1, $2)',
-        [webhook_url, is_enabled]
-      );
-    }
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Speichern der N8N-Einstellungen' });
-  }
-});
-```
-
-Außerdem in den generischen Routen die Guard-Zeilen `if (['n8n', 'deputies', 'resources'].includes(req.params.key)) return;` löschen (Zeile 10 und 21) — sie lassen Requests hängen.
-
-## Frontend: `src/components/N8nWebhookSettings.tsx`
-
-### a) State ergänzen (nach Zeile 18)
-```ts
-  const [isSaving, setIsSaving] = useState(false);
-```
-
-### b) `handleUrlChange` (41-57) und `handleEnabledChange` (59-81) ersetzen
-```ts
-  const handleUrlChange = (value: string) => {
-    setWebhookUrl(value);
-    onSettingsChange(isEnabled, value);
-  };
-
-  const handleEnabledChange = (enabled: boolean) => {
-    setIsEnabled(enabled);
-    onSettingsChange(enabled, webhookUrl);
-  };
-
-  const saveSettings = async () => {
-    if (isEnabled && !webhookUrl.trim()) {
-      toast.error('Bitte geben Sie eine N8N Webhook URL ein');
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await api.put('/api/settings/n8n', { webhook_url: webhookUrl, is_enabled: isEnabled });
-      window.dispatchEvent(new CustomEvent('n8n-settings-updated'));
-      onSettingsChange(isEnabled, webhookUrl);
-      toast.success('N8N Einstellungen gespeichert');
-    } catch (error) {
-      console.error('Error saving N8N settings:', error);
-      toast.error('Fehler beim Speichern der Einstellungen');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-```
-
-### c) Input Zeile 148 `disabled={!isEnabled}` entfernen
-
-### d) Speichern-Button nach Zeile 153 (`</div>` des URL-Blocks) einfügen
-```tsx
-        <Button onClick={saveSettings} disabled={isSaving} className="w-full">
-          <Settings className="h-4 w-4 mr-2" />
-          {isSaving ? 'Speichert...' : 'Einstellungen speichern'}
-        </Button>
-```
-
-Wichtig: Frontend-Änderungen erscheinen erst nach einem neuen Build/Deploy des React-Teils — ein Backend-Neustart genügt nicht.
+Umsetzung in dieser Reihenfolge: 1 → 3 → 2 → 4/5 → 6 → 7 → 8. Punkte 1, 2, 7, 8 betreffen nur den Express-Server (Neustart nötig), Punkte 3–6 das Frontend (`npm run build` nötig).
