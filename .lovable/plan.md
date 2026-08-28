@@ -1,32 +1,71 @@
-# Fix: Vertretungsfunktion ist kaputt (nicht entfernt)
+# Fix: Login mit Benutzername funktioniert nicht
 
 ## Ursache (verifiziert)
 
-Die Vertretungsfunktion existiert noch vollständig im Code (`src/components/DeputySelection.tsx`, `src/pages/Index.tsx:330-338`, `src/lib/storage.ts:184-191`, `server/src/routes/settings.ts:84-118`). Sie funktioniert nicht, weil sie denselben Routen-Fehler trifft wie die N8N-Einstellungen:
+Es sind zwei zusammenhängende Fehler:
 
-In `server/src/routes/settings.ts` stehen die generischen Routen `GET /:key` (Zeile 8) und `PUT /:key` (Zeile 20) **vor** den spezifischen Routen `/deputies/list`, `/deputies`, `/resources/*` und `/n8n`. Express matcht `/:key` zuerst, und die Guards in Zeile 10 und 21 führen `return;` aus — ohne Antwort und ohne `next()`. Folgen:
+1. **Unterschiedliche E-Mail-Domains.** Beim Anlegen eines Accounts baut `src/components/AccountCreationForm.tsx:71` die Adresse als `${username}@internal.local`. Beim Login baut `src/hooks/useAuth.tsx:88` dagegen `${credential}@app.internal`. Der Login sucht damit eine E-Mail, die es nie gibt → "Ungültige Anmeldedaten".
 
-- `GET /api/settings/deputies/list` hängt → `isUserDeputy()` fängt den Fehler und liefert `false` → die Vertretungsauswahl wird nie angezeigt (`shouldShow` bleibt `false`).
-- `PUT /api/settings/deputies` hängt → Stellvertretung kann nicht gespeichert werden.
+2. **Der Benutzername wird nie gespeichert.** `POST /api/auth/register` (`server/src/routes/auth.ts:10-61`) liest nur `email, password, name, personalNumber` aus dem Body und schreibt in `profiles` nur `name` und `personal_number`. Das Feld `username`, das das Formular mitschickt (Zeile 79), wird ignoriert; ebenso passt `personal_number` (Formular) nicht zu `personalNumber` (Server). Die Spalte `profiles.username` bleibt also leer, weshalb auch eine spätere Suche nach Benutzernamen nichts findet.
 
-Ein Fix behebt Vertretung UND N8N-Einstellungen gleichzeitig.
+Personalnummer und E-Mail funktionieren, weil diese beiden Pfade keine konstruierte Adresse brauchen.
 
-## Code-Änderung — nur `server/src/routes/settings.ts`
+## Lösung: Benutzername serverseitig als echtes Login-Kriterium
 
-Den kompletten spezifischen Block (N8N + Deputies + Resources) **vor** die generischen `/:key`-Routen verschieben und die Guards entfernen. Konkret:
+### 1. `server/src/routes/auth.ts` — Register speichert den Benutzernamen
 
-1. Die Blöcke `// === N8N SETTINGS ===`, `// === DEPUTY ASSIGNMENTS ===` und `// === TEAMLEADER RESOURCES ===` (bisher Zeilen 44-164) direkt nach `const router = Router();` (Zeile 5) einfügen.
-2. In `GET /:key` (Zeile 10) und `PUT /:key` (Zeile 21) die Zeilen entfernen:
-   ```ts
-   if (['n8n', 'deputies', 'resources'].includes(req.params.key)) return;
-   ```
-   (Wichtig: das `return` ohne `next()` war der eigentliche Bug. Ohne diese Zeilen greifen die Generischen nur noch für echte Setting-Keys.)
-3. Alte Positionen der verschobenen Blöcke löschen (keine Duplikate).
+In `POST /register` den Body um `username` erweitern und beide Schreibweisen der Personalnummer akzeptieren:
 
-## Zusätzlich prüfen (nicht Teil dieses Fixes)
+```ts
+const { email, password, name, username } = req.body;
+const personalNumber = req.body.personalNumber ?? req.body.personal_number;
+```
 
-Falls nach dem Fix das Vertretungsfeld bei Teamleitern trotzdem nicht erscheint, liegt das bekannte Rollenproblem vor (`roles[0]` in `src/hooks/useAuth.tsx:57` — Teamleiter mit `employee`+`teamleader` wird zufällig als `employee` erkannt). Das war bereits im Audit-Plan als separates Item beschrieben.
+Und das Profil-INSERT auf `username` erweitern:
+
+```ts
+await query(
+  'INSERT INTO profiles (id, name, personal_number, username) VALUES ($1, $2, $3, $4)',
+  [userId, name, personalNumber || null, (username || email.split('@')[0]).toLowerCase()]
+);
+```
+
+### 2. `server/src/routes/auth.ts` — Login akzeptiert Benutzername oder E-Mail
+
+In `POST /login` die User-Suche so ändern, dass sie beides trifft (die Domain spielt dann keine Rolle mehr):
+
+```ts
+const userResult = await query(
+  `SELECT u.id, u.email, u.password_hash, p.name
+   FROM users u JOIN profiles p ON p.id = u.id
+   WHERE LOWER(u.email) = LOWER($1)
+      OR LOWER(p.username) = LOWER($1)
+      OR LOWER(SPLIT_PART(u.email, '@', 1)) = LOWER($1)`,
+  [email]
+);
+```
+
+Der dritte Zweig sorgt dafür, dass auch bereits bestehende Accounts ohne gefüllte `username`-Spalte sofort funktionieren.
+
+### 3. `src/hooks/useAuth.tsx` — keine Fantasie-Domain mehr anhängen
+
+Zeile 88 ersetzen durch:
+
+```ts
+data = await api.post('/api/auth/login', { email: credential, password });
+```
+
+Der Server entscheidet jetzt, ob es eine E-Mail oder ein Benutzername ist.
+
+### 4. Bestehende Profile nachtragen (einmalig, optional)
+
+```sql
+UPDATE profiles p
+SET username = LOWER(SPLIT_PART(u.email, '@', 1))
+FROM users u
+WHERE u.id = p.id AND (p.username IS NULL OR p.username = '');
+```
 
 ## Aktivieren
 
-Nur Backend-Neustart nötig (`server/`: `npm run build` bzw. Prozess neu starten), kein Frontend-Build erforderlich.
+Backend neu bauen/neu starten und Frontend neu bauen (`npm run build`).
