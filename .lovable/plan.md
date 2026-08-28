@@ -1,88 +1,32 @@
-# Fix: Admin-Dashboard zeigt bei allen Teamleitern 0
+# Fix: Vertretungsfunktion ist kaputt (nicht entfernt)
 
 ## Ursache (verifiziert)
 
-`getTeamLeaderStatistics()` (`src/lib/storage.ts:212-231`) ruft pro Teamleiter `getErrorReportsForTeamLeader(leader.id)` auf. Diese Funktion (`storage.ts:173-176`) **ignoriert die ID** und ruft `GET /api/error-reports/for-teamleader` auf. Der Server-Handler (`server/src/routes/errorReports.ts:43-105`) filtert ausschließlich nach `req.userId`, also nach dem eingeloggten Nutzer. Beim Teamleiter stimmt das zufällig — beim Admin liefert es 0, und zwar für jede Zeile.
+Die Vertretungsfunktion existiert noch vollständig im Code (`src/components/DeputySelection.tsx`, `src/pages/Index.tsx:330-338`, `src/lib/storage.ts:184-191`, `server/src/routes/settings.ts:84-118`). Sie funktioniert nicht, weil sie denselben Routen-Fehler trifft wie die N8N-Einstellungen:
 
-Lösung: ein Server-Endpunkt, der die Zahlen pro Teamleiter aggregiert.
+In `server/src/routes/settings.ts` stehen die generischen Routen `GET /:key` (Zeile 8) und `PUT /:key` (Zeile 20) **vor** den spezifischen Routen `/deputies/list`, `/deputies`, `/resources/*` und `/n8n`. Express matcht `/:key` zuerst, und die Guards in Zeile 10 und 21 führen `return;` aus — ohne Antwort und ohne `next()`. Folgen:
 
-## 1. Backend — `server/src/routes/errorReports.ts`
+- `GET /api/settings/deputies/list` hängt → `isUserDeputy()` fängt den Fehler und liefert `false` → die Vertretungsauswahl wird nie angezeigt (`shouldShow` bleibt `false`).
+- `PUT /api/settings/deputies` hängt → Stellvertretung kann nicht gespeichert werden.
 
-Diesen Block **direkt vor** `// GET /api/error-reports/:id` einfügen (also vor Zeile 122, nach dem `next-id`-Handler):
+Ein Fix behebt Vertretung UND N8N-Einstellungen gleichzeitig.
 
-```ts
-// GET /api/error-reports/statistics/teamleaders
-router.get('/statistics/teamleaders', authenticate, requireRole('admin', 'management'), async (_req: AuthRequest, res: Response) => {
-  try {
-    const { rows } = await query(`
-      SELECT
-        tl.id,
-        tl.name,
-        COALESCE(d.name, 'Unbekannte Abteilung') AS department,
-        COUNT(er.id)                                                        AS total,
-        COUNT(er.id) FILTER (WHERE er.approval_status = 'pending')          AS pending,
-        COUNT(er.id) FILTER (WHERE er.approval_status = 'approved')         AS approved,
-        COUNT(er.id) FILTER (WHERE er.approval_status = 'rejected')         AS rejected
-      FROM profiles tl
-      JOIN user_roles ur ON ur.user_id = tl.id AND ur.role = 'teamleader'
-      LEFT JOIN departments d ON d.id = tl.department_id
-      LEFT JOIN error_reports er ON (
-        er.assigned_team_leader_id = tl.id
-        OR (tl.department_id IS NOT NULL AND er.department_id = tl.department_id)
-        OR er.resource_name IN (
-          SELECT tr.resource_name FROM teamleader_resources tr WHERE tr.teamleader_id = tl.id
-        )
-      )
-      GROUP BY tl.id, tl.name, d.name
-      ORDER BY tl.name
-    `);
+## Code-Änderung — nur `server/src/routes/settings.ts`
 
-    res.json(rows.map(r => ({
-      id: r.id,
-      name: r.name,
-      department: r.department,
-      totalReports: Number(r.total),
-      pendingReports: Number(r.pending),
-      approvedReports: Number(r.approved),
-      rejectedReports: Number(r.rejected),
-    })));
-  } catch (error: any) {
-    console.error('Error fetching teamleader statistics:', error);
-    res.status(500).json({ error: 'Fehler beim Laden der Teamleiter-Statistiken' });
-  }
-});
-```
+Den kompletten spezifischen Block (N8N + Deputies + Resources) **vor** die generischen `/:key`-Routen verschieben und die Guards entfernen. Konkret:
 
-Wichtig: Der Block muss **vor** `router.get('/:id', ...)` stehen, sonst wird er nie erreicht.
+1. Die Blöcke `// === N8N SETTINGS ===`, `// === DEPUTY ASSIGNMENTS ===` und `// === TEAMLEADER RESOURCES ===` (bisher Zeilen 44-164) direkt nach `const router = Router();` (Zeile 5) einfügen.
+2. In `GET /:key` (Zeile 10) und `PUT /:key` (Zeile 21) die Zeilen entfernen:
+   ```ts
+   if (['n8n', 'deputies', 'resources'].includes(req.params.key)) return;
+   ```
+   (Wichtig: das `return` ohne `next()` war der eigentliche Bug. Ohne diese Zeilen greifen die Generischen nur noch für echte Setting-Keys.)
+3. Alte Positionen der verschobenen Blöcke löschen (keine Duplikate).
 
-## 2. Frontend — `src/lib/storage.ts`
+## Zusätzlich prüfen (nicht Teil dieses Fixes)
 
-Die komplette Funktion `getTeamLeaderStatistics` (Zeilen 212-231) durch diese ersetzen:
+Falls nach dem Fix das Vertretungsfeld bei Teamleitern trotzdem nicht erscheint, liegt das bekannte Rollenproblem vor (`roles[0]` in `src/hooks/useAuth.tsx:57` — Teamleiter mit `employee`+`teamleader` wird zufällig als `employee` erkannt). Das war bereits im Audit-Plan als separates Item beschrieben.
 
-```ts
-export const getTeamLeaderStatistics = async () => {
-  const data = await api.get('/api/error-reports/statistics/teamleaders');
-  return (data || []).map((s: any) => ({
-    id: s.id,
-    username: s.id,
-    name: s.name,
-    department: s.department || 'Unbekannte Abteilung',
-    totalReports: Number(s.totalReports) || 0,
-    pendingReports: Number(s.pendingReports) || 0,
-    approvedReports: Number(s.approvedReports) || 0,
-    rejectedReports: Number(s.rejectedReports) || 0,
-  }));
-};
-```
+## Aktivieren
 
-`src/components/AdminDashboard.tsx` und `src/components/TeamLeaderStatistics.tsx` bleiben unverändert, da die Feldnamen identisch sind.
-
-## 3. Aktivieren
-
-```bash
-# im server/-Verzeichnis
-npm run build && sudo systemctl restart fehlermeldesystem   # bzw. Prozess neu starten
-
-# im Projekt-Root
-npm run build   # dist/ nach /var/www/... kopieren
-```
+Nur Backend-Neustart nötig (`server/`: `npm run build` bzw. Prozess neu starten), kein Frontend-Build erforderlich.
