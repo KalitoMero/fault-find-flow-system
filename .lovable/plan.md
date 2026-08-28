@@ -1,71 +1,67 @@
-# Fix: Login mit Benutzername funktioniert nicht
+# Fix: Passwort ändern schlägt fehl
 
 ## Ursache (verifiziert)
 
-Es sind zwei zusammenhängende Fehler:
-
-1. **Unterschiedliche E-Mail-Domains.** Beim Anlegen eines Accounts baut `src/components/AccountCreationForm.tsx:71` die Adresse als `${username}@internal.local`. Beim Login baut `src/hooks/useAuth.tsx:88` dagegen `${credential}@app.internal`. Der Login sucht damit eine E-Mail, die es nie gibt → "Ungültige Anmeldedaten".
-
-2. **Der Benutzername wird nie gespeichert.** `POST /api/auth/register` (`server/src/routes/auth.ts:10-61`) liest nur `email, password, name, personalNumber` aus dem Body und schreibt in `profiles` nur `name` und `personal_number`. Das Feld `username`, das das Formular mitschickt (Zeile 79), wird ignoriert; ebenso passt `personal_number` (Formular) nicht zu `personalNumber` (Server). Die Spalte `profiles.username` bleibt also leer, weshalb auch eine spätere Suche nach Benutzernamen nichts findet.
-
-Personalnummer und E-Mail funktionieren, weil diese beiden Pfade keine konstruierte Adresse brauchen.
-
-## Lösung: Benutzername serverseitig als echtes Login-Kriterium
-
-### 1. `server/src/routes/auth.ts` — Register speichert den Benutzernamen
-
-In `POST /register` den Body um `username` erweitern und beide Schreibweisen der Personalnummer akzeptieren:
+`src/components/AccountManagementDialog.tsx:98` ruft beim Speichern eines neuen Passworts auf:
 
 ```ts
-const { email, password, name, username } = req.body;
-const personalNumber = req.body.personalNumber ?? req.body.personal_number;
+await api.put(`/api/profiles/${employee.id}/password`, { password: newPassword });
 ```
 
-Und das Profil-INSERT auf `username` erweitern:
+In `server/src/routes/profiles.ts` gibt es aber nur diese Routen:
+`GET /`, `GET /:id`, `GET /by-department/:departmentId`, `PUT /:id`, `DELETE /:id`.
+
+Eine Route `PUT /:id/password` existiert nicht — der Server antwortet mit 404, der Client wirft die Fehlermeldung "Fehler beim Aktualisieren: ...". Der einzige vorhandene Passwort-Endpunkt ist `POST /api/auth/change-password` (`server/src/routes/auth.ts:186`), der aber nur das **eigene** Passwort (`req.userId`) ändert und deshalb für den Admin-Dialog nicht passt.
+
+## Lösung
+
+### 1. `server/src/routes/profiles.ts` — Admin-Route zum Passwort-Reset ergänzen
+
+Ganz oben `bcrypt` importieren:
 
 ```ts
-await query(
-  'INSERT INTO profiles (id, name, personal_number, username) VALUES ($1, $2, $3, $4)',
-  [userId, name, personalNumber || null, (username || email.split('@')[0]).toLowerCase()]
-);
+import bcrypt from 'bcryptjs';
 ```
 
-### 2. `server/src/routes/auth.ts` — Login akzeptiert Benutzername oder E-Mail
-
-In `POST /login` die User-Suche so ändern, dass sie beides trifft (die Domain spielt dann keine Rolle mehr):
+Und **vor** `router.put('/:id', ...)` (also vor Zeile 57) einfügen:
 
 ```ts
-const userResult = await query(
-  `SELECT u.id, u.email, u.password_hash, p.name
-   FROM users u JOIN profiles p ON p.id = u.id
-   WHERE LOWER(u.email) = LOWER($1)
-      OR LOWER(p.username) = LOWER($1)
-      OR LOWER(SPLIT_PART(u.email, '@', 1)) = LOWER($1)`,
-  [email]
-);
+// PUT /api/profiles/:id/password  (nur Admin)
+router.put('/:id/password', authenticate, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { password } = req.body;
+    if (!password || String(password).length < 4) {
+      return res.status(400).json({ error: 'Passwort muss mindestens 4 Zeichen lang sein' });
+    }
+
+    const exists = await query('SELECT id FROM users WHERE id = $1', [req.params.id]);
+    if (exists.rows.length === 0) {
+      return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+
+    const hash = await bcrypt.hash(String(password), 12);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.params.id]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ error: 'Fehler beim Ändern des Passworts' });
+  }
+});
 ```
 
-Der dritte Zweig sorgt dafür, dass auch bereits bestehende Accounts ohne gefüllte `username`-Spalte sofort funktionieren.
+Wichtig: Die Route muss **vor** `PUT /:id` stehen, sonst greift die generische Route zuerst.
 
-### 3. `src/hooks/useAuth.tsx` — keine Fantasie-Domain mehr anhängen
+Sicherstellen, dass `requireRole` im Import-Statement der Datei enthalten ist (wird bereits von `DELETE /:id` genutzt).
 
-Zeile 88 ersetzen durch:
+### 2. Fehlermeldung im Dialog aussagekräftiger machen (optional)
+
+In `src/components/AccountManagementDialog.tsx:108`:
 
 ```ts
-data = await api.post('/api/auth/login', { email: credential, password });
-```
-
-Der Server entscheidet jetzt, ob es eine E-Mail oder ein Benutzername ist.
-
-### 4. Bestehende Profile nachtragen (einmalig, optional)
-
-```sql
-UPDATE profiles p
-SET username = LOWER(SPLIT_PART(u.email, '@', 1))
-FROM users u
-WHERE u.id = p.id AND (p.username IS NULL OR p.username = '');
+toast.error('Fehler beim Aktualisieren: ' + (error?.message || 'Unbekannter Fehler'));
 ```
 
 ## Aktivieren
 
-Backend neu bauen/neu starten und Frontend neu bauen (`npm run build`).
+Backend neu bauen und neu starten. Frontend-Build ist nur nötig, wenn Punkt 2 übernommen wird.
