@@ -1,39 +1,39 @@
-# Code-Audit: gefundene Fehler und Korrekturplan
+# Fix: Dashboard-Statistiken zeigen immer 0
 
-Ergebnis der Durchsuchung von Frontend (`src/`) und Backend (`server/src/`). Die SQL-Abfragen sind durchgehend parametrisiert (keine SQL-Injection gefunden), der JWT-Auth-Fluss ist korrekt. Es gibt jedoch mehrere echte Defekte.
+## Ursache (verifiziert)
 
-## Kritisch
+`getTeamLeaderStatistics()` in `src/lib/storage.ts:212-231` lädt alle Teamleiter und ruft pro Teamleiter `getErrorReportsForTeamLeader(leader.id)` auf. Diese Funktion (`storage.ts:173-176`) **ignoriert die übergebene ID** und ruft einfach `GET /api/error-reports/for-teamleader` auf.
 
-1. **Hängende Requests in den Settings-Routen** (`server/src/routes/settings.ts:8-21`)
-   Die generische Route `/:key` steht vor `/n8n`. Bei `n8n`, `deputies`, `resources` wird `return;` ausgeführt — ohne Antwort und ohne `next()`. Der Request bleibt offen, die eigentlichen N8N-/Deputy-Handler werden nie erreicht. Das ist die Ursache dafür, dass N8N-Einstellungen nicht gespeichert werden können.
-   Fix: spezifische Routen (`/n8n`, `/deputies/*`, `/resources/*`) vor `/:key` verschieben und die `return;`-Guards entfernen.
+Der Server-Handler (`server/src/routes/errorReports.ts:43-105`) filtert ausschließlich nach `req.userId`, also nach dem **eingeloggten Benutzer** — nicht nach dem Teamleiter aus der Liste:
+- Ressourcen: `WHERE teamleader_id = req.userId`
+- Abteilung: `profiles.department_id` des eingeloggten Users
+- `er.assigned_team_leader_id = req.userId`
 
-2. **Ungeschützter Datei-Download mit Path-Traversal** (`server/src/routes/upload.ts:64-68`)
-   `GET /files/:filename` hat als einzige Route der Datei kein `authenticate` und fügt den Dateinamen ungeprüft per `path.join` an. Fix: `authenticate` ergänzen und den Dateinamen auf `path.basename()` reduzieren bzw. prüfen, dass der aufgelöste Pfad innerhalb von `uploadDir` liegt.
+Wenn ein Admin das Dashboard öffnet, hat dieser in der Regel keine Ressourcen, keine passende Abteilung und keine zugewiesenen Meldungen → das Ergebnis ist eine leere Liste, und zwar für **jede** Zeile der Statistik. Deshalb stehen überall Nullen.
 
-## Hoch
+## Lösung
 
-3. **Rollenauswahl ist zufällig** (`src/hooks/useAuth.tsx:57` und `:99`)
-   `roles[0]` ohne Sortierung; die SQL-Abfrage in `server/src/routes/auth.ts:91` hat kein `ORDER BY`. Bei Nutzern mit mehreren Rollen (z. B. `employee` + `teamleader`) fehlt daher der Dashboard-Button.
-   Fix: `resolveRole()` mit Priorität `admin > management > teamleader > employee` einführen und an beiden Stellen nutzen.
+### Backend — neuer Endpunkt
 
-4. **Ressourcen-Leck in den Audio-Recordern** (`src/components/AudioRecorder.tsx`, `AudioRecorderSimple.tsx`, `AudioRecorderN8n.tsx`)
-   Kein Cleanup beim Unmount: `setInterval`-Timer laufen weiter und das Mikrofon-`MediaStream` wird nicht gestoppt, wenn die Komponente während einer Aufnahme verschwindet.
-   Fix: `useEffect(() => () => { Timer clearen, Tracks stoppen, Recorder stoppen, Worker terminieren }, [])` in allen drei Komponenten.
+In `server/src/routes/errorReports.ts` einen Endpunkt `GET /statistics/teamleaders` ergänzen (vor `/:id` einsortieren, damit er erreichbar bleibt), abgesichert mit `requireRole('admin', 'management')`. Er liefert in einer einzigen SQL-Abfrage pro Teamleiter die Zählwerte:
 
-5. **Worker-Cleanup läuft ins Leere** (`src/components/AudioRecorder.tsx:409-412`)
-   `postMessage({type:'cleanup'})` direkt gefolgt von `terminate()` — die Nachricht wird nie verarbeitet.
-   Fix: entweder auf die Cleanup-Antwort warten oder direkt terminieren und den toten `cleanup`-Zweig entfernen.
+- Basis: alle Profile, die in `user_roles` die Rolle `teamleader` haben, `LEFT JOIN departments` für den Abteilungsnamen.
+- Zuordnung der Meldungen mit derselben Logik wie `/for-teamleader`, aber pro Teamleiter statt für `req.userId`: `assigned_team_leader_id = tl.id` ODER `resource_name` in dessen `teamleader_resources` ODER `department_id = tl.department_id`.
+- Aggregation via `COUNT(*)` und `COUNT(*) FILTER (WHERE approval_status = ...)` für `total`, `pending`, `approved`, `rejected`.
+- Da `COUNT(...)` in Postgres `bigint` liefert, im Handler in Zahlen casten (oder im Frontend `Number(...)`), sonst kommen Strings an.
 
-## Mittel
+### Frontend
 
-6. **Toter Code**: `src/integrations/supabase/client.ts` exportiert `null as any` und wird nirgends importiert; `src/workers/transcriptionWorker.ts` ist durch `optimizedTranscriptionWorker.ts` ersetzt und hat keine Call-Sites. Beide entfernen (nach einem letzten Grep für Typ-Importe aus `integrations/supabase/types`).
+`getTeamLeaderStatistics()` in `src/lib/storage.ts` auf den neuen Endpunkt umstellen: ein einziger `api.get('/api/error-reports/statistics/teamleaders')` und Mapping auf `{ id, name, department, totalReports, pendingReports, approvedReports, rejectedReports }` mit `Number()`-Konvertierung. Die N+1-Schleife über `getProfiles()` entfällt damit.
 
-7. **Fehlende Eingabevalidierung** (`server/src/routes/excel.ts:23-24`)
-   `orderNumber.replace(...)` ohne Prüfung — fehlende Felder erzeugen einen TypeError und einen 500 statt eines 400. Fix: Felder validieren und mit 400 antworten.
+`getErrorReportsForTeamLeader(_userId)` bleibt unverändert für den Teamleiter-eigenen Blick, bekommt aber einen Kommentar, dass der Parameter ignoriert wird und immer der eingeloggte Nutzer gilt — damit der Fehler nicht erneut entsteht.
 
-8. **Fragile Routen-Reihenfolge** in `server/src/routes/errorReports.ts` (`/:id` vor `/statistics/overview`). Aktuell funktionsfähig, sollte aber vorsorglich umsortiert werden; der irreführende Kommentar bei Zeile 273 wird korrigiert.
+Konsumenten (`src/components/TeamLeaderStatistics.tsx`, `src/components/AdminDashboard.tsx`) müssen nicht angepasst werden, da die Feldnamen gleich bleiben.
 
-## Vorgehen
+## Nach der Umsetzung
 
-Umsetzung in dieser Reihenfolge: 1 → 3 → 2 → 4/5 → 6 → 7 → 8. Punkte 1, 2, 7, 8 betreffen nur den Express-Server (Neustart nötig), Punkte 3–6 das Frontend (`npm run build` nötig).
+Backend neu starten und Frontend neu bauen (`npm run build`), damit beide Änderungen auf dem Ubuntu-Server wirksam werden.
+
+## Offene Frage
+
+Falls die Zahlen für einen eingeloggten **Teamleiter** (nicht Admin) ebenfalls 0 sind, liegt zusätzlich das bekannte Rollenproblem vor (`roles[0]` in `src/hooks/useAuth.tsx:57`) — das ist im separaten Audit-Plan beschrieben und kann im selben Zug mitgefixt werden.
